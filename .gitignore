@@ -1,0 +1,47 @@
+# Environment variables (NEVER commit secrets)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Data files (contains sensitive encrypted data)
+data/*.enc
+data/*.log
+!data/.gitkeep
+
+# Logs
+logs/
+*.log
+error_log.txt
+
+# Debug files
+debug/
+
+# Build outputs
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Zip files
+*.zip
+crypto-bot.zip
+
+# Output logs
+output.log
