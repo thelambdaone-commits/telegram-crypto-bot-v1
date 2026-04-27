@@ -48,7 +48,7 @@ openssl rand -hex 32
 ## Installation
 
 ```bash
-git clone <url-du-repo>
+git clone [<url-du-repo>](https://github.com/thelambdaone-commits/telegram-crypto-bot-v1.git)
 cd telegram-crypto-bot
 npm install
 cp .env.example .env
