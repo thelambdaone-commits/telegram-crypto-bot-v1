@@ -8,6 +8,8 @@
     "precheck": "node scripts/precheck.js",
     "check:polymarket": "node scripts/check-polymarket.js",
     "check:polymarket-history": "node scripts/check-polymarket-history.js",
+    "export:credentials": "node scripts/export-credentials.js",
+    "check:exports": "node scripts/check-exports.js",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "lint": "eslint src/ --ignore-pattern node_modules/",
