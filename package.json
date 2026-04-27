@@ -5,20 +5,33 @@
   "type": "module",
   "description": "Telegram Multi-Chain Wallet Manager Bot",
   "scripts": {
+    "precheck": "node scripts/precheck.js",
+    "check:polymarket": "node scripts/check-polymarket.js",
+    "check:polymarket-history": "node scripts/check-polymarket-history.js",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "lint": "eslint src/ --ignore-pattern node_modules/",
     "lint:fix": "eslint src/ --ignore-pattern node_modules/ --fix",
     "format": "prettier --write src/ --ignore-pattern node_modules/",
-    "test": "node --test tests/*.test.js 2>/dev/null || echo 'No tests found'"
+    "test": "node --test tests",
+    "test:clob": "node --test tests/clob/*.test.js",
+    "test:watch": "node --watch --test tests/*.test.js"
   },
-  "keywords": ["telegram", "crypto", "wallet", "bot", "ethereum", "bitcoin", "solana"],
+  "keywords": [
+    "telegram",
+    "crypto",
+    "wallet",
+    "bot",
+    "ethereum",
+    "bitcoin",
+    "solana"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@polymarket/clob-client": "^5.8.1",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "1.98.4",
-    "bigint-buffer": "^1.1.5",
     "bip32": "^5.0.1",
     "bip39": "3.1.0",
     "bitcoinjs-lib": "7.0.1",
@@ -37,6 +50,6 @@
     "prettier": "^3.2.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.18.0"
   }
 }
