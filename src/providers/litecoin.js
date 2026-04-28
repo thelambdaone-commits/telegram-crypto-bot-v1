@@ -1,14 +1,14 @@
-import { ECPairFactory } from "ecpair";
-import * as tinysecp from "tiny-secp256k1";
-import * as bitcoin from "bitcoinjs-lib";
+import { ECPairFactory } from 'ecpair';
+import * as tinysecp from 'tiny-secp256k1';
+import * as bitcoin from 'bitcoinjs-lib';
 
-import { BaseProvider } from "./base.provider.js";
+import { BaseProvider } from './base.provider.js';
 
 const ECPair = ECPairFactory(tinysecp);
 
 const LTC_NETWORK = {
-  messagePrefix: "\x18Bitcoin Signed Message:\n",
-  bech32: "ltc",
+  messagePrefix: '\x18Bitcoin Signed Message:\n',
+  bech32: 'ltc',
   bip32: {
     public: 0x019d9cfe,
     private: 0x019d9c6e,
@@ -21,8 +21,8 @@ const LTC_NETWORK = {
 
 export class LitecoinChain extends BaseProvider {
   constructor(apiUrl = null) {
-    super("Litecoin", "LTC");
-    this.apiUrl = apiUrl || "https://mempool.space/api/litecoin";
+    super('Litecoin', 'LTC');
+    this.apiUrl = apiUrl || 'https://mempool.space/api/litecoin';
     this.network = LTC_NETWORK;
   }
 
@@ -36,7 +36,7 @@ export class LitecoinChain extends BaseProvider {
     return {
       address: address,
       privateKey: keyPair.toWIF(),
-      publicKey: keyPair.publicKey.toString("hex"),
+      publicKey: keyPair.publicKey.toString('hex'),
     };
   }
 
@@ -50,13 +50,13 @@ export class LitecoinChain extends BaseProvider {
     return {
       address: address,
       privateKey: keyPair.toWIF(),
-      publicKey: keyPair.publicKey.toString("hex"),
+      publicKey: keyPair.publicKey.toString('hex'),
     };
   }
 
   async getBalance(address, tokenSymbol = null) {
-    if (tokenSymbol && tokenSymbol.toUpperCase() !== "LTC") return { balance: "0", symbol: tokenSymbol };
-    const apis = [this.apiUrl, "https://mempool.space/api/litecoin"];
+    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'LTC') return { balance: '0', symbol: tokenSymbol };
+    const apis = [this.apiUrl, 'https://mempool.space/api/litecoin'];
 
     for (const api of apis) {
       try {
@@ -86,15 +86,15 @@ export class LitecoinChain extends BaseProvider {
     }
 
     return {
-      balance: "0",
-      balanceSats: "0",
+      balance: '0',
+      balanceSats: '0',
       symbol: this.symbol,
-      error: "Unable to fetch balance",
+      error: 'Unable to fetch balance',
     };
   }
 
   async getUtxos(address) {
-    const apis = [this.apiUrl, "https://mempool.space/api/litecoin"];
+    const apis = [this.apiUrl, 'https://mempool.space/api/litecoin'];
 
     for (const api of apis) {
       try {
@@ -120,7 +120,7 @@ export class LitecoinChain extends BaseProvider {
   }
 
   async estimateFees(fromAddress, toAddress, amount) {
-    const apis = [this.apiUrl, "https://mempool.space/api/litecoin"];
+    const apis = [this.apiUrl, 'https://mempool.space/api/litecoin'];
     let feeEstimates = null;
 
     for (const api of apis) {
@@ -143,7 +143,7 @@ export class LitecoinChain extends BaseProvider {
     }
 
     if (!feeEstimates) {
-      feeEstimates = { "1": 1, "6": 0.5, "144": 0.1 };
+      feeEstimates = { '1': 1, '6': 0.5, '144': 0.1 };
     }
 
     let utxos = [];
@@ -153,7 +153,7 @@ export class LitecoinChain extends BaseProvider {
       utxos = [{}];
     }
 
-    const avgFeeRate = feeEstimates["6"] || 1;
+    const avgFeeRate = feeEstimates['6'] || 1;
     const txVbytes = 140 + utxos.length * 50;
     const estimatedFee = avgFeeRate * txVbytes;
 
@@ -165,7 +165,7 @@ export class LitecoinChain extends BaseProvider {
     };
   }
 
-  async sendTransaction(privateKey, toAddress, amount, feeLevel = "average") {
+  async sendTransaction(privateKey, toAddress, amount, feeLevel = 'average') {
     const keyPair = ECPair.fromWIF(privateKey, this.network);
     const utxos = await this.getUtxos(keyPair.publicKey.toString());
     const fees = await this.estimateFees(keyPair.publicKey.toString(), toAddress, amount);
@@ -181,7 +181,7 @@ export class LitecoinChain extends BaseProvider {
       psbt.addInput({
         hash: utxo.txid,
         index: utxo.vout,
-        nonWitnessUtxo: Buffer.from(txHex, "hex"),
+        nonWitnessUtxo: Buffer.from(txHex, 'hex'),
       });
     }
 
@@ -208,13 +208,13 @@ export class LitecoinChain extends BaseProvider {
     const txHex = tx.toHex();
 
     const response = await fetch(`${this.apiUrl}/tx`, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
       body: txHex,
     });
 
     if (!response.ok) {
-      throw new Error("Failed to broadcast transaction");
+      throw new Error('Failed to broadcast transaction');
     }
 
     const txId = await response.text();
@@ -226,13 +226,13 @@ export class LitecoinChain extends BaseProvider {
       amount: amount.toString(),
       fee: (feeSats / 100000000).toString(),
       blockNumber: 0,
-      status: "success",
+      status: 'success',
     };
   }
 
   validateAddress(address) {
     try {
-      if (address.startsWith("ltc1")) {
+      if (address.startsWith('ltc1')) {
         return true;
       }
       if (/^[LM][a-km-zA-HJ-NP-Z1-9]{25,33}$/.test(address)) {

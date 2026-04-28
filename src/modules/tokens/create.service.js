@@ -9,17 +9,17 @@ import {
   Connection,
   Keypair,
   PublicKey,
-} from "@solana/web3.js";
+} from '@solana/web3.js';
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
   setAuthority,
   AuthorityType,
-} from "@solana/spl-token";
-import { config } from "../../core/config.js";
+} from '@solana/spl-token';
+import { config } from '../../core/config.js';
 
-const connection = new Connection(config.rpc.sol, "confirmed");
+const connection = new Connection(config.rpc.sol, 'confirmed');
 
 export const TokenService = {
   /**
@@ -30,21 +30,21 @@ export const TokenService = {
    */
   async createMint(payerPrivateKey, decimals) {
     try {
-      console.log("[TOKEN_SERVICE] createMint - key length:", payerPrivateKey?.length);
+      console.log('[TOKEN_SERVICE] createMint - key length:', payerPrivateKey?.length);
       
       let keypair;
       // Try hex first (most common), then base64
       if (payerPrivateKey.length === 64) {
         // Hex format (64 chars)
-        const secretKey = Buffer.from(payerPrivateKey, "hex");
+        const secretKey = Buffer.from(payerPrivateKey, 'hex');
         keypair = Keypair.fromSecretKey(secretKey);
       } else {
         // Base64 or other
-        const secretKey = Buffer.from(payerPrivateKey, "base64");
+        const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
 
-      console.log("[TOKEN_SERVICE] Keypair created, pubkey:", keypair.publicKey.toString());
+      console.log('[TOKEN_SERVICE] Keypair created, pubkey:', keypair.publicKey.toString());
 
       const mint = await createMint(
         connection,
@@ -59,10 +59,10 @@ export const TokenService = {
         mint: mint,
       };
     } catch (error) {
-      console.error("[TOKEN_SERVICE] createMint error:", error);
+      console.error('[TOKEN_SERVICE] createMint error:', error);
       return {
         success: false,
-        error: error.message || "Failed to create mint",
+        error: error.message || 'Failed to create mint',
       };
     }
   },
@@ -78,10 +78,10 @@ export const TokenService = {
     try {
       let keypair;
       if (payerPrivateKey.length === 64) {
-        const secretKey = Buffer.from(payerPrivateKey, "hex");
+        const secretKey = Buffer.from(payerPrivateKey, 'hex');
         keypair = Keypair.fromSecretKey(secretKey);
       } else {
-        const secretKey = Buffer.from(payerPrivateKey, "base64");
+        const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
       
@@ -100,10 +100,10 @@ export const TokenService = {
         ata: ata.address,
       };
     } catch (error) {
-      console.error("[TOKEN_SERVICE] createATA error:", error);
+      console.error('[TOKEN_SERVICE] createATA error:', error);
       return {
         success: false,
-        error: error.message || "Failed to create ATA",
+        error: error.message || 'Failed to create ATA',
       };
     }
   },
@@ -121,10 +121,10 @@ export const TokenService = {
     try {
       let keypair;
       if (payerPrivateKey.length === 64) {
-        const secretKey = Buffer.from(payerPrivateKey, "hex");
+        const secretKey = Buffer.from(payerPrivateKey, 'hex');
         keypair = Keypair.fromSecretKey(secretKey);
       } else {
-        const secretKey = Buffer.from(payerPrivateKey, "base64");
+        const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
       
@@ -147,10 +147,10 @@ export const TokenService = {
         txHash: txHash,
       };
     } catch (error) {
-      console.error("[TOKEN_SERVICE] mintTo error:", error);
+      console.error('[TOKEN_SERVICE] mintTo error:', error);
       return {
         success: false,
-        error: error.message || "Failed to mint tokens",
+        error: error.message || 'Failed to mint tokens',
       };
     }
   },
@@ -165,10 +165,10 @@ export const TokenService = {
     try {
       let keypair;
       if (payerPrivateKey.length === 64) {
-        const secretKey = Buffer.from(payerPrivateKey, "hex");
+        const secretKey = Buffer.from(payerPrivateKey, 'hex');
         keypair = Keypair.fromSecretKey(secretKey);
       } else {
-        const secretKey = Buffer.from(payerPrivateKey, "base64");
+        const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
       
@@ -188,10 +188,10 @@ export const TokenService = {
         txHash: txHash,
       };
     } catch (error) {
-      console.error("[TOKEN_SERVICE] revokeMintAuthority error:", error);
+      console.error('[TOKEN_SERVICE] revokeMintAuthority error:', error);
       return {
         success: false,
-        error: error.message || "Failed to revoke mint authority",
+        error: error.message || 'Failed to revoke mint authority',
       };
     }
   },
@@ -218,7 +218,7 @@ export const TokenService = {
         totalEstimate: totalEstimate / 1e9,
       };
     } catch (error) {
-      console.error("[TOKEN_SERVICE] estimateRealCost error:", error);
+      console.error('[TOKEN_SERVICE] estimateRealCost error:', error);
       return {
         mintRent: 0.002,
         ataRent: 0.002,

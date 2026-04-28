@@ -1,14 +1,14 @@
-import { ECPairFactory } from "ecpair";
-import * as tinysecp from "tiny-secp256k1";
-import * as bitcoin from "bitcoinjs-lib";
+import { ECPairFactory } from 'ecpair';
+import * as tinysecp from 'tiny-secp256k1';
+import * as bitcoin from 'bitcoinjs-lib';
 
-import { BaseProvider } from "./base.provider.js";
+import { BaseProvider } from './base.provider.js';
 
 const ECPair = ECPairFactory(tinysecp);
 
 const BCH_NETWORK = {
-  messagePrefix: "\x18Bitcoin Signed Message:\n",
-  bech32: "bitcoincash",
+  messagePrefix: '\x18Bitcoin Signed Message:\n',
+  bech32: 'bitcoincash',
   bip32: {
     public: 0x0488b21e,
     private: 0x0488ade4,
@@ -21,20 +21,20 @@ const BCH_NETWORK = {
 
 export class BitcoinCashChain extends BaseProvider {
   constructor(apiUrl = null) {
-    super("Bitcoin Cash", "BCH");
-    this.apiUrl = apiUrl || "https://api.blockchain.info/bch/stats";
+    super('Bitcoin Cash', 'BCH');
+    this.apiUrl = apiUrl || 'https://api.blockchain.info/bch/stats';
     this.network = BCH_NETWORK;
-    this.explorerApi = "https://blockchain.info";
+    this.explorerApi = 'https://blockchain.info';
   }
 
   toLegacyAddress(cashAddr) {
     try {
       return bitcoin.address.fromBase58Check(
         bitcoin.address.toBase58Check(
-          Buffer.from(cashAddr.replace("bitcoincash:", ""), "hex"),
+          Buffer.from(cashAddr.replace('bitcoincash:', ''), 'hex'),
           0x00
         )
-      ).toString("hex");
+      ).toString('hex');
     } catch {
       return null;
     }
@@ -50,7 +50,7 @@ export class BitcoinCashChain extends BaseProvider {
     return {
       address: address,
       privateKey: keyPair.toWIF(),
-      publicKey: keyPair.publicKey.toString("hex"),
+      publicKey: keyPair.publicKey.toString('hex'),
     };
   }
 
@@ -64,16 +64,16 @@ export class BitcoinCashChain extends BaseProvider {
     return {
       address: address,
       privateKey: keyPair.toWIF(),
-      publicKey: keyPair.publicKey.toString("hex"),
+      publicKey: keyPair.publicKey.toString('hex'),
     };
   }
 
   async getBalance(address, tokenSymbol = null) {
-    if (tokenSymbol && tokenSymbol.toUpperCase() !== "BCH") return { balance: "0", symbol: tokenSymbol };
+    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'BCH') return { balance: '0', symbol: tokenSymbol };
     try {
       let lookupAddress = address;
-      if (address.startsWith("bitcoincash:")) {
-        const base58 = address.replace("bitcoincash:", "");
+      if (address.startsWith('bitcoincash:')) {
+        const base58 = address.replace('bitcoincash:', '');
         lookupAddress = this.base58ToLegacy(base58);
       }
 
@@ -96,8 +96,8 @@ export class BitcoinCashChain extends BaseProvider {
       };
     } catch (error) {
       return {
-        balance: "0",
-        balanceSats: "0",
+        balance: '0',
+        balanceSats: '0',
         symbol: this.symbol,
         error: error.message,
       };
@@ -107,19 +107,19 @@ export class BitcoinCashChain extends BaseProvider {
   base58ToLegacy(base58) {
     try {
       const decoded = this.base58Decode(base58);
-      return "1" + decoded.slice(0, -4);
+      return '1' + decoded.slice(0, -4);
     } catch {
       return base58;
     }
   }
 
   base58Decode(address) {
-    const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     let num = [];
     for (let i = 0; i < address.length; i++) {
       const char = address[address.length - 1 - i];
       const index = alphabet.indexOf(char);
-      if (index === -1) throw new Error("Invalid base58");
+      if (index === -1) throw new Error('Invalid base58');
       let carry = index;
       for (let j = 0; j < num.length; j++) {
         carry += num[j] * 58;
@@ -137,14 +137,14 @@ export class BitcoinCashChain extends BaseProvider {
         num.push(0);
       }
     }
-    return Buffer.from(num.reverse()).toString("hex");
+    return Buffer.from(num.reverse()).toString('hex');
   }
 
   async getUtxos(address) {
     try {
       let lookupAddress = address;
-      if (address.startsWith("bitcoincash:")) {
-        const base58 = address.replace("bitcoincash:", "");
+      if (address.startsWith('bitcoincash:')) {
+        const base58 = address.replace('bitcoincash:', '');
         lookupAddress = this.base58ToLegacy(base58);
       }
 
@@ -176,8 +176,8 @@ export class BitcoinCashChain extends BaseProvider {
 
   async broadcastTransaction(txHex) {
     const apis = [
-      { url: "https://api.blockchain.info/pushtx", method: "POST" },
-      { url: "https://blockchain.info/pushtx", method: "POST" },
+      { url: 'https://api.blockchain.info/pushtx', method: 'POST' },
+      { url: 'https://blockchain.info/pushtx', method: 'POST' },
     ];
 
     for (const api of apis) {
@@ -186,8 +186,8 @@ export class BitcoinCashChain extends BaseProvider {
         const timeout = setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch(api.url, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" },
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
           body: txHex,
           signal: controller.signal,
         });
@@ -196,7 +196,7 @@ export class BitcoinCashChain extends BaseProvider {
 
         if (response.ok) {
           const result = await response.text();
-          if (result.includes("txid") || result.length >= 64) {
+          if (result.includes('txid') || result.length >= 64) {
             return result;
           }
         }
@@ -205,10 +205,10 @@ export class BitcoinCashChain extends BaseProvider {
       }
     }
 
-    throw new Error("Broadcast failed - all APIs unavailable");
+    throw new Error('Broadcast failed - all APIs unavailable');
   }
 
-  async sendTransaction(privateKey, toAddress, amount, feeLevel = "average") {
+  async sendTransaction(privateKey, toAddress, amount, feeLevel = 'average') {
     try {
       const keyPair = ECPair.fromWIF(privateKey, this.network);
       const fromAddress = keyPair.publicKey.toString();
@@ -216,7 +216,7 @@ export class BitcoinCashChain extends BaseProvider {
       const utxos = await this.getUtxos(fromAddress);
 
       if (!utxos || utxos.length === 0) {
-        throw new Error("No UTXOs available");
+        throw new Error('No UTXOs available');
       }
 
       const fees = await this.estimateFees(fromAddress, toAddress, amount);
@@ -229,7 +229,7 @@ export class BitcoinCashChain extends BaseProvider {
 
       let totalInput = 0;
       for (const utxo of utxos) {
-        tx.addInput(Buffer.from(utxo.txHash, "hex").reverse(), utxo.index);
+        tx.addInput(Buffer.from(utxo.txHash, 'hex').reverse(), utxo.index);
         totalInput += utxo.value;
       }
 
@@ -252,24 +252,24 @@ export class BitcoinCashChain extends BaseProvider {
         amount: amount.toString(),
         fee: (feeSats / 100000000).toString(),
         blockNumber: 0,
-        status: "success",
+        status: 'success',
       };
     } catch (error) {
       return {
-        hash: "failed",
-        from: "",
+        hash: 'failed',
+        from: '',
         to: toAddress,
         amount: amount.toString(),
-        fee: "0.00001",
+        fee: '0.00001',
         blockNumber: 0,
-        status: "failed",
+        status: 'failed',
         error: error.message,
       };
     }
   }
 
   base58ToBytes(address) {
-    const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     const bytes = [];
     for (let i = 0; i < address.length; i++) {
       const char = address[i];
@@ -297,8 +297,8 @@ export class BitcoinCashChain extends BaseProvider {
 
   validateAddress(address) {
     try {
-      if (address.startsWith("bitcoincash:")) {
-        return address.replace("bitcoincash:", "").length >= 42;
+      if (address.startsWith('bitcoincash:')) {
+        return address.replace('bitcoincash:', '').length >= 42;
       }
       if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(address)) {
         return true;

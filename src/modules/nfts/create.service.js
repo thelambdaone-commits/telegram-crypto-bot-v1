@@ -10,15 +10,15 @@ import {
   Connection,
   Keypair,
   PublicKey,
-} from "@solana/web3.js";
+} from '@solana/web3.js';
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
-} from "@solana/spl-token";
-import { config } from "../../core/config.js";
+} from '@solana/spl-token';
+import { config } from '../../core/config.js';
 
-const connection = new Connection(config.rpc.sol, "confirmed");
+const connection = new Connection(config.rpc.sol, 'confirmed');
 
 export const NFTService = {
   /**
@@ -31,18 +31,18 @@ export const NFTService = {
    */
   async createNFT(payerPrivateKey, name, description, imageUrl) {
     try {
-      console.log("[NFT_SERVICE] createNFT - name:", name);
+      console.log('[NFT_SERVICE] createNFT - name:', name);
       
       let keypair;
       if (payerPrivateKey.length === 64) {
-        const secretKey = Buffer.from(payerPrivateKey, "hex");
+        const secretKey = Buffer.from(payerPrivateKey, 'hex');
         keypair = Keypair.fromSecretKey(secretKey);
       } else {
-        const secretKey = Buffer.from(payerPrivateKey, "base64");
+        const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
 
-      console.log("[NFT_SERVICE] Keypair created, pubkey:", keypair.publicKey.toString());
+      console.log('[NFT_SERVICE] Keypair created, pubkey:', keypair.publicKey.toString());
 
       // Create mint with supply=1, decimals=0
       const mint = await createMint(
@@ -54,7 +54,7 @@ export const NFTService = {
       );
 
       const mintAddress = mint.toString();
-      console.log("[NFT_SERVICE] Mint created:", mintAddress);
+      console.log('[NFT_SERVICE] Mint created:', mintAddress);
 
       // Create ATA for the owner
       const ata = await getOrCreateAssociatedTokenAccount(
@@ -65,7 +65,7 @@ export const NFTService = {
       );
 
       const ataAddress = ata.address.toString();
-      console.log("[NFT_SERVICE] ATA created:", ataAddress);
+      console.log('[NFT_SERVICE] ATA created:', ataAddress);
 
       // Mint NFT (supply = 1)
       const amountInLamports = 1; // 1 NFT
@@ -78,19 +78,19 @@ export const NFTService = {
         amountInLamports
       );
 
-      console.log("[NFT_SERVICE] NFT minted, tx:", txHash);
+      console.log('[NFT_SERVICE] NFT minted, tx:', txHash);
 
       // Create metadata JSON (off-chain)
       const metadata = {
         name: name,
-        description: description || "",
+        description: description || '',
         image: imageUrl,
         properties: {
-          category: "image",
+          category: 'image',
           files: [
             {
               uri: imageUrl,
-              type: imageUrl.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg"
+              type: imageUrl.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
             }
           ]
         }
@@ -103,10 +103,10 @@ export const NFTService = {
         metadata: metadata,
       };
     } catch (error) {
-      console.error("[NFT_SERVICE] createNFT error:", error);
+      console.error('[NFT_SERVICE] createNFT error:', error);
       return {
         success: false,
-        error: error.message || "Failed to create NFT",
+        error: error.message || 'Failed to create NFT',
       };
     }
   },
@@ -118,26 +118,26 @@ export const NFTService = {
    */
   validateImageUrl(url) {
     if (!url) {
-      return { valid: false, error: "URL d'image requise" };
+      return { valid: false, error: 'URL d\'image requise' };
     }
 
     try {
       const parsed = new URL(url);
       
-      if (!["http:", "https:"].includes(parsed.protocol)) {
-        return { valid: false, error: "L'URL doit utiliser HTTP ou HTTPS" };
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return { valid: false, error: 'L\'URL doit utiliser HTTP ou HTTPS' };
       }
 
       const lowerUrl = url.toLowerCase();
-      if (!lowerUrl.endsWith(".png") && 
-          !lowerUrl.endsWith(".jpg") && 
-          !lowerUrl.endsWith(".jpeg")) {
-        return { valid: false, error: "Seuls PNG et JPG sont acceptés" };
+      if (!lowerUrl.endsWith('.png') && 
+          !lowerUrl.endsWith('.jpg') && 
+          !lowerUrl.endsWith('.jpeg')) {
+        return { valid: false, error: 'Seuls PNG et JPG sont acceptés' };
       }
 
       return { valid: true };
     } catch (e) {
-      return { valid: false, error: "URL invalide" };
+      return { valid: false, error: 'URL invalide' };
     }
   },
 
@@ -162,7 +162,7 @@ export const NFTService = {
         totalEstimate: totalEstimate / 1e9,
       };
     } catch (error) {
-      console.error("[NFT_SERVICE] estimateRealCost error:", error);
+      console.error('[NFT_SERVICE] estimateRealCost error:', error);
       return {
         mintRent: 0.002,
         ataRent: 0.002,

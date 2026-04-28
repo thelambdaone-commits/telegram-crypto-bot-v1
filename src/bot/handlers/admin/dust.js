@@ -1,18 +1,18 @@
-import { isAdmin } from "../../middlewares/auth.middleware.js";
-import { mainMenuKeyboard } from "../../keyboards/index.js";
-import { getPricesEUR, formatEUR } from "../../../shared/price.js";
-import { MESSAGES, EMOJIS } from "../../messages/index.js";
-import { config } from "../../../core/config.js";
-import { Markup } from "telegraf";
+import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { mainMenuKeyboard } from '../../keyboards/index.js';
+import { getPricesEUR, formatEUR } from '../../../shared/price.js';
+import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { config } from '../../../core/config.js';
+import { Markup } from 'telegraf';
 
 function escapeMarkdown(text) {
-  return text.replace(/[_*[\]()~`>#+=|{}.!\\-]/g, "\\$&");
+  return text.replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
 }
 
 async function getEthGasPrice() {
   try {
-    const { ethers } = await import("ethers");
-    const provider = new ethers.JsonRpcProvider(config.rpc?.eth || "https://eth.llamarpc.com");
+    const { ethers } = await import('ethers');
+    const provider = new ethers.JsonRpcProvider(config.rpc?.eth || 'https://eth.llamarpc.com');
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice ? Number(feeData.gasPrice) / 1e9 : 30;
     return gasPrice;
@@ -25,10 +25,10 @@ async function handleAdminDust(ctx, storage, walletService) {
   const chatId = ctx.chat.id;
 
   if (!isAdmin(chatId)) {
-    return ctx.reply("❌ Accès réservé aux admins.");
+    return ctx.reply('❌ Accès réservé aux admins.');
   }
 
-  const loadingMsg = await ctx.reply("👑 Analyse globale du dust en cours...");
+  const loadingMsg = await ctx.reply('👑 Analyse globale du dust en cours...');
 
   try {
     const users = await storage.getAllUsers();
@@ -38,8 +38,8 @@ async function handleAdminDust(ctx, storage, walletService) {
     const gasUnits = 21000;
     const gasCostEth = (gasGwei * gasUnits) / 1_000_000_000;
 
-    let summaryText = "👑 *Admin - Dust Global*\n\n";
-    summaryText += "━━━━━━━━━━━━\n";
+    let summaryText = '👑 *Admin - Dust Global*\n\n';
+    summaryText += '━━━━━━━━━━━━\n';
     summaryText += `📊 ${users.length} utilisateur(s) analyse(s)\n\n`;
 
     let globalStats = {
@@ -62,8 +62,8 @@ async function handleAdminDust(ctx, storage, walletService) {
       let userBtcDust = 0;
       let userDustFound = false;
 
-      const ethWallets = wallets.filter((w) => w.chain === "eth");
-      const btcWallets = wallets.filter((w) => w.chain === "btc");
+      const ethWallets = wallets.filter((w) => w.chain === 'eth');
+      const btcWallets = wallets.filter((w) => w.chain === 'btc');
 
       for (const wallet of ethWallets) {
         try {
@@ -124,27 +124,27 @@ async function handleAdminDust(ctx, storage, walletService) {
 
     userDustList.sort((a, b) => b.total - a.total);
 
-    summaryText += "━━━━━━━━━━━━\n";
-    summaryText += "📈 *Statistiques globales*\n\n";
+    summaryText += '━━━━━━━━━━━━\n';
+    summaryText += '📈 *Statistiques globales*\n\n';
     summaryText += `👥 Users avec dust: ${globalStats.usersWithDust}\n`;
     summaryText += `👛 Total wallets: ${globalStats.totalWallets}\n`;
-    summaryText += "━━━━━━━━━━━━\n";
+    summaryText += '━━━━━━━━━━━━\n';
     summaryText += `🔷 ETH dust: ${formatEUR(globalStats.totalEthDust)}\n`;
     summaryText += `🟠 BTC dust: ${formatEUR(globalStats.totalBtcDust)}\n`;
-    summaryText += "━━━━━━━━━━━━\n";
+    summaryText += '━━━━━━━━━━━━\n';
     summaryText += `💰 *Total dust:* ${formatEUR(globalStats.totalDustValue)}\n`;
-    summaryText += "\n";
+    summaryText += '\n';
 
     if (userDustList.length > 0) {
-      summaryText += "━━━━━━━━━━━━\n";
-      summaryText += "📋 *Top 10 utilisateurs*\n\n";
+      summaryText += '━━━━━━━━━━━━\n';
+      summaryText += '📋 *Top 10 utilisateurs*\n\n';
 
       const topUsers = userDustList.slice(0, 10);
       for (let i = 0; i < topUsers.length; i++) {
         const u = topUsers[i];
         const name = u.user.username
           ? escapeMarkdown(`@${u.user.username}`)
-          : escapeMarkdown(u.user.firstName || "Inconnu");
+          : escapeMarkdown(u.user.firstName || 'Inconnu');
         summaryText += `${i + 1}. ${name}\n`;
         if (u.ethDust > 0) summaryText += `   🔷 ETH: ${formatEUR(u.ethDust)}\n`;
         if (u.btcDust > 0) summaryText += `   🟠 BTC: ${formatEUR(u.btcDust)}\n`;
@@ -155,13 +155,13 @@ async function handleAdminDust(ctx, storage, walletService) {
         summaryText += `...et ${userDustList.length - 10} autres`;
       }
     } else {
-      summaryText += "✅ *Aucun dust detecte.*";
+      summaryText += '✅ *Aucun dust detecte.*';
     }
 
     await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
 
     await ctx.reply(summaryText, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       ...adminDustKeyboard(),
     });
   } catch (error) {
@@ -173,16 +173,16 @@ async function handleAdminDust(ctx, storage, walletService) {
 }
 
 export function setupAdminDust(bot, storage, walletService) {
-  bot.command("admin_dust", async (ctx) => {
+  bot.command('admin_dust', async (ctx) => {
     await handleAdminDust(ctx, storage, walletService);
   });
 
-  bot.action("admin_dust", async (ctx) => {
+  bot.action('admin_dust', async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
     await handleAdminDust(ctx, storage, walletService);
   });
 
-  bot.action("admin_dust_refresh", async (ctx) => {
+  bot.action('admin_dust_refresh', async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
     await handleAdminDust(ctx, storage, walletService);
   });
@@ -191,8 +191,8 @@ export function setupAdminDust(bot, storage, walletService) {
 function adminDustKeyboard() {
   return Markup.inlineKeyboard([
     [
-      Markup.button.callback("🔄 Actualiser", "admin_dust_refresh"),
-      Markup.button.callback("🔙 Panel Admin", "admin_panel"),
+      Markup.button.callback('🔄 Actualiser', 'admin_dust_refresh'),
+      Markup.button.callback('🔙 Panel Admin', 'admin_panel'),
     ],
   ]);
 }

@@ -3,11 +3,11 @@
  * SOL -> mSOL staking and exit functions
  */
 
-import { PublicKey, Connection } from "@solana/web3.js";
-import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
+import { PublicKey, Connection } from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 
-const MARINADE_MINT = "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So";
-const MARINADE_RPC = "https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff";
+const MARINADE_MINT = 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So';
+const MARINADE_RPC = 'https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff';
 const SOL_RPC = process.env.SOL_RPC_URL || MARINADE_RPC;
 
 let connection;
@@ -38,7 +38,7 @@ export class MarinadeService {
         return {
           success: true,
           balance: balance,
-          symbol: "mSOL",
+          symbol: 'mSOL',
           decimals: 9,
         };
       } catch {
@@ -46,7 +46,7 @@ export class MarinadeService {
         return {
           success: true,
           balance: 0,
-          symbol: "mSOL",
+          symbol: 'mSOL',
           decimals: 9,
           hasAccount: false,
         };
@@ -96,10 +96,10 @@ export class MarinadeService {
 
       return {
         success: true,
-        txHash: "PLACEHOLDER",
+        txHash: 'PLACEHOLDER',
         amountStaked: amountSOL,
         amountReceived: stakeLamports / 1e9,
-        message: "Stake transactions require wallet signing in bot flow",
+        message: 'Stake transactions require wallet signing in bot flow',
       };
     } catch (error) {
       return {
@@ -124,7 +124,7 @@ export class MarinadeService {
         priceImpact: 0.5,
         fee: 0.000015, // ~15000 lamports
         feeUSD: 0,
-        mode: "fast",
+        mode: 'fast',
       };
     } catch (error) {
       return {
@@ -142,10 +142,10 @@ export class MarinadeService {
       // Fast exit through Jupiter swap router
       return {
         success: true,
-        txHash: "PLACEHOLDER",
+        txHash: 'PLACEHOLDER',
         amountOut: amountmSOL * 0.995,
-        message: "Fast exit swap requires transaction signing in bot flow",
-        mode: "fast",
+        message: 'Fast exit swap requires transaction signing in bot flow',
+        mode: 'fast',
       };
     } catch (error) {
       return {
@@ -170,8 +170,8 @@ export class MarinadeService {
         priceImpact: 0,
         fee: 0.000005,
         feeUSD: 0,
-        mode: "standard",
-        estimatedTime: "~1 epoch (~2-3 days)",
+        mode: 'standard',
+        estimatedTime: '~1 epoch (~2-3 days)',
         requiresClaim: true,
       };
     } catch (error) {
@@ -190,9 +190,9 @@ export class MarinadeService {
       // Initiate delayed unstake through Marinade
       return {
         success: true,
-        txHash: "PLACEHOLDER",
-        message: "Delayed unstake initiated - claim available after epoch",
-        mode: "standard",
+        txHash: 'PLACEHOLDER',
+        message: 'Delayed unstake initiated - claim available after epoch',
+        mode: 'standard',
         requiresClaim: true,
       };
     } catch (error) {
@@ -223,8 +223,8 @@ export class MarinadeService {
       // Claim SOL after delayed unstake is ready
       return {
         success: true,
-        txHash: "PLACEHOLDER",
-        message: "Claim transaction requires signing in bot flow",
+        txHash: 'PLACEHOLDER',
+        message: 'Claim transaction requires signing in bot flow',
       };
     } catch (error) {
       return {
@@ -243,7 +243,7 @@ export class MarinadeService {
       return {
         success: true,
         apy: 7.2, // placeholder - would fetch dynamically
-        source: "marinade",
+        source: 'marinade',
       };
     } catch (error) {
       return {

@@ -56,25 +56,25 @@ export class DustService {
 
   static getRecommendation(dustItems) {
     if (!dustItems || dustItems.length === 0) {
-      return { action: "ok", text: "✅ Aucun dust détecté" };
+      return { action: 'ok', text: '✅ Aucun dust détecté' };
     }
     
     const totalValue = dustItems.reduce((s, i) => s + (i.valueUsd || i.valueBtcUsd || 0), 0);
     
     if (totalValue < 1) {
-      return { action: "wait", text: "💤 Valeur trop faible - Patiente" };
+      return { action: 'wait', text: '💤 Valeur trop faible - Patiente' };
     }
     if (totalValue < 5) {
-      return { action: "monitor", text: "👀 Surveiller - proche du seuil" };
+      return { action: 'monitor', text: '👀 Surveiller - proche du seuil' };
     }
-    return { action: "consolidate", text: "💡 Consolidation possible" };
+    return { action: 'consolidate', text: '💡 Consolidation possible' };
   }
 
   static async getDustSummary(wallets, chainAdapters, prices) {
     const results = { eth: [], btc: [], sol: [] };
     
     for (const wallet of wallets) {
-      if (wallet.chain === "eth") {
+      if (wallet.chain === 'eth') {
         const analysis = await this.analyzeWalletEth(wallet.address, null, 30);
         results.eth.push({
           wallet,
@@ -83,7 +83,7 @@ export class DustService {
         });
       }
       
-      if (wallet.chain === "btc") {
+      if (wallet.chain === 'btc') {
         try {
           const utxos = await chainAdapters.btc.getUtxos(wallet.address);
           const feeEstimates = await chainAdapters.btc.estimateFees(wallet.address, wallet.address, 0);

@@ -1,7 +1,7 @@
 /**
  * Chart Generation Service - Creates price charts for cryptocurrencies
  */
-import { ChartJSNodeCanvas } from "chartjs-node-canvas";
+import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 
 const width = 800;
 const height = 400;
@@ -9,46 +9,46 @@ const height = 400;
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
   width,
   height,
-  backgroundColour: "#1a1a2e",
+  backgroundColour: '#1a1a2e',
 });
 
 const COINGECKO_IDS = {
-  btc: "bitcoin",
-  eth: "ethereum",
-  sol: "solana",
-  ltc: "litecoin",
-  bch: "bitcoin-cash",
-  usdc: "usd-coin",
-  usdt: "tether",
-  matic: "polygon-ecosystem-token",
-  op: "optimism",
-  jitosol: "jito-staked-sol",
+  btc: 'bitcoin',
+  eth: 'ethereum',
+  sol: 'solana',
+  ltc: 'litecoin',
+  bch: 'bitcoin-cash',
+  usdc: 'usd-coin',
+  usdt: 'tether',
+  matic: 'polygon-ecosystem-token',
+  op: 'optimism',
+  jitosol: 'jito-staked-sol',
 };
 
 const CHAIN_COLORS = {
-  btc: { line: "#f7931a", fill: "rgba(247, 147, 26, 0.2)" },
-  eth: { line: "#627eea", fill: "rgba(98, 126, 234, 0.2)" },
-  sol: { line: "#9945ff", fill: "rgba(153, 69, 255, 0.2)" },
-  ltc: { line: "#bfbbbb", fill: "rgba(191, 187, 187, 0.2)" },
-  bch: { line: "#8bc34a", fill: "rgba(139, 195, 74, 0.2)" },
-  usdc: { line: "#2775ca", fill: "rgba(39, 117, 202, 0.2)" },
-  usdt: { line: "#26a17b", fill: "rgba(38, 161, 123, 0.2)" },
-  matic: { line: "#8247e5", fill: "rgba(130, 71, 229, 0.2)" },
-  op: { line: "#ff0420", fill: "rgba(255, 4, 32, 0.2)" },
-  jitosol: { line: "#3ccec0", fill: "rgba(60, 206, 192, 0.2)" },
+  btc: { line: '#f7931a', fill: 'rgba(247, 147, 26, 0.2)' },
+  eth: { line: '#627eea', fill: 'rgba(98, 126, 234, 0.2)' },
+  sol: { line: '#9945ff', fill: 'rgba(153, 69, 255, 0.2)' },
+  ltc: { line: '#bfbbbb', fill: 'rgba(191, 187, 187, 0.2)' },
+  bch: { line: '#8bc34a', fill: 'rgba(139, 195, 74, 0.2)' },
+  usdc: { line: '#2775ca', fill: 'rgba(39, 117, 202, 0.2)' },
+  usdt: { line: '#26a17b', fill: 'rgba(38, 161, 123, 0.2)' },
+  matic: { line: '#8247e5', fill: 'rgba(130, 71, 229, 0.2)' },
+  op: { line: '#ff0420', fill: 'rgba(255, 4, 32, 0.2)' },
+  jitosol: { line: '#3ccec0', fill: 'rgba(60, 206, 192, 0.2)' },
 };
 
 const CHAIN_NAMES = {
-  btc: "Bitcoin",
-  eth: "Ethereum",
-  sol: "Solana",
-  ltc: "Litecoin",
-  bch: "Bitcoin Cash",
-  usdc: "USD Coin",
-  usdt: "Tether",
-  matic: "Polygon",
-  op: "Optimism",
-  jitosol: "Jito Staked SOL",
+  btc: 'Bitcoin',
+  eth: 'Ethereum',
+  sol: 'Solana',
+  ltc: 'Litecoin',
+  bch: 'Bitcoin Cash',
+  usdc: 'USD Coin',
+  usdt: 'Tether',
+  matic: 'Polygon',
+  op: 'Optimism',
+  jitosol: 'Jito Staked SOL',
 };
 
 /**
@@ -76,7 +76,7 @@ export async function generatePriceChart(chain, days) {
   const chainLower = chain.toLowerCase();
 
   if (!COINGECKO_IDS[chainLower]) {
-    throw new Error(`Crypto non supportée. Utilise: btc, eth, sol`);
+    throw new Error('Crypto non supportée. Utilise: btc, eth, sol');
   }
 
   // Fetch price data
@@ -86,11 +86,11 @@ export async function generatePriceChart(chain, days) {
   const labels = priceData.map(([timestamp]) => {
     const date = new Date(timestamp);
     if (days <= 7) {
-      return date.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+      return date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
     } else if (days <= 30) {
-      return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     } else {
-      return date.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+      return date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
     }
   });
 
@@ -104,12 +104,12 @@ export async function generatePriceChart(chain, days) {
 
   // Reduce labels for readability
   const step = Math.ceil(labels.length / 10);
-  const reducedLabels = labels.map((label, i) => (i % step === 0 ? label : ""));
+  const reducedLabels = labels.map((label, i) => (i % step === 0 ? label : ''));
 
   const colors = CHAIN_COLORS[chainLower];
 
   const configuration = {
-    type: "line",
+    type: 'line',
     data: {
       labels: reducedLabels,
       datasets: [
@@ -131,28 +131,28 @@ export async function generatePriceChart(chain, days) {
         legend: {
           display: true,
           labels: {
-            color: "#ffffff",
-            font: { size: 14, weight: "bold" },
+            color: '#ffffff',
+            font: { size: 14, weight: 'bold' },
           },
         },
         title: {
           display: true,
-          text: `${CHAIN_NAMES[chainLower]} - ${days} jours (${isPositive ? "+" : ""}${priceChange.toFixed(2)}%)`,
-          color: isPositive ? "#00ff88" : "#ff4444",
-          font: { size: 18, weight: "bold" },
+          text: `${CHAIN_NAMES[chainLower]} - ${days} jours (${isPositive ? '+' : ''}${priceChange.toFixed(2)}%)`,
+          color: isPositive ? '#00ff88' : '#ff4444',
+          font: { size: 18, weight: 'bold' },
         },
       },
       scales: {
         x: {
-          ticks: { color: "#888888", maxRotation: 45 },
-          grid: { color: "rgba(255, 255, 255, 0.1)" },
+          ticks: { color: '#888888', maxRotation: 45 },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
         },
         y: {
           ticks: {
-            color: "#888888",
-            callback: (value) => `€${value.toLocaleString("fr-FR")}`,
+            color: '#888888',
+            callback: (value) => `€${value.toLocaleString('fr-FR')}`,
           },
-          grid: { color: "rgba(255, 255, 255, 0.1)" },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
           min: minPrice * 0.98,
           max: maxPrice * 1.02,
         },
@@ -182,15 +182,15 @@ export async function generatePriceChart(chain, days) {
  */
 export function parsePeriod(period) {
   const periodMap = {
-    "7": 7,
-    "7j": 7,
-    "30": 30,
-    "30j": 30,
-    "90": 90,
-    "90j": 90,
-    "1an": 365,
-    "365": 365,
-    "1y": 365,
+    '7': 7,
+    '7j': 7,
+    '30': 30,
+    '30j': 30,
+    '90': 90,
+    '90j': 90,
+    '1an': 365,
+    '365': 365,
+    '1y': 365,
   };
 
   return periodMap[period?.toLowerCase()] || 30;

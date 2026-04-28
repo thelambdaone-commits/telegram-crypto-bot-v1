@@ -1,21 +1,21 @@
-import { TOKEN_CONFIGS } from "../core/tokens.config.js";
-import { BaseProvider } from "./base.provider.js";
-import { ethers } from "ethers";
+import { TOKEN_CONFIGS } from '../core/tokens.config.js';
+import { BaseProvider } from './base.provider.js';
+import { ethers } from 'ethers';
 
 const ERC20_ABI = [
-  "function transfer(address to, uint256 amount) returns (bool)",
-  "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function balanceOf(address owner) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
 ];
 
 export class PolygonChain extends BaseProvider {
   constructor(rpcUrl) {
-    super("Polygon", "MATIC");
-    this.rpcUrl = rpcUrl || "https://polygon-rpc.com";
+    super('Polygon', 'MATIC');
+    this.rpcUrl = rpcUrl || 'https://polygon-rpc.com';
     this.provider = new ethers.JsonRpcProvider(this.rpcUrl);
     this.tokenAddresses = TOKEN_CONFIGS.matic.tokens;
-    this.explorer = "https://polygonscan.com";
+    this.explorer = 'https://polygonscan.com';
   }
 
   getProvider() {
@@ -44,7 +44,7 @@ export class PolygonChain extends BaseProvider {
   }
 
   async importFromKey(privateKey) {
-    const formattedKey = privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
+    const formattedKey = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
     const wallet = new ethers.Wallet(formattedKey);
     return {
       address: wallet.address,
@@ -82,14 +82,14 @@ export class PolygonChain extends BaseProvider {
   }
 
   async getAllTokens(address) {
-    const results = []
-    const provider = this.getProvider()
+    const results = [];
+    const provider = this.getProvider();
     
     for (const [symbol, tokenAddress] of Object.entries(this.tokenAddresses)) {
       try {
-        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-        const balance = await contract.balanceOf(address)
-        const decimals = await contract.decimals()
+        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const balance = await contract.balanceOf(address);
+        const decimals = await contract.decimals();
         
         if (balance > 0n) {
           results.push({
@@ -97,16 +97,16 @@ export class PolygonChain extends BaseProvider {
             address: tokenAddress,
             amount: Number(balance) / Math.pow(10, decimals),
             decimals,
-            icon: "💵",
+            icon: '💵',
             isKnown: true,
-          })
+          });
         }
       } catch (error) {
-        continue
+        continue;
       }
     }
     
-    return results
+    return results;
   }
 
   async estimateFees(fromAddress, toAddress, amount, tokenSymbol = null) {
@@ -146,7 +146,7 @@ export class PolygonChain extends BaseProvider {
     return fees;
   }
 
-  async sendTransaction(privateKey, toAddress, amount, feeLevel = "average", tokenSymbol = null) {
+  async sendTransaction(privateKey, toAddress, amount, feeLevel = 'average', tokenSymbol = null) {
     const provider = this.getProvider();
     const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -157,7 +157,7 @@ export class PolygonChain extends BaseProvider {
     return await this.sendNative(wallet, toAddress, amount, feeLevel);
   }
 
-  async sendNative(wallet, toAddress, amount, feeLevel = "average") {
+  async sendNative(wallet, toAddress, amount, feeLevel = 'average') {
     const fees = await this.estimateFees(wallet.address, toAddress, amount);
     const feeData = fees[feeLevel];
 
@@ -176,10 +176,10 @@ export class PolygonChain extends BaseProvider {
       from: wallet.address,
       to: toAddress,
       amount: amount.toString(),
-      symbol: "MATIC",
+      symbol: 'MATIC',
       fee: ethers.formatEther(receipt.gasUsed * receipt.gasPrice),
       blockNumber: receipt.blockNumber,
-      status: receipt.status === 1 ? "success" : "failed",
+      status: receipt.status === 1 ? 'success' : 'failed',
     };
   }
 
@@ -210,7 +210,7 @@ export class PolygonChain extends BaseProvider {
       tokenAddress: tokenAddress,
       fee: ethers.formatEther(receipt.gasUsed * receipt.gasPrice),
       blockNumber: receipt.blockNumber,
-      status: receipt.status === 1 ? "success" : "failed",
+      status: receipt.status === 1 ? 'success' : 'failed',
     };
   }
 

@@ -4,7 +4,7 @@
  */
 export class SessionManager {
   constructor() {
-    this.sessions = new Map()
+    this.sessions = new Map();
   }
 
   _getSession(chatId) {
@@ -13,51 +13,51 @@ export class SessionManager {
         state: null,
         data: {},
         lastActivity: Date.now(),
-      })
+      });
     }
-    return this.sessions.get(chatId)
+    return this.sessions.get(chatId);
   }
 
   getState(chatId) {
-    return this._getSession(chatId).state
+    return this._getSession(chatId).state;
   }
 
   setState(chatId, state) {
-    const session = this._getSession(chatId)
-    session.state = state
-    session.lastActivity = Date.now()
+    const session = this._getSession(chatId);
+    session.state = state;
+    session.lastActivity = Date.now();
   }
 
   getData(chatId) {
-    return this._getSession(chatId).data
+    return this._getSession(chatId).data;
   }
 
   setData(chatId, data) {
-    const session = this._getSession(chatId)
-    session.data = data
-    session.lastActivity = Date.now()
+    const session = this._getSession(chatId);
+    session.data = data;
+    session.lastActivity = Date.now();
   }
 
   clearData(chatId) {
-    const session = this._getSession(chatId)
-    session.data = {}
-    session.lastActivity = Date.now()
+    const session = this._getSession(chatId);
+    session.data = {};
+    session.lastActivity = Date.now();
   }
 
   clearState(chatId) {
-    const session = this._getSession(chatId)
-    session.state = null
-    session.data = {}
-    session.lastActivity = Date.now()
+    const session = this._getSession(chatId);
+    session.state = null;
+    session.data = {};
+    session.lastActivity = Date.now();
   }
 
   cleanup() {
-    const now = Date.now()
-    const expiry = 30 * 60 * 1000
+    const now = Date.now();
+    const expiry = 30 * 60 * 1000;
 
     for (const [chatId, session] of this.sessions) {
       if (now - session.lastActivity > expiry) {
-        this.sessions.delete(chatId)
+        this.sessions.delete(chatId);
       }
     }
   }

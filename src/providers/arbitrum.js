@@ -1,19 +1,19 @@
-import { TOKEN_CONFIGS } from "../core/tokens.config.js";
-import { BaseProvider } from "./base.provider.js";
-import { ethers } from "ethers";
+import { TOKEN_CONFIGS } from '../core/tokens.config.js';
+import { BaseProvider } from './base.provider.js';
+import { ethers } from 'ethers';
 
 const ERC20_ABI = [
-  "function transfer(address to, uint256 amount) returns (bool)",
-  "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function balanceOf(address owner) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
 ];
 
 export class ArbitrumChain extends BaseProvider {
   constructor(rpcUrl) {
-    super("Arbitrum", "ARB");
-    this.provider = new ethers.JsonRpcProvider(rpcUrl)
-    this.tokenAddresses = TOKEN_CONFIGS.arb.tokens
+    super('Arbitrum', 'ARB');
+    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.tokenAddresses = TOKEN_CONFIGS.arb.tokens;
   }
 
   getProvider() {
@@ -42,7 +42,7 @@ export class ArbitrumChain extends BaseProvider {
   }
 
   async importFromKey(privateKey) {
-    const formattedKey = privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
+    const formattedKey = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
     const wallet = new ethers.Wallet(formattedKey);
     return {
       address: wallet.address,
@@ -80,14 +80,14 @@ export class ArbitrumChain extends BaseProvider {
   }
 
   async getAllTokens(address) {
-    const results = []
-    const provider = this.getProvider()
+    const results = [];
+    const provider = this.getProvider();
     
     for (const [symbol, tokenAddress] of Object.entries(this.tokenAddresses)) {
       try {
-        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-        const balance = await contract.balanceOf(address)
-        const decimals = await contract.decimals()
+        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const balance = await contract.balanceOf(address);
+        const decimals = await contract.decimals();
         
         if (balance > 0n) {
           results.push({
@@ -95,16 +95,16 @@ export class ArbitrumChain extends BaseProvider {
             address: tokenAddress,
             amount: Number(balance) / Math.pow(10, decimals),
             decimals,
-            icon: "💵",
+            icon: '💵',
             isKnown: true,
-          })
+          });
         }
       } catch (error) {
-        continue
+        continue;
       }
     }
     
-    return results
+    return results;
   }
 
   async estimateFees(fromAddress, toAddress, amount, tokenSymbol = null) {
@@ -144,7 +144,7 @@ export class ArbitrumChain extends BaseProvider {
     return fees;
   }
 
-  async sendTransaction(privateKey, toAddress, amount, feeLevel = "average", tokenSymbol = null) {
+  async sendTransaction(privateKey, toAddress, amount, feeLevel = 'average', tokenSymbol = null) {
     const provider = this.getProvider();
     const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -155,7 +155,7 @@ export class ArbitrumChain extends BaseProvider {
     return await this.sendNative(wallet, toAddress, amount, feeLevel);
   }
 
-  async sendNative(wallet, toAddress, amount, feeLevel = "average") {
+  async sendNative(wallet, toAddress, amount, feeLevel = 'average') {
     const fees = await this.estimateFees(wallet.address, toAddress, amount);
     const feeData = fees[feeLevel];
 
@@ -174,10 +174,10 @@ export class ArbitrumChain extends BaseProvider {
       from: wallet.address,
       to: toAddress,
       amount: amount.toString(),
-      symbol: "ETH",
+      symbol: 'ETH',
       fee: ethers.formatEther(receipt.gasUsed * receipt.gasPrice),
       blockNumber: receipt.blockNumber,
-      status: receipt.status === 1 ? "success" : "failed",
+      status: receipt.status === 1 ? 'success' : 'failed',
     };
   }
 
@@ -208,7 +208,7 @@ export class ArbitrumChain extends BaseProvider {
       tokenAddress: tokenAddress,
       fee: ethers.formatEther(receipt.gasUsed * receipt.gasPrice),
       blockNumber: receipt.blockNumber,
-      status: receipt.status === 1 ? "success" : "failed",
+      status: receipt.status === 1 ? 'success' : 'failed',
     };
   }
 

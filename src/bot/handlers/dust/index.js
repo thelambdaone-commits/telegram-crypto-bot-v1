@@ -1,37 +1,37 @@
-import { Markup } from "telegraf";
-import { DustService } from "../../../modules/dust/dust.service.js";
-import { SolanaBurner } from "../../../modules/dust/solana.burner.js";
-import { getPricesEUR, formatEUR } from "../../../shared/price.js";
-import { mainMenuKeyboard } from "../../keyboards/index.js";
-import { config } from "../../../core/config.js";
-import { safeAnswerCbQuery } from "../../utils.js";
+import { Markup } from 'telegraf';
+import { DustService } from '../../../modules/dust/dust.service.js';
+import { SolanaBurner } from '../../../modules/dust/solana.burner.js';
+import { getPricesEUR, formatEUR } from '../../../shared/price.js';
+import { mainMenuKeyboard } from '../../keyboards/index.js';
+import { config } from '../../../core/config.js';
+import { safeAnswerCbQuery } from '../../utils.js';
 
 async function getEthGasPrice() {
   try {
-    const { ethers } = await import("ethers");
-    const provider = new ethers.JsonRpcProvider(config.rpc?.eth || "https://eth.llamarpc.com");
+    const { ethers } = await import('ethers');
+    const provider = new ethers.JsonRpcProvider(config.rpc?.eth || 'https://eth.llamarpc.com');
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice ? Number(feeData.gasPrice) / 1e9 : 30;
-    return { gasPrice, level: gasPrice < 20 ? "bas" : gasPrice < 60 ? "moyen" : "eleve" };
+    return { gasPrice, level: gasPrice < 20 ? 'bas' : gasPrice < 60 ? 'moyen' : 'eleve' };
   } catch {
-    return { gasPrice: 30, level: "defaut" };
+    return { gasPrice: 30, level: 'defaut' };
   }
 }
 
 async function handleDustCommand(ctx, storage, walletService) {
   const chatId = ctx.chat.id;
-  const loadingMsg = await ctx.reply("🧹 Analyse du dust en cours...");
+  const loadingMsg = await ctx.reply('🧹 Analyse du dust en cours...');
 
   try {
     const wallets = await storage.getWallets(chatId);
-    const ethWallets = wallets.filter((w) => w.chain === "eth");
-    const btcWallets = wallets.filter((w) => w.chain === "btc");
+    const ethWallets = wallets.filter((w) => w.chain === 'eth');
+    const btcWallets = wallets.filter((w) => w.chain === 'btc');
 
     if (ethWallets.length === 0 && btcWallets.length === 0) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
       return ctx.reply(
-        "❌ Tu n'as pas de wallet ETH ou BTC.\n\nCrée-en un avec `/gen eth` ou `/gen btc`",
-        { parse_mode: "Markdown", ...mainMenuKeyboard() }
+        '❌ Tu n\'as pas de wallet ETH ou BTC.\n\nCrée-en un avec `/gen eth` ou `/gen btc`',
+        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }
 
@@ -39,8 +39,8 @@ async function handleDustCommand(ctx, storage, walletService) {
     const chainAdapters = walletService.chains;
     const { gasPrice: gasGwei } = await getEthGasPrice();
 
-    let summaryText = "🧹 *Dust Keeper*\n\n";
-    summaryText += "━━━━━━━━━━━━\n";
+    let summaryText = '🧹 *Dust Keeper*\n\n';
+    summaryText += '━━━━━━━━━━━━\n';
 
     let totalDustValue = 0;
     let hasDust = false;
@@ -68,10 +68,10 @@ async function handleDustCommand(ctx, storage, walletService) {
             summaryText += `💰 Valeur: ${formatEUR(valueUsd)}\n`;
             summaryText += `⛽ Coût transfert: ${formatEUR(gasCostUsd)}\n`;
             summaryText += `⚠️ Ratio: ${ratio}% du coût\n`;
-            summaryText += `📊 Statut: 🟡 Dust\n\n`;
+            summaryText += '📊 Statut: 🟡 Dust\n\n';
           } else {
             summaryText += `💰 Valeur: ${formatEUR(valueUsd)}\n`;
-            summaryText += `📊 Statut: ✅ Utilisable\n\n`;
+            summaryText += '📊 Statut: ✅ Utilisable\n\n';
           }
         }
       } catch (error) {
@@ -79,7 +79,7 @@ async function handleDustCommand(ctx, storage, walletService) {
       }
     }
 
-    summaryText += "━━━━━━━━━━━━\n";
+    summaryText += '━━━━━━━━━━━━\n';
 
     for (const wallet of btcWallets) {
       try {
@@ -117,29 +117,29 @@ async function handleDustCommand(ctx, storage, walletService) {
         if (dustUtxos.length > 0) {
           summaryText += `💰 Valeur dust: ${totalDustBtc.toFixed(8)} BTC\n`;
           summaryText += `   (≈ ${formatEUR(totalDustUsd)})\n`;
-          summaryText += `📊 Statut: 🟡 Dust détecté\n`;
+          summaryText += '📊 Statut: 🟡 Dust détecté\n';
         } else {
-          summaryText += `📊 Statut: ✅ Aucun dust\n`;
+          summaryText += '📊 Statut: ✅ Aucun dust\n';
         }
-        summaryText += "\n";
+        summaryText += '\n';
       } catch (error) {
         continue;
       }
     }
 
-    summaryText += "━━━━━━━━━━━━\n";
+    summaryText += '━━━━━━━━━━━━\n';
 
     if (hasDust) {
       summaryText += `💵 *Total dust value:* ${formatEUR(totalDustValue)}\n\n`;
-      summaryText += `_\n💡 Conseil: Le dust ETH/BTC n'est pas dangereux,\nmais peut être coûteux à transférer._`;
+      summaryText += '_\n💡 Conseil: Le dust ETH/BTC n\'est pas dangereux,\nmais peut être coûteux à transférer._';
     } else {
-      summaryText += `✅ *Aucun dust détecté* sur tes wallets.`;
+      summaryText += '✅ *Aucun dust détecté* sur tes wallets.';
     }
 
     await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
 
     await ctx.reply(summaryText, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       ...mainMenuKeyboard(),
     });
   } catch (error) {
@@ -152,21 +152,21 @@ async function handleDustCommand(ctx, storage, walletService) {
 
 async function handleBurnCommand(ctx, storage, walletService) {
   const chatId = ctx.chat.id;
-  const loadingMsg = await ctx.reply("🔥 Analyse des tokens SOL...");
+  const loadingMsg = await ctx.reply('🔥 Analyse des tokens SOL...');
 
   try {
     const wallets = await storage.getWallets(chatId);
-    const solWallets = wallets.filter((w) => w.chain === "sol");
+    const solWallets = wallets.filter((w) => w.chain === 'sol');
 
     if (solWallets.length === 0) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
       return ctx.reply(
-        "❌ Tu n'as pas de wallet Solana.\n\nCrée-en un avec `/gen sol`",
-        { parse_mode: "Markdown", ...mainMenuKeyboard() }
+        '❌ Tu n\'as pas de wallet Solana.\n\nCrée-en un avec `/gen sol`',
+        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }
 
-    let summaryText = "🔥 *Burn Tokens (SOL)*\n\n";
+    let summaryText = '🔥 *Burn Tokens (SOL)*\n\n';
     let totalBurnable = 0;
 
     for (const wallet of solWallets) {
@@ -197,26 +197,26 @@ async function handleBurnCommand(ctx, storage, walletService) {
             summaryText += `\n_...et ${burnableTokens.length - 5} autres tokens_`;
           }
 
-          summaryText += "\n\n";
+          summaryText += '\n\n';
         }
       } catch (error) {
         continue;
       }
     }
 
-    summaryText += "━━━━━━━━━━━━\n";
+    summaryText += '━━━━━━━━━━━━\n';
 
     if (totalBurnable > 0) {
       summaryText += `⚠️ *${totalBurnable} token(s) sans valeur détecté(s)*\n\n`;
-      summaryText += `_\n💡 Ces tokens peuvent être brûlés via un outil externe\ncomme Jupiter, Raydium ou Solflare._`;
+      summaryText += '_\n💡 Ces tokens peuvent être brûlés via un outil externe\ncomme Jupiter, Raydium ou Solflare._';
     } else {
-      summaryText += `✅ *Aucun token brûlable détecté.*`;
+      summaryText += '✅ *Aucun token brûlable détecté.*';
     }
 
     await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
 
     await ctx.reply(summaryText, {
-      parse_mode: "Markdown",
+      parse_mode: 'Markdown',
       ...mainMenuKeyboard(),
     });
   } catch (error) {
@@ -228,20 +228,20 @@ async function handleBurnCommand(ctx, storage, walletService) {
 }
 
 export function setupDustHandlers(bot, storage, walletService) {
-  bot.command("dust", async (ctx) => {
+  bot.command('dust', async (ctx) => {
     await handleDustCommand(ctx, storage, walletService);
   });
 
-  bot.command("burn", async (ctx) => {
+  bot.command('burn', async (ctx) => {
     await handleBurnCommand(ctx, storage, walletService);
   });
 
-  bot.action("dust_analysis", async (ctx) => {
+  bot.action('dust_analysis', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     await handleDustCommand(ctx, storage, walletService);
   });
 
-  bot.action("burn_tokens", async (ctx) => {
+  bot.action('burn_tokens', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     await handleBurnCommand(ctx, storage, walletService);
   });

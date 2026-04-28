@@ -3,5 +3,5 @@
  * @module ui
  */
 
-export * from "./formatters.js"
-export * from "./texts.js"
+export * from './formatters.js';
+export * from './texts.js';

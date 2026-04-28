@@ -7,68 +7,68 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
-} from "@solana/web3.js"
-import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token"
-import { BaseProvider } from "./base.provider.js";
-import { TOKEN_CONFIGS, getTokenConfig } from "../core/tokens.config.js"
+} from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import { BaseProvider } from './base.provider.js';
+import { TOKEN_CONFIGS, getTokenConfig } from '../core/tokens.config.js';
 
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-import * as bip39 from "bip39"
-import bs58 from "bs58"
+const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+import * as bip39 from 'bip39';
+import bs58 from 'bs58';
 
 export class SolanaChain extends BaseProvider {
   constructor(rpcUrl) {
-    super("Solana", "SOL");
-    this.primaryRpcUrl = rpcUrl
-    this.connection = new Connection(rpcUrl, "confirmed")
+    super('Solana', 'SOL');
+    this.primaryRpcUrl = rpcUrl;
+    this.connection = new Connection(rpcUrl, 'confirmed');
     
     // Fallback RPC endpoints
     this.fallbackRpcs = [
-      "https://api.mainnet-beta.solana.com",
-      "https://solana-mainnet.g.alchemy.com/v2/demo",
-      "https://rpc.ankr.com/solana"
-    ]
+      'https://api.mainnet-beta.solana.com',
+      'https://solana-mainnet.g.alchemy.com/v2/demo',
+      'https://rpc.ankr.com/solana'
+    ];
   }
 
   async createWallet() {
-    const mnemonic = bip39.generateMnemonic()
-    const seed = await bip39.mnemonicToSeed(mnemonic)
-    const keypair = Keypair.fromSeed(seed.slice(0, 32))
+    const mnemonic = bip39.generateMnemonic();
+    const seed = await bip39.mnemonicToSeed(mnemonic);
+    const keypair = Keypair.fromSeed(seed.slice(0, 32));
 
     return {
       address: keypair.publicKey.toString(),
-      privateKey: Buffer.from(keypair.secretKey).toString("hex"),
+      privateKey: Buffer.from(keypair.secretKey).toString('hex'),
       mnemonic,
-    }
+    };
   }
 
   async importFromSeed(seedPhrase) {
     if (!bip39.validateMnemonic(seedPhrase)) {
-      throw new Error("Invalid seed phrase")
+      throw new Error('Invalid seed phrase');
     }
 
-    const seed = await bip39.mnemonicToSeed(seedPhrase)
-    const keypair = Keypair.fromSeed(seed.slice(0, 32))
+    const seed = await bip39.mnemonicToSeed(seedPhrase);
+    const keypair = Keypair.fromSeed(seed.slice(0, 32));
 
     return {
       address: keypair.publicKey.toString(),
-      privateKey: Buffer.from(keypair.secretKey).toString("hex"),
+      privateKey: Buffer.from(keypair.secretKey).toString('hex'),
       mnemonic: seedPhrase,
-    }
+    };
   }
 
   async importFromKey(privateKey) {
-    let secretKey
-    const cleanKey = privateKey.trim()
-    let formatTried = []
+    let secretKey;
+    const cleanKey = privateKey.trim();
+    let formatTried = [];
 
     // 1. Handle JSON Array format: [1, 2, 3, ...]
-    if (cleanKey.startsWith("[") && cleanKey.endsWith("]")) {
+    if (cleanKey.startsWith('[') && cleanKey.endsWith(']')) {
       try {
-        const arr = JSON.parse(cleanKey)
+        const arr = JSON.parse(cleanKey);
         if (Array.isArray(arr) && arr.length >= 32) {
-          secretKey = Uint8Array.from(arr)
-          formatTried.push("JSON")
+          secretKey = Uint8Array.from(arr);
+          formatTried.push('JSON');
         }
       } catch (e) {
         // Not valid JSON, continue
@@ -79,11 +79,11 @@ export class SolanaChain extends BaseProvider {
     if (!secretKey) {
       try {
         // Try decode directly, no regex check needed
-        const decoded = bs58.decode(cleanKey)
+        const decoded = bs58.decode(cleanKey);
         // Valid Solana key is 64 bytes (private + public) or 32 bytes (private only)
         if (decoded.length === 64 || decoded.length === 32) {
-          secretKey = decoded
-          formatTried.push("Base58")
+          secretKey = decoded;
+          formatTried.push('Base58');
         }
       } catch (e) {
         // Not valid Base58, continue
@@ -93,11 +93,11 @@ export class SolanaChain extends BaseProvider {
     // 3. Try Hex format (with or without 0x prefix)
     if (!secretKey) {
       try {
-        let hex = cleanKey.startsWith("0x") ? cleanKey.slice(2) : cleanKey
+        let hex = cleanKey.startsWith('0x') ? cleanKey.slice(2) : cleanKey;
         // Support both 64 char (32 bytes) and 128 char (64 bytes) hex
         if (/^[0-9a-fA-F]+$/.test(hex) && (hex.length === 64 || hex.length === 128)) {
-          secretKey = Uint8Array.from(Buffer.from(hex, "hex"))
-          formatTried.push("Hex")
+          secretKey = Uint8Array.from(Buffer.from(hex, 'hex'));
+          formatTried.push('Hex');
         }
       } catch (e) {
         // Not valid hex
@@ -107,10 +107,10 @@ export class SolanaChain extends BaseProvider {
     // 4. Try base64 format (sometimes used)
     if (!secretKey) {
       try {
-        const decoded = Buffer.from(cleanKey, "base64")
+        const decoded = Buffer.from(cleanKey, 'base64');
         if (decoded.length === 64 || decoded.length === 32) {
-          secretKey = decoded
-          formatTried.push("Base64")
+          secretKey = decoded;
+          formatTried.push('Base64');
         }
       } catch (e) {
         // Not valid base64
@@ -118,72 +118,72 @@ export class SolanaChain extends BaseProvider {
     }
 
     if (!secretKey) {
-      throw new Error(`Format non reconnu. Formats acceptes: Base58 (87-88 car.), Hex (64 car.), ou JSON array []. Length recu: ${cleanKey.length}`)
+      throw new Error(`Format non reconnu. Formats acceptes: Base58 (87-88 car.), Hex (64 car.), ou JSON array []. Length recu: ${cleanKey.length}`);
     }
 
-    let keypair
+    let keypair;
     if (secretKey.length === 64) {
       // Full 64-byte secret key (32 bytes private + 32 bytes public)
-      keypair = Keypair.fromSecretKey(secretKey)
+      keypair = Keypair.fromSecretKey(secretKey);
     } else if (secretKey.length === 32) {
       // 32-byte seed
-      keypair = Keypair.fromSeed(secretKey)
+      keypair = Keypair.fromSeed(secretKey);
     } else {
-      throw new Error(`Longueur de clé invalide: ${secretKey.length} octets (attendu 32 ou 64)`)
+      throw new Error(`Longueur de clé invalide: ${secretKey.length} octets (attendu 32 ou 64)`);
     }
 
     return {
       address: keypair.publicKey.toString(),
-      privateKey: Buffer.from(keypair.secretKey).toString("hex"),
+      privateKey: Buffer.from(keypair.secretKey).toString('hex'),
       mnemonic: null,
-    }
+    };
   }
 
   async getBalance(address, tokenSymbol = null) {
-    if (tokenSymbol && tokenSymbol.toUpperCase() !== "SOL") {
-      const config = getTokenConfig("sol", tokenSymbol);
+    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'SOL') {
+      const config = getTokenConfig('sol', tokenSymbol);
       if (config) {
         return await this.getTokenBalance(address, config.mint);
       }
     }
-    const publicKey = new PublicKey(address)
+    const publicKey = new PublicKey(address);
     
     // Try primary connection first
-    const rpcsToTry = [this.primaryRpcUrl, ...this.fallbackRpcs]
+    const rpcsToTry = [this.primaryRpcUrl, ...this.fallbackRpcs];
     
     for (const rpcUrl of rpcsToTry) {
       try {
         const conn = new Connection(rpcUrl, { 
-          commitment: "confirmed",
+          commitment: 'confirmed',
           confirmTransactionInitialTimeout: 10000
-        })
-        const balance = await conn.getBalance(publicKey)
+        });
+        const balance = await conn.getBalance(publicKey);
 
         return {
           balance: (balance / LAMPORTS_PER_SOL).toString(),
           balanceLamports: balance.toString(),
           symbol: this.symbol,
-        }
+        };
       } catch (error) {
         // Try next RPC silently
-        continue
+        continue;
       }
     }
     
     // All RPCs failed
-    console.warn(`[SOL] All RPCs failed for address ${address.slice(0, 12)}...`)
+    console.warn(`[SOL] All RPCs failed for address ${address.slice(0, 12)}...`);
     return {
-      balance: "0",
-      balanceLamports: "0",
+      balance: '0',
+      balanceLamports: '0',
       symbol: this.symbol,
-      error: "Unable to fetch balance - network issue"
-    }
+      error: 'Unable to fetch balance - network issue'
+    };
   }
 
   async estimateFees(fromAddress, toAddress, amount) {
     // Solana has stable base fees (5000 lamports per signature)
     // Recent blockhash is no longer used for fee calculation in modern web3 versions
-    const baseFee = 5000 
+    const baseFee = 5000; 
 
     // Solana doesn't have fee levels like ETH, but we can add priority fees
     const fees = {
@@ -202,31 +202,31 @@ export class SolanaChain extends BaseProvider {
         feeSOL: ((baseFee + 10000) / LAMPORTS_PER_SOL).toString(),
         priorityFee: 10000,
       },
-    }
+    };
 
-    return fees
+    return fees;
   }
 
-  async sendTransaction(privateKey, toAddress, amount, feeLevel = "average") {
-    const secretKey = Uint8Array.from(Buffer.from(privateKey, "hex"))
-    const fromKeypair = Keypair.fromSecretKey(secretKey)
-    const toPublicKey = new PublicKey(toAddress)
+  async sendTransaction(privateKey, toAddress, amount, feeLevel = 'average') {
+    const secretKey = Uint8Array.from(Buffer.from(privateKey, 'hex'));
+    const fromKeypair = Keypair.fromSecretKey(secretKey);
+    const toPublicKey = new PublicKey(toAddress);
 
-    const lamports = Math.round(Number.parseFloat(amount) * LAMPORTS_PER_SOL)
-    const transaction = new Transaction()
+    const lamports = Math.round(Number.parseFloat(amount) * LAMPORTS_PER_SOL);
+    const transaction = new Transaction();
     
     // Add priority fees if specified
-    if (feeLevel !== "slow") {
-      const fees = await this.estimateFees("", "", 0)
-      const priorityFee = fees[feeLevel]?.priorityFee || 0
+    if (feeLevel !== 'slow') {
+      const fees = await this.estimateFees('', '', 0);
+      const priorityFee = fees[feeLevel]?.priorityFee || 0;
       
       if (priorityFee > 0) {
-        const { ComputeBudgetProgram } = await import("@solana/web3.js")
+        const { ComputeBudgetProgram } = await import('@solana/web3.js');
         transaction.add(
           ComputeBudgetProgram.setComputeUnitPrice({
             microLamports: Math.floor((priorityFee * 1000) / 200000) // Rough conversion to microLamports for priority
           })
-        )
+        );
       }
     }
 
@@ -236,84 +236,84 @@ export class SolanaChain extends BaseProvider {
         toPubkey: toPublicKey,
         lamports,
       }),
-    )
+    );
 
-    const signature = await sendAndConfirmTransaction(this.connection, transaction, [fromKeypair])
+    const signature = await sendAndConfirmTransaction(this.connection, transaction, [fromKeypair]);
 
     return {
       hash: signature,
       from: fromKeypair.publicKey.toString(),
       to: toAddress,
       amount: amount.toString(),
-      status: "success",
-    }
+      status: 'success',
+    };
   }
 
   async getTransactionHistory(address, limit = 5) {
     // Solana - Get signatures first, then fetch details for each
-    const rpcUrl = this.primaryRpcUrl || "https://api.mainnet-beta.solana.com"
+    const rpcUrl = this.primaryRpcUrl || 'https://api.mainnet-beta.solana.com';
     
     try {
       // Step 1: Get recent signatures
       const sigResponse = await fetch(rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          jsonrpc: "2.0",
+          jsonrpc: '2.0',
           id: 1,
-          method: "getSignaturesForAddress",
+          method: 'getSignaturesForAddress',
           params: [address, { limit }],
         }),
-      })
-      const sigData = await sigResponse.json()
+      });
+      const sigData = await sigResponse.json();
       
-      if (!sigData.result?.length) return []
+      if (!sigData.result?.length) return [];
       
       // Step 2: Get transaction details for each signature
-      const transactions = []
+      const transactions = [];
       
       for (const sig of sigData.result.slice(0, limit)) {
         try {
           const txResponse = await fetch(rpcUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              jsonrpc: "2.0",
+              jsonrpc: '2.0',
               id: 1,
-              method: "getTransaction",
-              params: [sig.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }],
+              method: 'getTransaction',
+              params: [sig.signature, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }],
             }),
-          })
-          const txData = await txResponse.json()
+          });
+          const txData = await txResponse.json();
           
-          let amount = 0
-          let type = "tx"
+          let amount = 0;
+          let type = 'tx';
           
           if (txData.result?.meta) {
-            const meta = txData.result.meta
-            const accountKeys = txData.result.transaction?.message?.accountKeys || []
+            const meta = txData.result.meta;
+            const accountKeys = txData.result.transaction?.message?.accountKeys || [];
             
             // Find the address index
-            let addressIndex = -1
+            let addressIndex = -1;
             for (let i = 0; i < accountKeys.length; i++) {
-              const key = accountKeys[i]?.pubkey || accountKeys[i]
+              const key = accountKeys[i]?.pubkey || accountKeys[i];
               if (key === address) {
-                addressIndex = i
-                break
+                addressIndex = i;
+                break;
               }
             }
             
             if (addressIndex >= 0 && meta.preBalances && meta.postBalances) {
-              const preBalance = meta.preBalances[addressIndex] || 0
-              const postBalance = meta.postBalances[addressIndex] || 0
-              const diff = postBalance - preBalance
+              const preBalance = meta.preBalances[addressIndex] || 0;
+              const postBalance = meta.postBalances[addressIndex] || 0;
+              const diff = postBalance - preBalance;
               
               if (diff > 0) {
-                type = "in"
-                amount = diff / 1e9
+                type = 'in';
+                amount = diff / 1e9;
               } else if (diff < 0) {
-                type = "out"
-                amount = Math.abs(diff) / 1e9
+                type = 'out';
+                amount = Math.abs(diff) / 1e9;
               }
             }
           }
@@ -321,32 +321,32 @@ export class SolanaChain extends BaseProvider {
           transactions.push({
             hash: sig.signature,
             type: type,
-            amount: amount > 0 ? amount.toFixed(6) : "—",
+            amount: amount > 0 ? amount.toFixed(6) : '—',
             timestamp: (sig.blockTime || Date.now() / 1000) * 1000,
-          })
+          });
         } catch (e) {
           // If individual tx fetch fails, add basic info
           transactions.push({
             hash: sig.signature,
-            type: "tx",
-            amount: "—",
+            type: 'tx',
+            amount: '—',
             timestamp: (sig.blockTime || Date.now() / 1000) * 1000,
-          })
+          });
         }
       }
       
-      return transactions
+      return transactions;
     } catch (error) {
-       return []
+       return [];
     }
   }
 
   validateAddress(address) {
     try {
-      new PublicKey(address)
-      return true
+      new PublicKey(address);
+      return true;
     } catch {
-      return false
+      return false;
     }
   }
 
@@ -357,7 +357,7 @@ export class SolanaChain extends BaseProvider {
     for (const rpcUrl of rpcsToTry) {
       try {
         const conn = new Connection(rpcUrl, {
-          commitment: "confirmed",
+          commitment: 'confirmed',
           confirmTransactionInitialTimeout: 10000
         });
         
@@ -406,7 +406,7 @@ export class SolanaChain extends BaseProvider {
         ...token,
         symbol: knownToken ? knownToken[0] : `SOL-${token.mint.slice(0, 4)}`,
         isKnown: !!knownToken,
-        icon: knownToken ? knownToken[1].icon : "🪙",
+        icon: knownToken ? knownToken[1].icon : '🪙',
       };
     });
   }
@@ -437,7 +437,7 @@ export class SolanaChain extends BaseProvider {
   }
 
   async ensureAta(privateKey, mintAddress) {
-    const keypair = Keypair.fromSecretKey(Uint8Array.from(Buffer.from(privateKey, "hex")));
+    const keypair = Keypair.fromSecretKey(Uint8Array.from(Buffer.from(privateKey, 'hex')));
     const mintPubkey = new PublicKey(mintAddress);
     const conn = this.connection;
 
@@ -447,7 +447,7 @@ export class SolanaChain extends BaseProvider {
       await getAccount(conn, ata);
       return { ata: ata.toString(), created: false };
     } catch {
-      const { createAssociatedTokenAccountInstruction } = await import("@solana/spl-token");
+      const { createAssociatedTokenAccountInstruction } = await import('@solana/spl-token');
       const transaction = new Transaction();
       transaction.add(createAssociatedTokenAccountInstruction(keypair.publicKey, ata, keypair.publicKey, mintPubkey));
 
@@ -456,14 +456,14 @@ export class SolanaChain extends BaseProvider {
     }
   }
 
-  async sendRawTransaction(privateKey, transaction, feeLevel = "average") {
-    const keypair = Keypair.fromSecretKey(Uint8Array.from(Buffer.from(privateKey, "hex")));
+  async sendRawTransaction(privateKey, transaction, feeLevel = 'average') {
+    const keypair = Keypair.fromSecretKey(Uint8Array.from(Buffer.from(privateKey, 'hex')));
 
-    const fees = await this.estimateFees("", "", 0);
+    const fees = await this.estimateFees('', '', 0);
     const priorityFee = fees[feeLevel]?.priorityFee || 0;
 
     if (priorityFee > 0) {
-      const { ComputeBudgetProgram } = await import("@solana/web3.js");
+      const { ComputeBudgetProgram } = await import('@solana/web3.js');
       transaction.add(
         ComputeBudgetProgram.setComputeUnitPrice({
           microLamports: Math.floor((priorityFee * 1000) / 200000),
@@ -475,7 +475,7 @@ export class SolanaChain extends BaseProvider {
 
     return {
       hash: signature,
-      status: "success",
+      status: 'success',
     };
   }
 }

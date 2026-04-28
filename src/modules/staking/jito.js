@@ -3,29 +3,29 @@
  * SOL <-> JitoSOL via Jupiter swap
  */
 
-import { PublicKey, Connection } from "@solana/web3.js";
-import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
-import { getPricesEUR } from "../../shared/price.js";
+import { PublicKey, Connection } from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import { getPricesEUR } from '../../shared/price.js';
 
-const JITO_MINT = "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn";
-const JITO_RPC = "https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff";
-const JUPITER_API = "https://api.jup.ag";
+const JITO_MINT = 'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn';
+const JITO_RPC = 'https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff';
+const JUPITER_API = 'https://api.jup.ag';
 const SOL_RPC = process.env.SOL_RPC_URL || JITO_RPC;
 
 // Jito Stake Pool Constants
-const STAKE_POOL_PROGRAM_ID = new PublicKey("SPoo1Ku8WFXoNDS9keSTneZabDECtSTAkgSxzZByMkB");
-const JITO_STAKE_POOL_ADDRESS = new PublicKey("Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb");
-const SYSTEM_PROGRAM_ID = new PublicKey("11111111111111111111111111111111");
-const STAKE_PROGRAM_ID = new PublicKey("Stake11111111111111111111111111111111111111");
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const SYSVAR_CLOCK_ID = new PublicKey("SysvarC1ock11111111111111111111111111111111");
-const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+const STAKE_POOL_PROGRAM_ID = new PublicKey('SPoo1Ku8WFXoNDS9keSTneZabDECtSTAkgSxzZByMkB');
+const JITO_STAKE_POOL_ADDRESS = new PublicKey('Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb');
+const SYSTEM_PROGRAM_ID = new PublicKey('11111111111111111111111111111111');
+const STAKE_PROGRAM_ID = new PublicKey('Stake11111111111111111111111111111111111111');
+const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const SYSVAR_CLOCK_ID = new PublicKey('SysvarC1ock11111111111111111111111111111111');
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 
 let connection;
 
 const getConnection = () => {
   if (!connection) {
-    connection = new Connection(SOL_RPC, "confirmed");
+    connection = new Connection(SOL_RPC, 'confirmed');
   }
   return connection;
 };
@@ -79,20 +79,20 @@ export class JitoService {
       return {
         success: true,
         balance: balance,
-        symbol: "JitoSOL",
+        symbol: 'JitoSOL',
         decimals: 9,
         rateSol: rateSol,
         hasAccount: hasAccount
       };
     } catch (error) {
-      console.log(`[JITO] getBalance error:`, error.message || error);
+      console.log('[JITO] getBalance error:', error.message || error);
       return { success: false, balance: 0, error: error.message };
     }
   }
 
   static async quoteEnter(amountSOL) {
     try {
-      const SOL_MINT = "So11111111111111111111111111111111111111112";
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
       const amountLamports = Math.floor(amountSOL * 1e9);
 
       const quoteResponse = await fetch(
@@ -141,7 +141,7 @@ export class JitoService {
 
   static async enter(walletPrivateKey, amountSOL, rpcUrl = SOL_RPC) {
     try {
-      const SOL_MINT = "So11111111111111111111111111111111111111112";
+      const SOL_MINT = 'So11111111111111111111111111111111111111112';
       const amountLamports = Math.floor(amountSOL * 1e9);
 
       console.log(`[JITO] Enter: Calling Jupiter quote for SOL->JitoSOL, amountLamports=${amountLamports}`);
@@ -157,25 +157,25 @@ export class JitoService {
       }
 
       const quoteData = await quoteResponse.json();
-      console.log(`[JITO] Quote response:`, JSON.stringify(quoteData).slice(0, 500));
+      console.log('[JITO] Quote response:', JSON.stringify(quoteData).slice(0, 500));
 
       if (!quoteData || !quoteData.outAmount) {
-        console.error(`[JITO] Invalid quote data:`, quoteData);
-        return { success: false, error: "Invalid quote from Jupiter" };
+        console.error('[JITO] Invalid quote data:', quoteData);
+        return { success: false, error: 'Invalid quote from Jupiter' };
       }
 
       const jitoSOLReceived = Number(quoteData.outAmount) / 1e9;
 
-      const { Keypair } = await import("@solana/web3.js");
-      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, "hex"));
+      const { Keypair } = await import('@solana/web3.js');
+      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const userPublicKey = fromKeypair.publicKey.toString();
 
       console.log(`[JITO] Building swap transaction for user: ${userPublicKey}`);
 
       const swapTxResponse = await fetch(`${JUPITER_API}/swap/v1/swap`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quoteResponse: quoteData,
           userPublicKey: userPublicKey,
@@ -194,23 +194,23 @@ export class JitoService {
       console.log(`[JITO] Swap built, tx length: ${swapData.swapTransaction?.length || 0}`);
 
       if (!swapData.swapTransaction) {
-        console.error(`[JITO] No swapTransaction in response:`, swapData);
-        return { success: false, error: "No swap transaction returned" };
+        console.error('[JITO] No swapTransaction in response:', swapData);
+        return { success: false, error: 'No swap transaction returned' };
       }
 
-      const { VersionedTransaction } = await import("@solana/web3.js");
+      const { VersionedTransaction } = await import('@solana/web3.js');
 
       const swapTransaction = VersionedTransaction.deserialize(
-        Buffer.from(swapData.swapTransaction, "base64")
+        Buffer.from(swapData.swapTransaction, 'base64')
       );
 
       swapTransaction.sign([fromKeypair]);
 
-      const conn = new Connection(rpcUrl, "confirmed");
+      const conn = new Connection(rpcUrl, 'confirmed');
       const signature = await conn.sendTransaction(swapTransaction);
       console.log(`[JITO] Transaction sent: ${signature}`);
 
-      await conn.confirmTransaction(signature, "confirmed");
+      await conn.confirmTransaction(signature, 'confirmed');
       console.log(`[JITO] Transaction confirmed: ${signature}`);
 
       return {
@@ -240,7 +240,7 @@ export class JitoService {
           priceImpact: 0.2,
           fee: 0.00001,
           feeUSD: 0,
-          mode: "fast",
+          mode: 'fast',
           fallback: true,
         };
       }
@@ -258,7 +258,7 @@ export class JitoService {
         priceImpact: priceImpact,
         fee: 0.000005,
         feeUSD: 0,
-        mode: "fast",
+        mode: 'fast',
         quoteResponse: quoteData,
       };
     } catch (error) {
@@ -270,7 +270,7 @@ export class JitoService {
         priceImpact: 0.2,
         fee: 0.00001,
         feeUSD: 0,
-        mode: "fast",
+        mode: 'fast',
         fallback: true,
       };
     }
@@ -285,23 +285,23 @@ export class JitoService {
       }
 
       if (quoteResult.fallback) {
-        return { success: false, error: "Jupiter API unavailable. Try again later." };
+        return { success: false, error: 'Jupiter API unavailable. Try again later.' };
       }
 
       const quoteData = quoteResult.quoteResponse;
       if (!quoteData) {
-        return { success: false, error: "Unable to get quote data" };
+        return { success: false, error: 'Unable to get quote data' };
       }
 
-      const { Keypair, VersionedTransaction } = await import("@solana/web3.js");
-      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, "hex"));
+      const { Keypair, VersionedTransaction } = await import('@solana/web3.js');
+      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const userPublicKey = fromKeypair.publicKey.toString();
 
-      const conn = new Connection(rpcUrl, "confirmed");
+      const conn = new Connection(rpcUrl, 'confirmed');
       const swapTxResponse = await fetch(`${JUPITER_API}/swap/v1/swap`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           quoteResponse: quoteData,
           userPublicKey: userPublicKey,
@@ -313,17 +313,17 @@ export class JitoService {
       if (!swapTxResponse.ok) {
         const errText = await swapTxResponse.text();
         console.error(`[JITO] Swap build failed: ${swapTxResponse.status} - ${errText}`);
-        return { success: false, error: "Failed to build swap transaction" };
+        return { success: false, error: 'Failed to build swap transaction' };
       }
 
       const swapData = await swapTxResponse.json();
 
       if (!swapData.swapTransaction) {
-        return { success: false, error: "No swap transaction returned" };
+        return { success: false, error: 'No swap transaction returned' };
       }
 
       const swapTransaction = VersionedTransaction.deserialize(
-        Buffer.from(swapData.swapTransaction, "base64")
+        Buffer.from(swapData.swapTransaction, 'base64')
       );
 
       swapTransaction.sign([fromKeypair]);
@@ -331,7 +331,7 @@ export class JitoService {
       const signature = await conn.sendTransaction(swapTransaction);
       console.log(`[JITO] ExitFast Transaction sent: ${signature}`);
 
-      await conn.confirmTransaction(signature, "confirmed");
+      await conn.confirmTransaction(signature, 'confirmed');
       console.log(`[JITO] ExitFast Transaction confirmed: ${signature}`);
 
       return {
@@ -340,7 +340,7 @@ export class JitoService {
         amountIn: amountJitoSOL,
         amountOut: quoteResult.amountOut,
         message: `Successfully swapped ${amountJitoSOL} JitoSOL for ${quoteResult.amountOut.toFixed(6)} SOL`,
-        mode: "fast",
+        mode: 'fast',
       };
     } catch (error) {
       return { success: false, error: error.message };
@@ -350,20 +350,20 @@ export class JitoService {
   static async quoteExitStandard(amountJitoSOL) {
     return {
       success: false,
-      error: "Standard exit not implemented in V1",
+      error: 'Standard exit not implemented in V1',
     };
   }
 
   static async exitStandard(walletPrivateKey, amountJitoSOL) {
     console.log(`[JITO] Initiating real Standard Exit for ${amountJitoSOL} JitoSOL`);
     try {
-      const { Keypair, Transaction, TransactionInstruction, SystemProgram, StakeProgram } = await import("@solana/web3.js");
-      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, "hex"));
+      const { Keypair, Transaction, TransactionInstruction, SystemProgram, StakeProgram } = await import('@solana/web3.js');
+      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const conn = getConnection();
 
       const lamports = Math.floor(amountJitoSOL * 1e9);
-      if (lamports <= 0) throw new Error("Montant invalide");
+      if (lamports <= 0) throw new Error('Montant invalide');
 
       // 1. Find user's JitoSOL token account
       const userPoolTokenAccount = await getAssociatedTokenAddress(new PublicKey(JITO_MINT), fromKeypair.publicKey);
@@ -389,18 +389,18 @@ export class JitoService {
       // For Jito, we can use a known good validator or scan the list.
       // To keep it simple and fast, we'll try to find the "withdraw authority" PDA
       const [withdrawAuthority] = PublicKey.findProgramAddressSync(
-        [JITO_STAKE_POOL_ADDRESS.toBuffer(), Buffer.from("withdraw")],
+        [JITO_STAKE_POOL_ADDRESS.toBuffer(), Buffer.from('withdraw')],
         STAKE_POOL_PROGRAM_ID
       );
 
       // We need to fetch the Stake Pool account to find the validator list
       const poolInfo = await conn.getAccountInfo(JITO_STAKE_POOL_ADDRESS);
-      if (!poolInfo) throw new Error("Impossible de récupérer les infos de la pool Jito");
+      if (!poolInfo) throw new Error('Impossible de récupérer les infos de la pool Jito');
       
       // The validator list address is at offset 65 in the Stake Pool account data
       const validatorListAddr = new PublicKey(poolInfo.data.slice(65, 65 + 32));
       const validatorListAcc = await conn.getAccountInfo(validatorListAddr);
-      if (!validatorListAcc) throw new Error("Impossible de récupérer la liste des validateurs");
+      if (!validatorListAcc) throw new Error('Impossible de récupérer la liste des validateurs');
 
       // Find first active validator with enough balance (simplified scan)
       // ValidatorList structure: Header(1) + Count(4) + Validators(Count * 73)
@@ -422,7 +422,7 @@ export class JitoService {
         }
       }
 
-      if (!validatorStakeAccount) throw new Error("Aucun validateur disponible pour le retrait");
+      if (!validatorStakeAccount) throw new Error('Aucun validateur disponible pour le retrait');
 
       // Step C: Approve token transfer (for the withdrawStake instruction)
       // Instruction index 4 for SPL Token Approve
@@ -456,7 +456,7 @@ export class JitoService {
           { pubkey: fromKeypair.publicKey, isSigner: false, isWritable: false }, // Stake authority
           { pubkey: withdrawAuthority, isSigner: false, isWritable: false }, // Transfer authority (the delegate we approved)
           { pubkey: userPoolTokenAccount, isSigner: false, isWritable: true },
-          { pubkey: new PublicKey("JitoFeeY9mJ3p7Z3CndYfncZfN8Jp5DrsA7uB6u5j7j"), isSigner: false, isWritable: true }, // Manager fee account (placeholder, should be from pool info)
+          { pubkey: new PublicKey('JitoFeeY9mJ3p7Z3CndYfncZfN8Jp5DrsA7uB6u5j7j'), isSigner: false, isWritable: true }, // Manager fee account (placeholder, should be from pool info)
           { pubkey: new PublicKey(JITO_MINT), isSigner: false, isWritable: true },
           { pubkey: SYSVAR_CLOCK_ID, isSigner: false, isWritable: false },
           { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
@@ -476,16 +476,16 @@ export class JitoService {
         stakeAccountAddress: tempStakeAccount.publicKey.toString(),
       };
     } catch (error) {
-      console.error("[JITO] exitStandard error:", error.message);
+      console.error('[JITO] exitStandard error:', error.message);
       return { success: false, error: error.message };
     }
   }
 
   static async getPendingStandardExits(walletAddress, specificAddress = null) {
-    console.log(`[JITO] Checking pending exits for wallet ${walletAddress}${specificAddress ? ` (specific: ${specificAddress})` : ""}`);
+    console.log(`[JITO] Checking pending exits for wallet ${walletAddress}${specificAddress ? ` (specific: ${specificAddress})` : ''}`);
     try {
       const conn = getConnection();
-      const STAKE_PROGRAM_ID = new PublicKey("Stake11111111111111111111111111111111111111");
+      const STAKE_PROGRAM_ID = new PublicKey('Stake11111111111111111111111111111111111111');
       
       let stakeAccounts = [];
 
@@ -540,7 +540,7 @@ export class JitoService {
       for (const account of stakeAccounts) {
         const parsedData = account.account.data?.parsed;
         // Skip accounts that aren't parsed stake accounts
-        if (!parsedData || parsedData.program !== "stake") {
+        if (!parsedData || parsedData.program !== 'stake') {
           console.log(`[JITO] Skipping non-stake account: ${account.pubkey.toString()}`);
           continue;
         }
@@ -557,7 +557,7 @@ export class JitoService {
         pending.push({
           address: account.pubkey.toString(),
           amountSOL: Number(stakeState) / 1e9,
-          status: isReady ? "ready" : "deactivating",
+          status: isReady ? 'ready' : 'deactivating',
           deactivationEpoch: deactivationEpoch,
           estimatedAvailableAt: estimatedAvailableAt,
         });
@@ -569,7 +569,7 @@ export class JitoService {
         epochInfo: epochInfo,
       };
     } catch (error) {
-      console.error("[JITO] getPendingStandardExits error:", error.message);
+      console.error('[JITO] getPendingStandardExits error:', error.message);
       
       // Basic fallback to at least get epoch info if possible
       try {
@@ -584,13 +584,13 @@ export class JitoService {
 
   static async claimExitStandard(walletPrivateKey, stakeAccountAddress) {
     try {
-      const { Keypair, Transaction, StakeProgram } = await import("@solana/web3.js");
-      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, "hex"));
+      const { Keypair, Transaction, StakeProgram } = await import('@solana/web3.js');
+      const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       
       const conn = getConnection();
       
-      if (!stakeAccountAddress || typeof stakeAccountAddress !== "string" || stakeAccountAddress.length < 32 || stakeAccountAddress === "UNKNOWN") {
+      if (!stakeAccountAddress || typeof stakeAccountAddress !== 'string' || stakeAccountAddress.length < 32 || stakeAccountAddress === 'UNKNOWN') {
         throw new Error(`Adresse de compte de stake invalide ou manquante : ${stakeAccountAddress}`);
       }
 
@@ -609,13 +609,13 @@ export class JitoService {
       }
       
       const parsedData = accountInfo.value.data?.parsed;
-      if (!parsedData || parsedData.program !== "stake") {
+      if (!parsedData || parsedData.program !== 'stake') {
         const owner = accountInfo.value.owner.toString();
         throw new Error(`L'adresse fournie (${stakeAccountAddress.slice(0, 8)}...) n'est pas un compte de stake (Propriétaire: ${owner}). Veuillez entrer l'adresse du STAKE ACCOUNT créé lors de l'unstake.`);
       }
 
       const data = parsedData.info;
-      if (!data || !data.stake) throw new Error("Données de compte de stake invalides.");
+      if (!data || !data.stake) throw new Error('Données de compte de stake invalides.');
 
       const deactivationEpoch = Number(data.stake.delegation?.deactivationEpoch) || 0;
       const epochInfo = await conn.getEpochInfo();
@@ -645,28 +645,28 @@ export class JitoService {
       transaction.feePayer = fromKeypair.publicKey;
 
       const signature = await conn.sendTransaction(transaction, [fromKeypair]);
-      await conn.confirmTransaction(signature, "confirmed");
+      await conn.confirmTransaction(signature, 'confirmed');
 
       return {
         success: true,
         txHash: signature,
-        message: "Successfully withdrawn SOL from stake account",
+        message: 'Successfully withdrawn SOL from stake account',
       };
     } catch (error) {
-      console.error("[JITO] claimExitStandard error:", error.message || error);
-      return { success: false, error: error.message || "Erreur inconnue lors du retrait" };
+      console.error('[JITO] claimExitStandard error:', error.message || error);
+      return { success: false, error: error.message || 'Erreur inconnue lors du retrait' };
     }
   }
 
   static async getApy() {
     try {
-      const response = await fetch("https://jito-api.staked.xyz/apy");
+      const response = await fetch('https://jito-api.staked.xyz/apy');
       if (response.ok) {
         const data = await response.json();
         return {
           success: true,
           apy: data.apy || 8.5,
-          source: "jito",
+          source: 'jito',
         };
       }
     } catch {}
@@ -674,7 +674,7 @@ export class JitoService {
     return {
       success: true,
       apy: 8.5,
-      source: "jito",
+      source: 'jito',
     };
   }
 }
