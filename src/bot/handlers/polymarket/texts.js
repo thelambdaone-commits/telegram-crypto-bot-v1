@@ -14,6 +14,11 @@ export const polymarketTexts = {
       text += `📬 \`${active.address.slice(0, 8)}...${active.address.slice(-6)}\`\n`;
     }
 
+    if (details.balances) {
+      text += `💵 Solde Polymarket: *${details.balances.polymarket || 'indisponible'}*\n`;
+      text += `👛 Actifs wallet: *${details.balances.wallet || 'indisponible'}*\n`;
+    }
+
     if (savedCount > 0) {
       text += `💾 Connexions sauvegardées: *${savedCount}*\n`;
     }
@@ -59,6 +64,60 @@ export const polymarketTexts = {
     return text;
   },
 
+  pnl: (summary) => {
+    if (!summary || (summary.positionCount === 0 && summary.realizedTradeCount === 0)) {
+      return '💰 *PnL du portefeuille*\n\n━━━━━━━━━━━━\n❌ Aucune position ouverte ni trade exploitable\n━━━━━━━━━━━━';
+    }
+
+    const sign = summary.unrealizedPnl >= 0 ? '+' : '';
+    const icon = summary.unrealizedPnl >= 0 ? '🟢' : '🔴';
+    const realizedSign = summary.realizedPnl >= 0 ? '+' : '';
+    const realizedIcon = summary.realizedPnl >= 0 ? '🟢' : '🔴';
+    const totalPnl = summary.unrealizedPnl + summary.realizedPnl;
+    const totalSign = totalPnl >= 0 ? '+' : '';
+    const totalIcon = totalPnl >= 0 ? '🟢' : '🔴';
+    let text =
+      '💰 *PnL du portefeuille*\n\n' +
+      '━━━━━━━━━━━━\n' +
+      `Positions ouvertes: *${summary.positionCount}*\n` +
+      `Positions clôturées: *${summary.closedPositionCount || 0}*\n` +
+      `Valeur actuelle: *$${summary.currentValue.toFixed(2)}*\n` +
+      `Coût estimé: *$${summary.costBasis.toFixed(2)}*\n` +
+      `${icon} PnL non réalisé: *${sign}$${summary.unrealizedPnl.toFixed(2)}*\n` +
+      `${realizedIcon} PnL réalisé estimé: *${realizedSign}$${summary.realizedPnl.toFixed(2)}*\n` +
+      `${totalIcon} Total estimé: *${totalSign}$${totalPnl.toFixed(2)}*`;
+
+    if (summary.pnlPercent !== null) {
+      text += `\nROI ouvert: *${sign}${summary.pnlPercent.toFixed(2)}%*`;
+    }
+
+    if (summary.unmatchedSellCount > 0) {
+      text += `\n⚠️ Ventes sans achat retrouvé: *${summary.unmatchedSellCount}*`;
+    }
+
+    text += '\n\n';
+
+    for (const item of summary.items.slice(0, 8)) {
+      const itemSign = item.pnl >= 0 ? '+' : '';
+      const itemIcon = item.pnl >= 0 ? '🟢' : '🔴';
+      text += `${itemIcon} ${item.title}\n`;
+      text += `• Taille: ${item.size.toFixed(4)}\n`;
+      text += `• Valeur: $${item.currentValue.toFixed(2)}\n`;
+      text += `• PnL: *${itemSign}$${item.pnl.toFixed(2)}*`;
+      if (item.pnlPercent !== null) {
+        text += ` (${itemSign}${item.pnlPercent.toFixed(2)}%)`;
+      }
+      text += '\n\n';
+    }
+
+    if (summary.items.length > 8) {
+      text += `_${summary.items.length - 8} position(s) supplémentaire(s) masquée(s)_\n`;
+    }
+
+    text += '━━━━━━━━━━━━\n_PnL basé sur les endpoints positions Polymarket._';
+    return text;
+  },
+
   orders: (orders) => {
     if (!orders || orders.length === 0) {
       return '📋 *Mes Ordres*\n\n━━━━━━━━━━━━\n❌ Aucun ordre actif\n━━━━━━━━━━━━';
@@ -76,13 +135,29 @@ export const polymarketTexts = {
     return text;
   },
 
-  history: (trades) => {
+  history: (trades, page = 0, pageSize = 10, wallet = null) => {
     if (!trades || trades.length === 0) {
       return '📜 *Historique Polymarket*\n\n━━━━━━━━━━━━\n❌ Aucun trade trouvé pour ce wallet\n━━━━━━━━━━━━';
     }
 
-    let text = '📜 *Historique Polymarket*\n\n━━━━━━━━━━━━\n';
-    for (const trade of trades.slice(0, 10)) {
+    const totalPages = Math.max(1, Math.ceil(trades.length / pageSize));
+    const safePage = Math.min(Math.max(page, 0), totalPages - 1);
+    const start = safePage * pageSize;
+    const pageTrades = trades.slice(start, start + pageSize);
+
+    let text =
+      '📜 *Historique Polymarket*\n' +
+      `Page *${safePage + 1}/${totalPages}* - Trades *${start + 1}-${start + pageTrades.length}/${trades.length}*\n`;
+
+    if (wallet?.address) {
+      const label = wallet.label ? `⭐ *${wallet.label}*\n` : '';
+      text += `${label}Adresse: \`${wallet.address}\`\n`;
+    }
+
+    text += '\n' +
+      '━━━━━━━━━━━━\n';
+
+    for (const trade of pageTrades) {
       const when = trade.timestamp
         ? new Date(Number(trade.timestamp) * 1000).toISOString().replace('T', ' ').slice(0, 16)
         : trade.match_time || trade.last_update || 'N/A';

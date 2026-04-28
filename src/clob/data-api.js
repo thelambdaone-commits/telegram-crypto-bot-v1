@@ -42,3 +42,45 @@ export async function getUserActivity(address, { limit = 100, type = 'TRADE' } =
     activity: Array.isArray(activity) ? activity : [],
   };
 }
+
+export async function getUserPositions(address, { limit = 500, offset = 0, sizeThreshold = 0 } = {}) {
+  const userAddress = await resolvePolymarketUserAddress(address);
+  const params = new URLSearchParams({
+    user: userAddress,
+    limit: String(limit),
+    offset: String(offset),
+    sizeThreshold: String(sizeThreshold),
+    sortBy: 'CASHPNL',
+    sortDirection: 'DESC',
+  });
+  const positions = await fetchJson(`${DATA_API}/positions?${params.toString()}`, 'Positions Polymarket');
+
+  return {
+    userAddress,
+    positions: Array.isArray(positions) ? positions : [],
+  };
+}
+
+export async function getUserClosedPositions(address, { limit = 50, maxPages = 20 } = {}) {
+  const userAddress = await resolvePolymarketUserAddress(address);
+  const positions = [];
+
+  for (let page = 0; page < maxPages; page += 1) {
+    const params = new URLSearchParams({
+      user: userAddress,
+      limit: String(limit),
+      offset: String(page * limit),
+      sortBy: 'TIMESTAMP',
+      sortDirection: 'DESC',
+    });
+    const pagePositions = await fetchJson(`${DATA_API}/closed-positions?${params.toString()}`, 'Positions cloturees Polymarket');
+    const items = Array.isArray(pagePositions) ? pagePositions : [];
+    positions.push(...items);
+    if (items.length < limit) break;
+  }
+
+  return {
+    userAddress,
+    positions,
+  };
+}

@@ -16,7 +16,11 @@ export function polymarketMenuKeyboard(connected) {
     ],
     [
       Markup.button.callback('📊 Positions', 'pm_menu_positions'),
+      Markup.button.callback('💰 PnL', 'pm_menu_pnl'),
+    ],
+    [
       Markup.button.callback('🔄 Rafraîchir', 'pm_menu_refresh'),
+      Markup.button.callback('📤 Exporter', 'pm_export_polyfill'),
     ],
     [
       Markup.button.callback('🔁 Changer wallet', 'pm_connect'),
@@ -42,17 +46,43 @@ export function confirmDisconnectKeyboard() {
   ]);
 }
 
-export function polymarketWalletSelectKeyboard(wallets) {
+export function polymarketWalletSelectKeyboard(wallets, activeCredentials = null) {
   const buttons = [];
+  const activeWalletId = activeCredentials?.walletId;
+  const activeAddress = activeCredentials?.address?.toLowerCase();
 
   for (const wallet of wallets) {
     const chain = wallet.chain.toUpperCase();
-    const label = `${wallet.label} [${chain}] (${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)})`;
+    const isActive =
+      (activeWalletId && wallet.id === activeWalletId) ||
+      (activeAddress && wallet.address?.toLowerCase() === activeAddress);
+    const prefix = isActive ? '⭐ ' : '';
+    const label = `${prefix}${wallet.label} [${chain}] (${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)})`;
     buttons.push([Markup.button.callback(label, `pm_select_wallet_${wallet.id}`)]);
   }
 
   buttons.push([Markup.button.callback('➕ Générer nouveau wallet ETH', 'pm_new_wallet')]);
   buttons.push([Markup.button.callback('❌ Annuler', 'pm_cancel')]);
+
+  return Markup.inlineKeyboard(buttons);
+}
+
+export function polymarketHistoryKeyboard(page, totalPages) {
+  const buttons = [];
+  const navigation = [];
+
+  if (page > 0) {
+    navigation.push(Markup.button.callback('⬅️ Précédent', `pm_history_page_${page - 1}`));
+  }
+
+  navigation.push(Markup.button.callback(`${page + 1}/${totalPages}`, 'pm_history_current'));
+
+  if (page < totalPages - 1) {
+    navigation.push(Markup.button.callback('Suivant ➡️', `pm_history_page_${page + 1}`));
+  }
+
+  buttons.push(navigation);
+  buttons.push([Markup.button.callback('🔙 Menu Polymarket', 'pm_menu_refresh')]);
 
   return Markup.inlineKeyboard(buttons);
 }

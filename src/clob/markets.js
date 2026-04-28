@@ -34,6 +34,16 @@ export async function getOrders(chatId) {
   try { return await client.getOpenOrders(); } catch { return []; }
 }
 
+export async function getCollateralBalanceAllowance(chatId) {
+  const client = getClobClient(chatId);
+  if (!client) throw new Error('Client non initialise');
+  try {
+    return await client.getBalanceAllowance({ asset_type: 'COLLATERAL' });
+  } catch (err) {
+    throw new Error(`Solde Polymarket inaccessible: ${err.message}`);
+  }
+}
+
 export async function placeOrder(chatId, params) {
   const client = getClobClient(chatId);
   if (!client) throw new Error('Client non initialise');
