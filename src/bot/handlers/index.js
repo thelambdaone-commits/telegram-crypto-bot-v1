@@ -12,7 +12,7 @@ import { setupStakingHandlers } from './staking/index.js';
 import { setupTokenHandlers } from './token/index.js';
 import { setupNFTHandlers } from './nft/index.js';
 import { setupPolymarketHandlers } from './polymarket/index.js';
-import { setupCommands } from './commands.js';
+import { setupCommands } from './commands/index.js';
 import { setupBalanceHandlers } from './balance.handlers.js';
 import { setupNavigationHandlers } from './nav.handlers.js';
 import { SessionManager } from '../session.js';

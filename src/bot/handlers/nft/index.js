@@ -37,7 +37,7 @@ async function startNFTWizard(ctx, chatId, storage, sessions) {
     if (solWallets.length === 0) {
       return ctx.reply(
         '❌ *Aucun wallet Solana*\n\nTu dois d\'abord creer un wallet Solana pour creer un NFT.\n\n' +
-        'Utilise le menu: ➕ Nouveau Wallet → Solana',
+        'Utilise le menu: 🆕 Nouveau Wallet → Solana',
         { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }

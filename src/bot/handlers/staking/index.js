@@ -487,6 +487,10 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
     await handleCalcCommand(ctx, args);
   });
 
+  bot.hears('📈 Staking', async (ctx) => {
+    await handleStakeCommand(ctx, storage);
+  });
+
   bot.action('staking_yield', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     await handleYieldCommand(ctx, storage, walletService);

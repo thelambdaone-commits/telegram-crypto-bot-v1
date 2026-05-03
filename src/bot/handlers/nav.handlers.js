@@ -1,7 +1,7 @@
 /**
  * Navigation & Shared Handlers
  */
-import { mainMenuKeyboard, walletListKeyboard, cancelKeyboard, chainSelectionKeyboard } from '../keyboards/index.js';
+import { mainMenuKeyboard, advancedActionsKeyboard, walletListKeyboard, cancelKeyboard, chainSelectionKeyboard } from '../keyboards/index.js';
 
 export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Action: back_to_menu
@@ -32,8 +32,25 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     } catch (e) {}
   });
 
-  // Hears: 💸 Envoyer
-  bot.hears('💸 Envoyer', async (ctx) => {
+  // Action: plus_actions
+  bot.action('plus_actions', async (ctx) => {
+    await ctx.answerCbQuery().catch(() => {});
+    ctx.editMessageText('➕ *Plus d\'actions*', {
+      parse_mode: 'Markdown',
+      ...advancedActionsKeyboard(),
+    });
+  });
+
+  // Hears: ➕ Plus d'actions (reply keyboard)
+  bot.hears('➕ Plus d\'actions', async (ctx) => {
+    ctx.reply('➕ *Plus d\'actions*', {
+      parse_mode: 'Markdown',
+      ...advancedActionsKeyboard(),
+    });
+  });
+
+  // Hears: 🚀 Envoyer
+  bot.hears('🚀 Envoyer', async (ctx) => {
     const wallets = await storage.getWallets(ctx.chat.id);
     if (wallets.length === 0) return ctx.reply('❌ Tu n\'as pas encore de wallet.');
     ctx.reply('💸 *Envoyer des fonds*\n\nDepuis quel wallet ?', {
@@ -51,8 +68,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     });
   });
 
-  // Hears: ➕ Nouveau Wallet
-  bot.hears('➕ Nouveau Wallet', async (ctx) => {
+  // Hears: 🆕 Nouveau Wallet
+  bot.hears('🆕 Nouveau Wallet', async (ctx) => {
     ctx.reply('➕ *Créer un nouveau wallet*\n\nChoisis le réseau :', {
       parse_mode: 'Markdown',
       ...chainSelectionKeyboard('chain_')

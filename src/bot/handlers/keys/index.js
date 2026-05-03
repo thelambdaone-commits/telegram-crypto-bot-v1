@@ -25,6 +25,23 @@ export function setupKeysHandlers(bot, storage, walletService) {
     });
   });
 
+  bot.hears('🔐 Mes Clés', async (ctx) => {
+    const chatId = ctx.chat.id;
+    const wallets = await storage.getWallets(chatId);
+
+    if (wallets.length === 0) {
+      return ctx.reply(`*${MESSAGES.noWallets}*`, {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
+    }
+
+    ctx.reply(`${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`, {
+      parse_mode: 'Markdown',
+      ...walletListKeyboard(wallets, 'keys_'),
+    });
+  });
+
   // Select wallet for keys
   bot.action(/^keys_(.+)$/, async (ctx) => {
     const walletId = ctx.match[1];

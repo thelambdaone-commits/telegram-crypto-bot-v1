@@ -97,7 +97,7 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
 
     if (state === 'ENTER_ADDRESS_ANALYZE') {
       // Ignore commands and menu buttons
-      if (text.startsWith('/') || ['💰 Mes Wallets', '💸 Envoyer', '🔍 Analyser', '🔐 Mes Clés', '📊 Cours EUR', '👑 Admin', 'Stop', 'Annuler', 'Retour'].includes(text)) {
+      if (text.startsWith('/') || ['💰 Mes Wallets', '🚀 Envoyer', '🔍 Analyser', '🔐 Mes Clés', '📊 Cours EUR', '👑 Admin', 'Stop', 'Annuler', 'Retour'].includes(text)) {
         sessions.setState(chatId, 'IDLE');
         return next();
       }
