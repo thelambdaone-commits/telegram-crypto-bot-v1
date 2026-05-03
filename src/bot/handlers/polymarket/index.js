@@ -10,13 +10,53 @@ import {
   confirmDisconnectKeyboard,
   polymarketWalletSelectKeyboard,
   polymarketHistoryKeyboard,
+  polymarketThemeSelectKeyboard,
+  polymarketThemeTradesKeyboard,
 } from './keyboards.js';
 
 const HISTORY_PAGE_SIZE = 10;
 const HISTORY_FETCH_LIMIT = 500;
+const POLYMARKET_TRADE_THEMES = [
+  {
+    id: 'politics',
+    label: '🗳️ Politique',
+    keywords: [
+      'politic', 'election', 'president', 'senate', 'house', 'congress', 'trump', 'biden',
+      'macron', 'government', 'vote', 'poll', 'minister', 'democrat', 'republican',
+    ],
+  },
+  {
+    id: 'sports',
+    label: '⚽ Sport',
+    keywords: [
+      'sport', 'football', 'soccer', 'nba', 'nfl', 'mlb', 'nhl', 'ufc', 'tennis',
+      'f1', 'formula', 'champions league', 'world cup', 'super bowl',
+    ],
+  },
+  {
+    id: 'crypto',
+    label: '💰 Crypto',
+    keywords: [
+      'crypto', 'bitcoin', 'btc', 'ethereum', 'eth', 'solana', 'sol', 'xrp', 'doge',
+      'token', 'coin', 'binance', 'coinbase', 'etf',
+    ],
+  },
+  {
+    id: 'world',
+    label: '🌍 Monde',
+    keywords: [
+      'world', 'war', 'ukraine', 'russia', 'china', 'israel', 'gaza', 'iran',
+      'europe', 'nato', 'ceasefire', 'conflict', 'geopolitic',
+    ],
+  },
+];
 
 function escapeMarkdown(text) {
   return String(text || '').replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+}
+
+function escapeMarkdownCode(text) {
+  return String(text || '').replace(/([`\\])/g, '\\$1');
 }
 
 function firstNumber(source, keys) {
@@ -106,6 +146,60 @@ function getTradeTimestamp(trade) {
   if (trade.match_time) return new Date(trade.match_time).getTime() / 1000;
   if (trade.last_update) return new Date(trade.last_update).getTime() / 1000;
   return 0;
+}
+
+function normalizeThemeText(value) {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map(normalizeThemeText).join(' ');
+  if (typeof value === 'object') {
+    return [
+      value.label,
+      value.name,
+      value.title,
+      value.slug,
+      value.category,
+    ].map(normalizeThemeText).join(' ');
+  }
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function getTradeThemeSearchText(trade) {
+  return [
+    trade.title,
+    trade.market,
+    trade.question,
+    trade.slug,
+    trade.category,
+    trade.eventCategory,
+    trade.tags,
+    trade.event,
+  ].map(normalizeThemeText).join(' ');
+}
+
+export function getPolymarketTradeThemes() {
+  return POLYMARKET_TRADE_THEMES.map(({ id, label }) => ({ id, label }));
+}
+
+export function filterPolymarketTradesByTheme(trades, themeId) {
+  const theme = POLYMARKET_TRADE_THEMES.find((item) => item.id === themeId);
+  if (!theme) return [];
+
+  return (trades || []).filter((trade) => {
+    const text = getTradeThemeSearchText(trade);
+    return theme.keywords.some((keyword) => text.includes(normalizeThemeText(keyword)));
+  });
+}
+
+export function calculatePolymarketTradeVolume(trades) {
+  return (trades || []).reduce((sum, trade) => {
+    const size = Math.abs(firstNumber(trade, ['size', 'amount', 'quantity']) || 0);
+    const price = firstNumber(trade, ['price', 'avgPrice', 'averagePrice']);
+    if (size <= 0 || price === null) return sum;
+    return sum + size * price;
+  }, 0);
 }
 
 export function calculateRealizedPnl(trades) {
@@ -735,6 +829,28 @@ async function loadPolymarketOfficialPnl(chatId, storage) {
   return { openPositions, closedPositions, errors, hasWallets: true };
 }
 
+async function loadPolymarketHistoryPnlSummary(chatId, storage, trades) {
+  const officialPnl = await loadPolymarketOfficialPnl(chatId, storage);
+  if (!officialPnl.hasWallets) return null;
+
+  if (
+    officialPnl.openPositions.length === 0 &&
+    officialPnl.closedPositions.length === 0 &&
+    officialPnl.errors.length > 0
+  ) {
+    return null;
+  }
+
+  const summary = calculateOfficialPortfolioPnl(officialPnl.openPositions, officialPnl.closedPositions);
+  return {
+    totalVolume: calculatePolymarketTradeVolume(trades),
+    positionCount: summary.positionCount,
+    closedPositionCount: summary.closedPositionCount,
+    realizedPnl: summary.realizedPnl,
+    totalPnl: summary.unrealizedPnl + summary.realizedPnl,
+  };
+}
+
 async function handlePnlCommand(ctx, storage) {
   const chatId = ctx.chat.id;
   const loading = await ctx.reply('💰 Calcul du PnL Polymarket...');
@@ -807,7 +923,72 @@ async function handleHistoryCommand(ctx, storage, page = 0, edit = false) {
       parse_mode: 'Markdown',
       ...polymarketHistoryKeyboard(safePage, totalPages),
     };
-    const text = polymarketTexts.history(trades, safePage, HISTORY_PAGE_SIZE, wallet);
+    const summary = await loadPolymarketHistoryPnlSummary(chatId, storage, trades);
+    const text = polymarketTexts.history(
+      trades,
+      safePage,
+      HISTORY_PAGE_SIZE,
+      wallet,
+      summary
+    );
+
+    if (edit) {
+      await safeEditMessage(ctx, text, options);
+      return;
+    }
+
+    await ctx.reply(text, options);
+  } catch (err) {
+    try {
+      if (loading) await ctx.telegram.deleteMessage(chatId, loading.message_id);
+    } catch {
+      // Ignore
+    }
+    ctx.reply(polymarketTexts.error(err.message), mainMenuKeyboard());
+  }
+}
+
+async function handleThemeSelectCommand(ctx) {
+  await safeEditMessage(ctx, polymarketTexts.themeSelect(), {
+    parse_mode: 'Markdown',
+    ...polymarketThemeSelectKeyboard(getPolymarketTradeThemes()),
+  });
+}
+
+async function handleThemeTradesCommand(ctx, storage, themeId, page = 0, edit = false) {
+  const theme = POLYMARKET_TRADE_THEMES.find((item) => item.id === themeId);
+  if (!theme) {
+    return safeEditMessage(ctx, polymarketTexts.error('Thème inconnu.'), {
+      parse_mode: 'Markdown',
+      ...polymarketThemeSelectKeyboard(getPolymarketTradeThemes()),
+    });
+  }
+
+  const chatId = ctx.chat.id;
+  const loading = edit ? null : await ctx.reply('📊 Chargement des trades par thème...');
+
+  try {
+    const { trades, errors, hasWallets, wallet } = await loadPolymarketHistory(chatId, storage);
+
+    if (!hasWallets) {
+      if (loading) await ctx.telegram.deleteMessage(chatId, loading.message_id);
+      return ctx.reply(polymarketTexts.noCredentials(), mainMenuKeyboard());
+    }
+
+    if (trades.length === 0 && errors.length > 0) {
+      throw new Error(errors.join('\n'));
+    }
+
+    if (loading) await ctx.telegram.deleteMessage(chatId, loading.message_id);
+
+    const themedTrades = filterPolymarketTradesByTheme(trades, themeId);
+    const totalPages = Math.max(1, Math.ceil(themedTrades.length / HISTORY_PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 0), totalPages - 1);
+    const options = {
+      parse_mode: 'Markdown',
+      ...polymarketThemeTradesKeyboard(themeId, safePage, totalPages),
+    };
+    const text = polymarketTexts.themeTrades(theme, themedTrades, safePage, HISTORY_PAGE_SIZE, wallet);
 
     if (edit) {
       await safeEditMessage(ctx, text, options);
@@ -843,8 +1024,8 @@ async function handleExportPolyfillCommand(ctx, storage) {
       : '';
 
     return ctx.reply(
-      '✅ *Session exportée vers polyfill-rs*\n\n' +
-      `Fichier mis à jour: \`${escapeMarkdown(result.envPath)}\`\n` +
+      '✅ *Session exportée vers polymarket-copy-trade*\n\n' +
+      `Fichier mis à jour: \`${escapeMarkdownCode(result.envPath)}\`\n` +
       `Variables écrites: *${result.keys.length}*${address}`,
       { parse_mode: 'Markdown', ...polymarketMenuKeyboard(true) }
     );
@@ -966,6 +1147,13 @@ export function setupPolymarketHandlers(bot, storage, walletService, sessions) {
     await handleHistoryCommand(ctx, storage);
   });
 
+  bot.command('polythemes', async (ctx) => {
+    await ctx.reply(polymarketTexts.themeSelect(), {
+      parse_mode: 'Markdown',
+      ...polymarketThemeSelectKeyboard(getPolymarketTradeThemes()),
+    });
+  });
+
   bot.command('polyexport', async (ctx) => {
     await handleExportPolyfillCommand(ctx, storage);
   });
@@ -1002,6 +1190,22 @@ export function setupPolymarketHandlers(bot, storage, walletService, sessions) {
   bot.action('pm_menu_history', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     await handleHistoryCommand(ctx, storage);
+  });
+
+  bot.action('pm_menu_themes', async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    await handleThemeSelectCommand(ctx);
+  });
+
+  bot.action(/^pm_theme_(.+)_page_(\d+)$/, async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    const themeId = ctx.match?.[1];
+    const page = Number(ctx.match?.[2] || 0);
+    await handleThemeTradesCommand(ctx, storage, themeId, page, true);
+  });
+
+  bot.action('pm_theme_current', async (ctx) => {
+    await safeAnswerCbQuery(ctx);
   });
 
   bot.action(/^pm_history_page_(\d+)$/, async (ctx) => {

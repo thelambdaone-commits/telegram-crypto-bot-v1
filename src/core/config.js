@@ -23,7 +23,7 @@ export const config = {
     alertChatId: process.env.POLYMARKET_ALERT_CHAT_ID
       ? Number(process.env.POLYMARKET_ALERT_CHAT_ID)
       : null,
-    polyfillEnvPath: process.env.POLYFILL_RS_ENV_PATH || resolve(__dirname, '../../../polyfill-rs/.env'),
+    polyfillEnvPath: process.env.POLYFILL_RS_ENV_PATH || '/home/ey9dyk3j8bg3/polymarket-copy-trade/.env',
   },
 
   rpc: {

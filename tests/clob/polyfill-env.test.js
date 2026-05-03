@@ -12,7 +12,7 @@ const creds = {
   apiPassphrase: 'api passphrase',
 };
 
-test('exports Polymarket credentials to a polyfill-rs env file', async () => {
+test('exports Polymarket credentials to a polymarket-copy-trade env file', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'polyfill-env-'));
   const envPath = path.join(dir, '.env');
   await fs.writeFile(envPath, 'EXISTING=value\nPOLYMARKET_API_KEY=old\n', 'utf8');

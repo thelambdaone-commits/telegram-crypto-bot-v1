@@ -82,6 +82,38 @@ export function polymarketHistoryKeyboard(page, totalPages) {
   }
 
   buttons.push(navigation);
+  buttons.push([Markup.button.callback('📝 Par thème', 'pm_menu_themes')]);
+  buttons.push([Markup.button.callback('🔙 Menu Polymarket', 'pm_menu_refresh')]);
+
+  return Markup.inlineKeyboard(buttons);
+}
+
+export function polymarketThemeSelectKeyboard(themes) {
+  const buttons = themes.map((theme) => [
+    Markup.button.callback(theme.label, `pm_theme_${theme.id}_page_0`),
+  ]);
+
+  buttons.push([Markup.button.callback('🔙 Menu Polymarket', 'pm_menu_refresh')]);
+
+  return Markup.inlineKeyboard(buttons);
+}
+
+export function polymarketThemeTradesKeyboard(themeId, page, totalPages) {
+  const buttons = [];
+  const navigation = [];
+
+  if (page > 0) {
+    navigation.push(Markup.button.callback('⬅️ Précédent', `pm_theme_${themeId}_page_${page - 1}`));
+  }
+
+  navigation.push(Markup.button.callback(`${page + 1}/${totalPages}`, 'pm_theme_current'));
+
+  if (page < totalPages - 1) {
+    navigation.push(Markup.button.callback('Suivant ➡️', `pm_theme_${themeId}_page_${page + 1}`));
+  }
+
+  buttons.push(navigation);
+  buttons.push([Markup.button.callback('📊 Changer thème', 'pm_menu_themes')]);
   buttons.push([Markup.button.callback('🔙 Menu Polymarket', 'pm_menu_refresh')]);
 
   return Markup.inlineKeyboard(buttons);

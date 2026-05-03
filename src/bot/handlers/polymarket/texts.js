@@ -135,7 +135,7 @@ export const polymarketTexts = {
     return text;
   },
 
-  history: (trades, page = 0, pageSize = 10, wallet = null) => {
+  history: (trades, page = 0, pageSize = 10, wallet = null, summary = null) => {
     if (!trades || trades.length === 0) {
       return '📜 *Historique Polymarket*\n\n━━━━━━━━━━━━\n❌ Aucun trade trouvé pour ce wallet\n━━━━━━━━━━━━';
     }
@@ -154,6 +154,18 @@ export const polymarketTexts = {
       text += `${label}Adresse: \`${wallet.address}\`\n`;
     }
 
+    if (summary) {
+      const totalSign = summary.totalPnl >= 0 ? '+' : '';
+      const totalIcon = summary.totalPnl >= 0 ? '🟢' : '🔴';
+      const realizedSign = summary.realizedPnl >= 0 ? '+' : '';
+      const realizedIcon = summary.realizedPnl >= 0 ? '🟢' : '🔴';
+      text += `Volume total: *$${summary.totalVolume.toFixed(2)}*\n`;
+      text += `Positions ouvertes: *${summary.positionCount}*\n`;
+      text += `Positions clôturées: *${summary.closedPositionCount || 0}*\n`;
+      text += `${realizedIcon} PnL réalisé estimé: *${realizedSign}$${summary.realizedPnl.toFixed(2)}*\n`;
+      text += `${totalIcon} Total estimé: *${totalSign}$${summary.totalPnl.toFixed(2)}*\n`;
+    }
+
     text += '\n' +
       '━━━━━━━━━━━━\n';
 
@@ -170,6 +182,47 @@ export const polymarketTexts = {
       text += `• Price: ${trade.price || 'N/A'}\n`;
       text += `• Date: ${when}\n\n`;
     }
+    text += '━━━━━━━━━━━━';
+    return text;
+  },
+
+  themeSelect: () =>
+    '📊 *Trades par thème*\n\n' +
+    'Choisissez un thème pour filtrer les trades du wallet Polymarket actif.',
+
+  themeTrades: (theme, trades, page = 0, pageSize = 10, wallet = null) => {
+    if (!trades || trades.length === 0) {
+      return `📊 *${theme.label}*\n\n━━━━━━━━━━━━\n❌ Aucun trade trouvé pour ce thème\n━━━━━━━━━━━━`;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(trades.length / pageSize));
+    const safePage = Math.min(Math.max(page, 0), totalPages - 1);
+    const start = safePage * pageSize;
+    const pageTrades = trades.slice(start, start + pageSize);
+
+    let text =
+      `📊 *${theme.label}*\n` +
+      `Page *${safePage + 1}/${totalPages}* - Trades *${start + 1}-${start + pageTrades.length}/${trades.length}*\n`;
+
+    if (wallet?.address) {
+      const label = wallet.label ? `⭐ *${wallet.label}*\n` : '';
+      text += `${label}Adresse: \`${wallet.address}\`\n`;
+    }
+
+    text += '\n━━━━━━━━━━━━\n';
+
+    for (const trade of pageTrades) {
+      const when = trade.timestamp
+        ? new Date(Number(trade.timestamp) * 1000).toISOString().replace('T', ' ').slice(0, 16)
+        : trade.match_time || trade.last_update || 'N/A';
+      text += `🎯 ${trade.title || trade.market || trade.asset_id || trade.id}\n`;
+      text += `• Side: *${trade.side || 'N/A'}*\n`;
+      text += `• Outcome: ${trade.outcome || 'N/A'}\n`;
+      text += `• Size: ${trade.size || 'N/A'}\n`;
+      text += `• Price: ${trade.price || 'N/A'}\n`;
+      text += `• Date: ${when}\n\n`;
+    }
+
     text += '━━━━━━━━━━━━';
     return text;
   },

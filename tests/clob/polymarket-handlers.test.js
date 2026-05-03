@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import {
   calculateOfficialPortfolioPnl,
   calculatePortfolioPnl,
+  calculatePolymarketTradeVolume,
   calculateRealizedPnl,
+  filterPolymarketTradesByTheme,
   formatCollateralBalance,
+  getPolymarketTradeThemes,
   loadPolymarketHistory,
   setupPolymarketHandlers,
 } from '../../src/bot/handlers/polymarket/index.js';
@@ -181,7 +184,7 @@ test('confirm disconnect removes credentials and edits message', async () => {
   assert.equal(edited, true);
 });
 
-test('connected Polymarket menu includes polyfill-rs export button', async () => {
+test('connected Polymarket menu includes polymarket-copy-trade export button', async () => {
   const actions = new Map();
   const bot = {
     on: () => {},
@@ -219,6 +222,47 @@ test('connected Polymarket menu includes portfolio PnL button', async () => {
   setupPolymarketHandlers(bot, storage, {}, sessions);
 
   assert.equal(typeof actions.get('pm_menu_pnl'), 'function');
+});
+
+test('connected Polymarket menu includes trades by theme actions', async () => {
+  const actions = new Map();
+  const bot = {
+    on: () => {},
+    command: () => {},
+    action: (name, handler) => {
+      actions.set(name, handler);
+    },
+  };
+  const storage = {};
+  const sessions = {
+    getState: () => null,
+    clearState: () => {},
+  };
+
+  setupPolymarketHandlers(bot, storage, {}, sessions);
+
+  assert.equal(typeof actions.get('pm_menu_themes'), 'function');
+  assert.equal(typeof actions.get('pm_theme_current'), 'function');
+  assert.equal([...actions.keys()].some((key) => String(key).includes('pm_theme_')), true);
+});
+
+test('filterPolymarketTradesByTheme matches structured fields and titles', () => {
+  const trades = [
+    { id: 'btc', title: 'Will Bitcoin hit 100k?', category: 'Crypto' },
+    { id: 'nba', market: 'NBA finals winner', tags: [{ label: 'Sports' }] },
+    { id: 'vote', question: 'US election winner?' },
+    { id: 'other', title: 'Rain in New York tomorrow?' },
+  ];
+
+  assert.deepEqual(filterPolymarketTradesByTheme(trades, 'crypto').map((trade) => trade.id), ['btc']);
+  assert.deepEqual(filterPolymarketTradesByTheme(trades, 'sports').map((trade) => trade.id), ['nba']);
+  assert.deepEqual(filterPolymarketTradesByTheme(trades, 'politics').map((trade) => trade.id), ['vote']);
+  assert.deepEqual(getPolymarketTradeThemes().map((theme) => theme.id), [
+    'politics',
+    'sports',
+    'crypto',
+    'world',
+  ]);
 });
 
 test('connect screen shows the active Polymarket wallet', async () => {
@@ -349,6 +393,16 @@ test('calculateRealizedPnl matches sells against previous buys', () => {
   assert.equal(Number(summary.realizedPnl.toFixed(2)), 1);
   assert.equal(summary.realizedTradeCount, 1);
   assert.equal(summary.unmatchedSellCount, 0);
+});
+
+test('calculatePolymarketTradeVolume sums size times price', () => {
+  const volume = calculatePolymarketTradeVolume([
+    { size: '10', price: '0.20' },
+    { amount: '4', avgPrice: '0.45' },
+    { size: '2', price: null },
+  ]);
+
+  assert.equal(Number(volume.toFixed(2)), 3.8);
 });
 
 test('calculateOfficialPortfolioPnl uses Polymarket position PnL fields', () => {
