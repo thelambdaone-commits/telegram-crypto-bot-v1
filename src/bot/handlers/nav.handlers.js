@@ -41,6 +41,16 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     });
   });
 
+  // Action: help_menu
+  bot.action('help_menu', async (ctx) => {
+    await ctx.answerCbQuery().catch(() => {});
+    const { getFullHelpText } = await import('../ui/index.js');
+    ctx.editMessageText(getFullHelpText(), {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+  });
+
   // Hears: ➕ Plus d'actions (reply keyboard)
   bot.hears('➕ Plus d\'actions', async (ctx) => {
     ctx.reply('➕ *Plus d\'actions*', {
@@ -49,8 +59,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     });
   });
 
-  // Hears: 🚀 Envoyer
-  bot.hears('🚀 Envoyer', async (ctx) => {
+  // Hears: 💸 Envoyer
+  bot.hears('💸 Envoyer', async (ctx) => {
     const wallets = await storage.getWallets(ctx.chat.id);
     if (wallets.length === 0) return ctx.reply('❌ Tu n\'as pas encore de wallet.');
     ctx.reply('💸 *Envoyer des fonds*\n\nDepuis quel wallet ?', {
@@ -76,9 +86,12 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     });
   });
 
-  // Hears: ❓ Aide
-  bot.hears('❓ Aide', async (ctx) => {
-    const { getHelpText } = await import('../ui/index.js');
-    await ctx.reply(getHelpText(), { parse_mode: 'Markdown' });
+  // Hears: help buttons
+  bot.hears(['🆘 Help', '❓ Aide'], async (ctx) => {
+    const { getFullHelpText } = await import('../ui/index.js');
+    await ctx.reply(getFullHelpText(), {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
   });
 }

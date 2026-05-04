@@ -1,18 +1,74 @@
 import { deriveClobApiCredentials, getOrBuildClobClient, removeClobClient } from '../../../clob/client.js';
 import { getPositions, getOrders, getCollateralBalanceAllowance } from '../../../clob/markets.js';
 import { getUserActivity, getUserClosedPositions, getUserPositions } from '../../../clob/data-api.js';
+import { exportPolymarketCredentialsToPolyfillEnv } from '../../../clob/polyfill-env.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, safeEditMessage } from '../../utils.js';
-import { polymarketTexts } from './texts.js';
-import { formatCollateralBalance, formatNumber } from '../../ui/formatters.js';
-import { calculatePortfolioPnl, calculateRealizedPnl, POLYMARKET_TRADE_THEMES } from '../../../modules/polymarket/analytics.js';
+import { confirmTexts, polymarketTexts } from './texts.js';
+import { formatCollateralBalance as formatCollateralBalanceUi, formatNumber } from '../../ui/formatters.js';
+import {
+  calculateOfficialPortfolioPnl,
+  calculatePortfolioPnl,
+  calculatePolymarketTradeVolume,
+  calculateRealizedPnl,
+  filterPolymarketTradesByTheme,
+  getPolymarketTradeThemes,
+  POLYMARKET_TRADE_THEMES,
+} from '../../../modules/polymarket/analytics.js';
 import {
   polymarketMenuKeyboard,
   confirmDisconnectKeyboard,
+  polymarketHistoryKeyboard,
+  polymarketThemeSelectKeyboard,
+  polymarketThemeTradesKeyboard,
   polymarketWalletSelectKeyboard,
 } from './keyboards.js';
 
 const HISTORY_PAGE_SIZE = 10;
+const HISTORY_FETCH_LIMIT = 500;
+
+export {
+  calculateOfficialPortfolioPnl,
+  calculatePortfolioPnl,
+  calculatePolymarketTradeVolume,
+  calculateRealizedPnl,
+  filterPolymarketTradesByTheme,
+  getPolymarketTradeThemes,
+};
+
+export function formatCollateralBalance(value) {
+  return formatCollateralBalanceUi(value).replace(',', '.');
+}
+
+function escapeMarkdown(value) {
+  return String(value ?? '').replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+}
+
+function escapeMarkdownCode(value) {
+  return String(value ?? '').replace(/[`\\]/g, '\\$&');
+}
+
+function formatWalletAssets(walletBalance, tokens = [], chain = 'eth') {
+  const symbol = chain.toUpperCase();
+  const nativeBalance = Number(walletBalance?.balance || walletBalance || 0);
+  const lines = [`${formatNumber(nativeBalance, 4, 6)} ${symbol}`];
+
+  const visibleTokens = (tokens || [])
+    .filter((token) => Number(token.balance || token.uiAmount || 0) > 0)
+    .slice(0, 4);
+
+  for (const token of visibleTokens) {
+    const amount = Number(token.balance || token.uiAmount || 0);
+    const tokenSymbol = token.symbol || token.mint || token.contractAddress || 'TOKEN';
+    lines.push(`${formatNumber(amount, 2, 6)} ${tokenSymbol}`);
+  }
+
+  if ((tokens || []).length > visibleTokens.length) {
+    lines.push(`+${tokens.length - visibleTokens.length} tokens`);
+  }
+
+  return lines.join(', ');
+}
 
 async function initClient(chatId, storage) {
   try {

@@ -8,7 +8,8 @@
 node_modules/
 
 # Data files (contains sensitive encrypted data)
-data/
+data/*
+!data/
 !data/.gitkeep
 
 # Logs

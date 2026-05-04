@@ -20,11 +20,12 @@ npm start
 | ------ |-------------|
 | 🪙 Multi-chain | Ethereum, Polygon, Solana, Bitcoin, Litecoin, BCH, Arbitrum, Optimism, Base |
 | 💳 Wallets | Creation et import avec labels auto |
-| 📤 Transferts | Estimation dynamique des frais |
+| 💸 Transferts | Estimation dynamique des frais |
 | 🔐 Staking | SOL via Jito et Marinade |
 | 🧹 Dust Keeper | Analyse/nettoyage petits soldes Solana |
 | 🎨 Tokens SPL | Creation de tokens et NFTs |
-| 💵 Prix EUR | CoinGecko intgre |
+| 💵 Prix EUR | CoinGecko integre |
+| 🆘 Aide | Boutons Cours EUR et Help dans le menu principal |
 | 🔍 Detection | Reconnaissance automatique d'adresse publique |
 | 👮 Admin | Panel, logs audit, rate limiting, stockage chiffre |
 | 🎯 Polymarket | Wallets ETH/Polygon, credentials CLOB, switch sessions, historique trades |
@@ -124,7 +125,7 @@ npm run lint
 
 | Commande / action | Role |
 | --- | --- |
-| Bouton Polymarket ou `/poly` | Ouvre le menu Polymarket |
+| Bouton `➕ Plus d'actions` puis `🎯 Polymarket`, ou `/poly` | Ouvre le menu Polymarket |
 | `/polyconnect` ou bouton connexion | Choisit un wallet ETH/Polygon ou genere un nouveau wallet |
 | Bouton Historique | Affiche les trades Polymarket via Data API |
 | Bouton Changer wallet | Switch entre les credentials Polymarket sauvegardes |
@@ -147,7 +148,7 @@ Le bot peut conserver plusieurs credentials Polymarket par utilisateur et change
 
 ## 🔓 Portabilite des Credentials
 
-Cette section explique comment exporter vos credentials Polymarket pour les'utiliser dans d'autres bots ou plateformes d'arbitrage.
+Cette section explique comment exporter vos credentials Polymarket pour les utiliser dans d'autres bots ou plateformes d'arbitrage.
 
 ### Pourquoi exporter?
 

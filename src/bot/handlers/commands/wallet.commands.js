@@ -164,7 +164,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
         '💸 *Envoi de cryptos*\n\n' +
         'Utilisation : `/send <réseau> <adresse> <montant>`\n\n' +
         'Exemple : `/send eth 0x123...abc 0.1`\n\n' +
-        '💡 Pour un envoi plus guidé, utilise le bouton *🚀 Envoyer* du menu !',
+        '💡 Pour un envoi plus guidé, utilise le bouton *💸 Envoyer* du menu !',
         { parse_mode: 'Markdown' }
       );
     }
