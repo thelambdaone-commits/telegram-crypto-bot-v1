@@ -34,7 +34,11 @@ export class App {
 
     this._setupShutdown();
 
-    await this.bot.launch();
+    await this.bot.telegram.getMe();
+    this.bot.launch().catch((error) => {
+      logger.logError(error, { context: 'bot.launch' });
+      process.exit(1);
+    });
     logger.info('Bot started successfully', { adminsCount: config.adminChatId.length });
     logger.info('Bot Telegram Crypto Wallet demarre');
     logger.info(
