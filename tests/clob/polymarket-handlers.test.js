@@ -13,12 +13,9 @@ import {
 } from '../../src/bot/handlers/polymarket/index.js';
 
 test('Polymarket callback middleware lets menu actions run', async () => {
-  let callbackMiddleware;
   const actions = new Map();
   const bot = {
-    on: (eventName, handler) => {
-      if (eventName === 'callback_query') callbackMiddleware = handler;
-    },
+    on: () => {},
     command: () => {},
     action: (name, handler) => {
       actions.set(name, handler);
@@ -37,21 +34,13 @@ test('Polymarket callback middleware lets menu actions run', async () => {
 
   setupPolymarketHandlers(bot, storage, {}, sessions);
 
-  let nextCalled = false;
-  const ctx = { callbackQuery: { data: 'pm_menu_refresh' } };
-
-  await callbackMiddleware(ctx, async () => {
-    nextCalled = true;
-  });
-
-  assert.equal(nextCalled, true);
   assert.equal(typeof actions.get('pm_menu_refresh'), 'function');
 });
 
 test('new Polymarket wallet is generated and stored in session on click', async () => {
-  let callbackMiddleware;
   let sessionState = null;
   let sessionData = null;
+  const actions = new Map();
   const wallet = {
     id: 'eth-123',
     chain: 'eth',
@@ -61,11 +50,11 @@ test('new Polymarket wallet is generated and stored in session on click', async 
     isCorrupted: false,
   };
   const bot = {
-    on: (eventName, handler) => {
-      if (eventName === 'callback_query') callbackMiddleware = handler;
-    },
+    on: () => {},
     command: () => {},
-    action: () => {},
+    action: (name, handler) => {
+      actions.set(name, handler);
+    },
   };
   const storage = {
     getWalletWithKey: async (_chatId, walletId) => {
@@ -95,10 +84,11 @@ test('new Polymarket wallet is generated and stored in session on click', async 
     callbackQuery: { data: 'pm_new_wallet' },
     answerCbQuery: async () => {},
     editMessageText: async () => {},
+    match: undefined,
   };
 
   setupPolymarketHandlers(bot, storage, walletService, sessions);
-  await callbackMiddleware(ctx, async () => {});
+  await actions.get('pm_new_wallet')(ctx);
 
   assert.equal(sessionState, 'AWAITING_POLY_API_KEY');
   assert.deepEqual(sessionData, {

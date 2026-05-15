@@ -44,17 +44,15 @@ export { formatCollateralBalance } from './formatters.js';
 export { loadPolymarketHistory } from './ui.js';
 
 export function setupPolymarketHandlers(bot, storage, walletService, sessions) {
-  // Callback query handler for wallet selection
-  bot.on('callback_query', async (ctx, next) => {
-    const callbackData = ctx.callbackQuery?.data;
+  // Callback query handler for wallet selection (namespaced to pm_ actions)
+  bot.action(/^pm_select_wallet_(.+)$/, async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    await handleWalletSelection(ctx, storage, walletService, sessions);
+  });
 
-    if (callbackData?.startsWith('pm_select_wallet_') || callbackData === 'pm_new_wallet') {
-      await safeAnswerCbQuery(ctx);
-      await handleWalletSelection(ctx, storage, walletService, sessions);
-      return;
-    }
-
-    return next();
+  bot.action('pm_new_wallet', async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    await handleWalletSelection(ctx, storage, walletService, sessions);
   });
 
   // Text input handler for polymarket flow
