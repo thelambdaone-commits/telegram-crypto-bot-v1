@@ -22,17 +22,17 @@ function formatAmount(amount) {
 }
 
 export function setupStakingTextInput(bot, storage, walletService, sessions) {
-  bot.on('text', async (ctx) => {
+  bot.on('text', async (ctx, next) => {
     const chatId = ctx.chat.id;
     const text = ctx.message.text?.trim();
     const state = sessions.getState(chatId);
 
-    if (!state) return;
+    if (!state) return next();
 
     if (text?.startsWith('/')) {
       sessions.clearState(chatId);
       sessions.clearData(chatId);
-      return;
+      return next();
     }
 
     if (state === 'JITO_ENTER_AMOUNT') {
@@ -54,6 +54,8 @@ export function setupStakingTextInput(bot, storage, walletService, sessions) {
       await handleJitoUnstakeManualAddress(ctx, text, storage, sessions);
       return;
     }
+
+    return next();
   });
 
   bot.action('cancel_staking', async (ctx) => {
@@ -74,6 +76,10 @@ export function setupStakingTextInput(bot, storage, walletService, sessions) {
 
   bot.action('confirm_jito_exit_fast', async (ctx) => {
     await handleJitoExitFastConfirm(ctx, storage, walletService, sessions);
+  });
+
+  bot.action('confirm_jito_exit_standard', async (ctx) => {
+    await handleJitoExitStandardConfirm(ctx, storage, walletService, sessions);
   });
 
   bot.action('jito_exit_manual', async (ctx) => {
@@ -487,6 +493,73 @@ async function handleJitoExitFastConfirm(ctx, storage, walletService, sessions) 
       });
       sessions.clearState(chatId);
     }
+}
+
+async function handleJitoExitStandardConfirm(ctx, storage, walletService, sessions) {
+  const chatId = ctx.chat.id;
+  await safeAnswerCbQuery(ctx);
+
+  try {
+    const data = sessions.getData(chatId);
+    const walletId = data.walletId;
+    const amount = data.amount;
+
+    const wallet = await storage.getWalletWithKey(chatId, walletId);
+    if (!wallet) {
+      return ctx.editMessageText('❌ Wallet non trouvé.', {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
+    }
+
+    await ctx.editMessageText('⏳ *Unstake en cours...*', { parse_mode: 'Markdown' });
+
+    const result = await JitoService.exitStandard(wallet.privateKey, amount);
+
+    if (!result.success) {
+      return ctx.editMessageText(`❌ Erreur: ${result.error}`, {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
+    }
+
+    const stakeAddress = result.stakeAccountAddress || 'Inconnue';
+
+    const request = await storage.addUnstakeRequest(chatId, {
+      type: 'jitosol',
+      amount,
+      walletId,
+      walletAddress: wallet.address,
+      stakeAccountAddress: stakeAddress,
+      txHash: result.txHash,
+    });
+
+    await ctx.editMessageText(
+      '✅ *Unstake initié avec succès !*\n\n' +
+        `📥 Montant: *${formatAmount(amount)} JitoSOL*\n` +
+        `🏦 Compte de stake: \`${stakeAddress}\`\n` +
+        '⏳ *Délai estimé:* ~2-3 jours (fin d\'epoch)\n\n' +
+        '📌 *Prochaine étape:*\n' +
+        "Une fois l'epoch terminée, utilise le menu Jito\n" +
+        'pour réclamer tes SOL via "Claim Unstake".\n\n' +
+        `🔗 [Voir transaction](https://solscan.io/tx/${result.txHash})`,
+      {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true,
+        ...mainMenuKeyboard(),
+      }
+    );
+
+    sessions.clearData(chatId);
+    sessions.clearState(chatId);
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoExitStandardConfirm', chatId });
+    await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+    sessions.clearState(chatId);
+  }
 }
 
 async function handleJitoExitStandardAmount(ctx, text, storage, walletService, sessions) {

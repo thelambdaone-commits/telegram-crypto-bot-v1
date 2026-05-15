@@ -11,6 +11,7 @@ import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { setupNFTTextInput } from './text-input.js';
 
 /**
  * Start the NFT wizard - reusable function
@@ -109,13 +110,7 @@ async function startNFTWizard(ctx, chatId, storage, sessions) {
 }
 
 export function setupNFTHandlers(bot, storage, walletService, sessions) {
-  // Import text-input handlers
-  import('./text-input.js')
-    .then(({ setupNFTTextInput }) => {
-      setupNFTTextInput(bot, storage, walletService, sessions);
-      logger.info('[NFT] Text input handlers loaded');
-    })
-    .catch((err) => logger.logError(err, { context: 'setupNFTHandlers.import' }));
+  setupNFTTextInput(bot, storage, walletService, sessions);
 
   // === COMMAND: /nft ===
   bot.command('nft', async (ctx) => {

@@ -178,6 +178,14 @@ export class StorageService {
   }
 
   /**
+   * Get a single wallet by ID (without private key)
+   */
+  async getWalletById(chatId, walletId) {
+    const data = await this.loadUserData(chatId);
+    return data.wallets.find((w) => w.id === walletId) || null;
+  }
+
+  /**
    * Get wallet with decrypted key - no passphrase
    * Returns { isCorrupted: true } if decryption fails (key mismatch)
    */

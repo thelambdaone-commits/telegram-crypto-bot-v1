@@ -12,6 +12,7 @@ import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { setupTokenTextInput } from './text-input.js';
 
 function formatSOL(amount) {
   return amount.toFixed(6);
@@ -133,13 +134,7 @@ async function startMintWizard(ctx, chatId, storage, sessions) {
 }
 
 export function setupTokenHandlers(bot, storage, walletService, sessions) {
-  // Import text-input handlers
-  import('./text-input.js')
-    .then(({ setupTokenTextInput }) => {
-      setupTokenTextInput(bot, storage, walletService, sessions);
-      logger.info('[TOKEN] Text input handlers loaded');
-    })
-    .catch((err) => logger.logError(err, { context: 'setupTokenHandlers.import' }));
+  setupTokenTextInput(bot, storage, walletService, sessions);
 
   // === COMMAND: /mint ===
   bot.command('mint', async (ctx) => {
