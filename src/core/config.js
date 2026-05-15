@@ -63,10 +63,19 @@ export const config = {
 };
 
 // Validate required config
+if (!process.env.COINGECKO_API_KEY) {
+  console.warn('[CONFIG] COINGECKO_API_KEY not set — EUR price conversion will use free tier (rate-limited)');
+}
+if (config.polymarket.feedEnabled && !config.polymarket.alertChatId) {
+  console.warn('[CONFIG] POLYMARKET_FEED_ENABLED=true but POLYMARKET_ALERT_CHAT_ID not set — alerts disabled');
+}
+if (!config.rpc.stakingSol) {
+  console.warn('[CONFIG] STAKING_SOL_RPC_URL not set — staking may be unavailable');
+}
 if (!config.botToken) {
   throw new Error('BOT_TOKEN est requis');
 }
-if (!config.masterKey || config.masterKey.length !== 64) {
+if (!config.masterKey || !/^[a-fA-F0-9]{64}$/.test(config.masterKey)) {
   throw new Error('MASTER_ENCRYPTION_KEY doit etre une chaine hex de 64 caracteres (32 bytes)');
 }
 if (!config.rpc.sol) {

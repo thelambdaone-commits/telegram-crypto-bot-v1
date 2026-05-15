@@ -4,7 +4,7 @@ import {
   adminCancelKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, escapeMarkdown } from '../../../shared/utils/telegram.js';
-import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { adminGuard, isAdmin } from '../../middlewares/auth.middleware.js';
 import {
   getRateLimitStats,
   blacklistUser,
@@ -103,7 +103,7 @@ export function setupAdminActions(bot, storage, sessions) {
   // Security stats
   bot.action('admin_security', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     const securityStats = getRateLimitStats();
 
@@ -132,7 +132,7 @@ export function setupAdminActions(bot, storage, sessions) {
   // View audit logs
   bot.action('admin_logs', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     const logs = auditLogger.getRecent(15);
 
@@ -162,15 +162,13 @@ export function setupAdminActions(bot, storage, sessions) {
   // Broadcast menu
   bot.action('admin_broadcast', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     return promptBroadcast(ctx, sessions, true);
   });
 
   bot.command('broadcast', async (ctx) => {
-    if (!isAdmin(ctx)) {
-      return ctx.reply('❌ Accès réservé aux admins.');
-    }
+    if (!adminGuard(ctx)) return;
 
     const text = ctx.message.text.replace(/^\/broadcast(?:@\w+)?\s*/i, '').trim();
     if (!text) {
@@ -184,7 +182,7 @@ export function setupAdminActions(bot, storage, sessions) {
   bot.action('admin_ban', async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_BAN_ID');
     ctx.editMessageText('🚫 *Bannir un utilisateur*\n\nEntre le Chat ID à bannir :', {
@@ -195,7 +193,7 @@ export function setupAdminActions(bot, storage, sessions) {
   bot.action('admin_unban', async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_UNBAN_ID');
     ctx.editMessageText('✅ *Débannir un utilisateur*\n\nEntre le Chat ID à débannir :', {
@@ -207,7 +205,7 @@ export function setupAdminActions(bot, storage, sessions) {
   bot.action('admin_view_user', async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_USER_ID');
     ctx.editMessageText("🔍 *Voir un utilisateur*\n\nEntre le Chat ID de l'utilisateur :", {
@@ -221,7 +219,7 @@ export function setupAdminActions(bot, storage, sessions) {
     const targetUserId = Number(ctx.match[1]);
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     try {
       const userData = await storage.loadUserData(targetUserId);
@@ -275,7 +273,7 @@ export function setupAdminActions(bot, storage, sessions) {
     const walletId = ctx.match[2];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     try {
       await storage.deleteWallet(targetUserId, walletId);

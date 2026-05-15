@@ -16,6 +16,8 @@
     "lint:fix": "eslint src/ --ignore-pattern node_modules/ --fix",
     "format": "prettier --write src/ --ignore-pattern node_modules/",
     "test": "node --test tests",
+    "ci": "npm run lint && npm test && npm run precheck",
+    "config:check": "node scripts/config-check.js",
     "test:clob": "node --test tests/clob/*.test.js",
     "test:watch": "node --watch --test tests"
   },

@@ -1,6 +1,6 @@
 import { adminExtendedKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
-import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { adminGuard, isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { config } from '../../../core/config.js';
 

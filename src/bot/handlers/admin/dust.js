@@ -1,4 +1,4 @@
-import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { adminGuard, isAdmin } from '../../middlewares/auth.middleware.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { config } from '../../../core/config.js';
