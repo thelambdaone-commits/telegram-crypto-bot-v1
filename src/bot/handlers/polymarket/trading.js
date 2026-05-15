@@ -14,7 +14,6 @@ export async function generatePolymarketWalletSession(chatId, storage, walletSer
   sessions.setData(chatId, {
     createNewWallet: true,
     walletId: fullWallet.id,
-    privateKey: fullWallet.privateKey,
     address: fullWallet.address,
     chain: fullWallet.chain,
     label: fullWallet.label,
@@ -61,7 +60,6 @@ export async function autoConnectPolymarket(ctx, storage, sessions, wallet, gene
     sessions.setData(chatId, {
       createNewWallet: generated,
       walletId: wallet.id,
-      privateKey: wallet.privateKey,
       address: wallet.address,
       chain: wallet.chain,
       label: wallet.label,
@@ -176,15 +174,18 @@ export async function handleApiPassphraseInput(ctx, storage, sessions) {
   const text = ctx.message.text.trim();
 
   const data = sessions.getData(chatId);
+  const walletId = data.walletId;
+  const fullWallet = await storage.getWalletWithKey(chatId, walletId);
 
-  const privateKey = data.privateKey;
-  const address = data.address;
-  const walletLabel = data.label;
-  const walletChain = data.chain;
-  if (!privateKey || !address) {
+  if (!fullWallet || fullWallet.isCorrupted) {
     sessions.clearState(chatId);
-    return ctx.reply('❌ Wallet Polymarket manquant en session. Réessayez avec /polyconnect.');
+    return ctx.reply('❌ Wallet Polymarket manquant ou corrompu. Réessayez avec /polyconnect.');
   }
+
+  const privateKey = fullWallet.privateKey;
+  const address = fullWallet.address;
+  const walletLabel = fullWallet.label;
+  const walletChain = fullWallet.chain;
 
   await storage.addPolymarketCredentials(
     chatId,

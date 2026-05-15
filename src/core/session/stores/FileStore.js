@@ -1,20 +1,31 @@
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { encrypt, decrypt } from '../../../shared/encryption.js';
 import { logger } from '../../../shared/logger.js';
 
 /**
  * File-based session store for persistence across restarts
  */
 export class FileStore {
-  constructor(filePath) {
+  constructor(filePath, masterKey = null) {
     this.filePath = filePath;
+    this.masterKey = masterKey;
   }
 
   async save(data) {
     try {
       const json = JSON.stringify(data, null, 2);
-      await fs.writeFile(this.filePath, json, 'utf8');
-      logger.debug('Sessions saved to file', { path: this.filePath, count: Object.keys(data).length });
+      let content = json;
+
+      if (this.masterKey) {
+        content = encrypt(json, this.masterKey);
+      }
+
+      await fs.writeFile(this.filePath, content, 'utf8');
+      logger.debug('Sessions saved to file', {
+        path: this.filePath,
+        count: Object.keys(data).length,
+        encrypted: !!this.masterKey,
+      });
     } catch (error) {
       logger.logError(error, { context: 'FileStore.save', path: this.filePath });
     }
@@ -22,12 +33,31 @@ export class FileStore {
 
   async load() {
     try {
-      const exists = await fs.access(this.filePath).then(() => true).catch(() => false);
+      const exists = await fs.access(this.filePath)
+        .then(() => true)
+        .catch(() => false);
       if (!exists) return {};
 
-      const json = await fs.readFile(this.filePath, 'utf8');
+      const content = await fs.readFile(this.filePath, 'utf8');
+      let json = content;
+
+      if (this.masterKey) {
+        try {
+          json = decrypt(content, this.masterKey);
+        } catch (e) {
+          logger.error('Failed to decrypt sessions file - key might have changed', {
+            error: e.message,
+          });
+          return {};
+        }
+      }
+
       const data = JSON.parse(json);
-      logger.info('Sessions loaded from file', { path: this.filePath, count: Object.keys(data).length });
+      logger.info('Sessions loaded from file', {
+        path: this.filePath,
+        count: Object.keys(data).length,
+        encrypted: !!this.masterKey,
+      });
       return data;
     } catch (error) {
       logger.logError(error, { context: 'FileStore.load', path: this.filePath });

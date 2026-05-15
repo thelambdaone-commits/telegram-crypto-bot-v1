@@ -40,6 +40,12 @@ export const CHAIN_EMOJIS = {
   eth: '🔷',
   btc: '🟠',
   sol: '🟣',
+  arb: '🔴',
+  matic: '🟣',
+  op: '🔵',
+  base: '🟦',
+  ltc: '🪙',
+  bch: '🟢',
 };
 
 /**
@@ -49,6 +55,12 @@ export const CHAIN_NAMES = {
   eth: 'Ethereum',
   btc: 'Bitcoin',
   sol: 'Solana',
+  arb: 'Arbitrum',
+  matic: 'Polygon',
+  op: 'Optimism',
+  base: 'Base',
+  ltc: 'Litecoin',
+  bch: 'Bitcoin Cash',
 };
 
 /**

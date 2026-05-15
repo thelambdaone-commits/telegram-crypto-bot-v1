@@ -24,7 +24,17 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     let text = '👛 *Tes Wallets*\n\n';
 
     for (const wallet of wallets) {
-      const chainEmoji = { eth: '🔷', btc: '🟠', sol: '🟣' }[wallet.chain] || '💎';
+      const chainEmoji = {
+        eth: '🔷',
+        btc: '🟠',
+        sol: '🟣',
+        arb: '🔴',
+        matic: '🟣',
+        op: '🔵',
+        base: '🟦',
+        ltc: '🪙',
+        bch: '🟢',
+      }[wallet.chain] || '💎';
       try {
         const balance = await walletService.getBalance(chatId, wallet.id);
         text += `${chainEmoji} *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;
@@ -54,19 +64,39 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
           'Utilise cette commande avec le réseau souhaité :\n\n' +
           '• `/gen eth` — Ethereum 🔷\n' +
           '• `/gen btc` — Bitcoin 🟠\n' +
-          '• `/gen sol` — Solana 🟣',
+          '• `/gen sol` — Solana 🟣\n' +
+          '• `/gen arb` — Arbitrum 🔴\n' +
+          '• `/gen matic` — Polygon 🟣\n' +
+          '• `/gen op` — Optimism 🔵\n' +
+          '• `/gen base` — Base 🟦\n' +
+          '• `/gen ltc` — Litecoin 🪙\n' +
+          '• `/gen bch` — Bitcoin Cash 🟢',
         { parse_mode: 'Markdown' }
       );
     }
 
     const chain = args[0].toLowerCase();
-    if (!['eth', 'btc', 'sol'].includes(chain)) {
-      return ctx.reply('❌ *Réseau non supporté !*\n\n' + 'Choisis parmi : `eth`, `btc`, `sol`', {
-        parse_mode: 'Markdown',
-      });
+    const supportedChains = ['eth', 'btc', 'sol', 'arb', 'matic', 'op', 'base', 'ltc', 'bch'];
+    if (!supportedChains.includes(chain)) {
+      return ctx.reply(
+        '❌ *Réseau non supporté !*\n\n' + `Choisis parmi : \`${supportedChains.join(', ')}\``,
+        {
+          parse_mode: 'Markdown',
+        }
+      );
     }
 
-    const chainNames = { eth: 'Ethereum 🔷', btc: 'Bitcoin 🟠', sol: 'Solana 🟣' };
+    const chainNames = {
+      eth: 'Ethereum 🔷',
+      btc: 'Bitcoin 🟠',
+      sol: 'Solana 🟣',
+      arb: 'Arbitrum 🔴',
+      matic: 'Polygon 🟣',
+      op: 'Optimism 🔵',
+      base: 'Base 🟦',
+      ltc: 'Litecoin 🪙',
+      bch: 'Bitcoin Cash 🟢',
+    };
     const loadingMsg = await ctx.reply(`⏳ Génération de ton wallet ${chainNames[chain]}...`);
 
     try {
@@ -125,9 +155,12 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
 
     const network = args[0].toLowerCase();
     const address = args[1];
+    const supportedBal = ['eth', 'btc', 'sol', 'arb', 'matic', 'op', 'base', 'ltc', 'bch'];
 
-    if (!['eth', 'btc', 'sol', 'matic', 'op', 'base'].includes(network)) {
-      return ctx.reply('❌ Réseau non supporté !', { parse_mode: 'Markdown' });
+    if (!supportedBal.includes(network)) {
+      return ctx.reply(`❌ Réseau non supporté ! Choisissez parmi : \`${supportedBal.join(', ')}\``, {
+        parse_mode: 'Markdown',
+      });
     }
 
     const loadingMsg = await ctx.reply('🔍 Recherche du solde...');
@@ -174,11 +207,15 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     const network = args[0].toLowerCase();
     const toAddress = args[1];
     const amount = Number.parseFloat(args[2].replace(',', '.'));
+    const supportedSend = ['eth', 'btc', 'sol', 'arb', 'matic', 'op', 'base', 'ltc', 'bch'];
 
-    if (!['eth', 'btc', 'sol'].includes(network)) {
-      return ctx.reply('❌ Réseau non supporté ! Choisis : `eth`, `btc`, `sol`', {
-        parse_mode: 'Markdown',
-      });
+    if (!supportedSend.includes(network)) {
+      return ctx.reply(
+        `❌ Réseau non supporté ! Choisis parmi : \`${supportedSend.join(', ')}\``,
+        {
+          parse_mode: 'Markdown',
+        }
+      );
     }
 
     if (Number.isNaN(amount) || amount <= 0) {
@@ -245,9 +282,12 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     const network = args[0].toLowerCase();
     const address = args[1];
     const limit = Math.min(Number.parseInt(args[2]) || 5, 20);
+    const supportedTx = ['eth', 'btc', 'sol', 'arb', 'matic', 'op', 'base', 'ltc', 'bch'];
 
-    if (!['eth', 'btc', 'sol'].includes(network)) {
-      return ctx.reply('❌ Réseau non supporté !', { parse_mode: 'Markdown' });
+    if (!supportedTx.includes(network)) {
+      return ctx.reply(`❌ Réseau non supporté ! Choisissez parmi : \`${supportedTx.join(', ')}\``, {
+        parse_mode: 'Markdown',
+      });
     }
 
     const loadingMsg = await ctx.reply('🔍 Recherche des transactions...');

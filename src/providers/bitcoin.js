@@ -160,7 +160,7 @@ export class BitcoinChain extends BaseProvider {
     throw new Error('Unable to fetch UTXOs - all APIs failed');
   }
 
-  async estimateFees(fromAddress, toAddress, amount) {
+  async estimateFees(fromAddress, _toAddress, _amount) {
     const apis = [
       { url: this.apiUrl, type: 'mempool' },
       { url: 'https://mempool.space/api', type: 'mempool2' },
@@ -258,8 +258,6 @@ export class BitcoinChain extends BaseProvider {
 
     // Add inputs
     for (const utxo of selectedUtxos) {
-      const txHex = await fetch(`${this.apiUrl}/tx/${utxo.txid}/hex`).then((r) => r.text());
-
       psbt.addInput({
         hash: utxo.txid,
         index: utxo.vout,

@@ -31,6 +31,7 @@ export async function setupHandlers(bot, storage) {
   const sessions = new SessionManager({
     timeoutMinutes: config.sessionTimeout || 30,
     persistPath: config.dataPath,
+    masterKey: config.masterKey,
   });
 
   await sessions.init();

@@ -197,7 +197,7 @@ async function handleJitoEnterAmount(ctx, text, storage, walletService, sessions
       ...data,
       amount: amount,
       quote: quote,
-      wallet: wallet,
+      walletId: wallet.id,
     });
 
     sessions.setState(chatId, 'JITO_ENTER_CONFIRM');
@@ -384,7 +384,7 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
       ...data,
       amount: amount,
       quote: quote,
-      wallet: wallet,
+      walletId: wallet.id,
     });
 
     sessions.setState(chatId, 'JITO_EXIT_FAST_CONFIRM');

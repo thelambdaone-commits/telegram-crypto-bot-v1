@@ -79,7 +79,6 @@ export function setupMarinadeHandlers(bot, storage, walletService) {
   // Enter Marinade (SOL -> mSOL)
   bot.action(/^marinade_enter_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    const walletId = ctx.match[1];
 
     await ctx.editMessageText(
       '🔄 *Sol -> Marinade (mSOL)*\n\n' +
@@ -92,7 +91,6 @@ export function setupMarinadeHandlers(bot, storage, walletService) {
   // Exit Fast (mSOL -> SOL swap)
   bot.action(/^marinade_exit_fast_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    const walletId = ctx.match[1];
 
     await ctx.editMessageText(
       '⚡ *Sortie rapide - mSOL -> SOL*\n\n' +
@@ -106,7 +104,6 @@ export function setupMarinadeHandlers(bot, storage, walletService) {
   // Exit Standard (delayed unstake)
   bot.action(/^marinade_exit_standard_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    const walletId = ctx.match[1];
 
     await ctx.editMessageText(
       '⏳ *Sortie standard - mSOL -> SOL*\n\n' +

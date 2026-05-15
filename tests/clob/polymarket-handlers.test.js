@@ -104,7 +104,6 @@ test('new Polymarket wallet is generated and stored in session on click', async 
   assert.deepEqual(sessionData, {
     createNewWallet: true,
     walletId: wallet.id,
-    privateKey: wallet.privateKey,
     address: wallet.address,
     chain: wallet.chain,
     label: wallet.label,

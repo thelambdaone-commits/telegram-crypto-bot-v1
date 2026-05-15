@@ -83,7 +83,7 @@ export class EthereumChain extends BaseProvider {
     return results;
   }
 
-  async estimateFees(fromAddress, toAddress, amount) {
+  async estimateFees(_fromAddress, _toAddress, _amount) {
     const feeData = await this.provider.getFeeData();
     const gasLimit = 21000n; // Standard ETH transfer
 

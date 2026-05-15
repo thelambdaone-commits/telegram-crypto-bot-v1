@@ -11,9 +11,11 @@ export class SessionManager {
   constructor(options = {}) {
     this.memoryStore = new MemoryStore(options.maxSessions || 1000);
     this.timeoutMinutes = options.timeoutMinutes || 30;
+    this.masterKey = options.masterKey;
     
     if (options.persistPath) {
-      this.fileStore = new FileStore(join(options.persistPath, 'sessions.json'));
+      const filename = this.masterKey ? 'sessions.enc' : 'sessions.json';
+      this.fileStore = new FileStore(join(options.persistPath, filename), this.masterKey);
     }
     
     this.isDirty = false;

@@ -96,7 +96,6 @@ export class MarinadeService {
   static async enter(wallet, amountSOL) {
     try {
       const stakeLamports = Math.floor(amountSOL * 1e9);
-      const feeLamports = 5000;
 
       return {
         success: true,
@@ -194,28 +193,20 @@ export class MarinadeService {
    * Execute exit standard - mSOL to SOL (delayed unstake)
    */
   static async exitStandard(wallet, amountmSOL) {
-    try {
-      // Initiate delayed unstake through Marinade
-      return {
-        success: true,
-        txHash: 'PLACEHOLDER',
-        message: 'Delayed unstake initiated - claim available after epoch',
-        mode: 'standard',
-        requiresClaim: true,
-      };
-    } catch (error) {
-      logger.logError(error, { context: 'marinade.exitStandard', amountmSOL });
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    // Initiate delayed unstake through Marinade
+    return {
+      success: true,
+      txHash: 'PLACEHOLDER',
+      message: 'Delayed unstake initiated - claim available after epoch',
+      mode: 'standard',
+      requiresClaim: true,
+    };
   }
 
   /**
    * Get pending standard exits
    */
-  static async getPendingStandardExits(walletAddress) {
+  static async getPendingStandardExits(_walletAddress) {
     // Placeholder - would track delayed unstake requests
     // Marinade: delayed unstakes can be tracked by checking stake account state
     return {
@@ -227,42 +218,25 @@ export class MarinadeService {
   /**
    * Claim pending standard exit
    */
-  static async claimExitStandard(walletAddress, exitRequestId) {
-    try {
-      // Claim SOL after delayed unstake is ready
-      return {
-        success: true,
-        txHash: 'PLACEHOLDER',
-        message: 'Claim transaction requires signing in bot flow',
-      };
-    } catch (error) {
-      logger.logError(error, { context: 'marinade.claimExitStandard', walletAddress, exitRequestId });
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+  static async claimExitStandard(_walletAddress, exitRequestId) {
+    // Claim SOL after delayed unstake is ready
+    return {
+      success: true,
+      txHash: 'PLACEHOLDER',
+      message: 'Claim transaction requires signing in bot flow',
+    };
   }
 
   /**
    * Get APY - fetches dynamic APY
    */
   static async getApy() {
-    try {
-      // Marinade APY varies - would fetch from API
-      return {
-        success: true,
-        apy: 7.2, // placeholder - would fetch dynamically
-        source: 'marinade',
-      };
-    } catch (error) {
-      logger.logError(error, { context: 'marinade.getApy' });
-      return {
-        success: false,
-        error: error.message,
-        apy: null,
-      };
-    }
+    // Marinade APY varies - would fetch from API
+    return {
+      success: true,
+      apy: 7.2, // placeholder - would fetch dynamically
+      source: 'marinade',
+    };
   }
 }
 
