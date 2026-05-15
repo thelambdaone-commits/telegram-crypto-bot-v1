@@ -3,7 +3,6 @@ import { safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { config } from '../../../core/config.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
 
 export function setupAdminStats(bot, storage) {
   // Global stats

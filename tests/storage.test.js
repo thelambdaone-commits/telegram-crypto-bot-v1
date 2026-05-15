@@ -37,9 +37,9 @@ test('StorageService lock release is idempotent', async () => {
   const storage = new StorageService(dataPath, crypto.randomBytes(32).toString('hex'));
   await storage.init();
 
-  await storage._acquireLock(456);
-  storage._releaseLock(456);
-  storage._releaseLock(456);
+  const release = await storage._acquireLock(456);
+  release();
+  release();
 
   await storage.addPendingTransaction(456, {
     walletId: 'wallet-1',

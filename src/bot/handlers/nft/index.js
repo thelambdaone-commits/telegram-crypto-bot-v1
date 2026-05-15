@@ -7,7 +7,6 @@
  */
 
 import { Markup } from 'telegraf';
-import { NFTService } from '../../../modules/nfts/create.service.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';

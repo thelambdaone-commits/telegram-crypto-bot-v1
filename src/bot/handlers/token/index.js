@@ -42,6 +42,7 @@ async function startMintWizard(ctx, chatId, storage, sessions) {
 
     // Get SOL wallets
     const wallets = await storage.getWallets(chatId);
+    const solWallets = wallets.filter((w) => w.chain === 'sol');
     logger.info('[MINT] Wallets found', { chatId, total: wallets.length, sol: solWallets.length });
 
     if (solWallets.length === 0) {

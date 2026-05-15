@@ -34,7 +34,7 @@ export function setupAdminHandlers(bot, storage, sessions, walletService) {
 
   // Initialize sub-modules
   setupAdminStats(bot, storage);
-  setupAdminUsers(bot, storage, sessions);
+  setupAdminUsers(bot, storage);
   setupAdminActions(bot, storage, sessions);
   setupAdminMisc(bot, storage, sessions);
   setupAdminDust(bot, storage, walletService);

@@ -1,4 +1,3 @@
-import { Markup } from 'telegraf';
 import {
   mainMenuKeyboard,
   walletListKeyboard,

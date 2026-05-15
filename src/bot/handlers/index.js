@@ -60,7 +60,7 @@ export async function setupHandlers(bot, storage) {
           ctx.from.username || null
         );
       } catch (e) {
-        logger.warn(`[PROFILE] Failed to update user profile`, { chatId, error: e.message });
+        logger.warn('[PROFILE] Failed to update user profile', { chatId, error: e.message });
       }
     }
 
@@ -72,7 +72,7 @@ export async function setupHandlers(bot, storage) {
         await ctx.reply('Ce bot est destine a un usage personnel uniquement.');
         await ctx.leaveChat();
       } catch (e) {
-        logger.warn(`[SECURITY] Failed to leave unauthorized chat`, { chatId, error: e.message });
+        logger.warn('[SECURITY] Failed to leave unauthorized chat', { chatId, error: e.message });
       }
       return;
     }

@@ -1,5 +1,4 @@
 import { Markup } from 'telegraf';
-import { DustService } from '../../../modules/dust/dust.service.js';
 import { SolanaBurner } from '../../../modules/dust/solana.burner.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';

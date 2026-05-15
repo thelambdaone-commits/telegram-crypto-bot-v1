@@ -515,7 +515,7 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
   // Liquid Staking menu
   bot.action('liquid_staking_menu', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    const { liquidStakingKeyboard, mainMenuKeyboard } = await import('../../keyboards/index.js');
+    const { liquidStakingKeyboard } = await import('../../keyboards/index.js');
 
     await ctx.editMessageText(
       '📈 *Liquid Staking Solana*\n\n' +

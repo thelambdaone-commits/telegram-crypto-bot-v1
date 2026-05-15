@@ -14,26 +14,26 @@ export class StorageService {
   constructor(dataPath, masterKey) {
     this.dataPath = dataPath;
     this.masterKey = masterKey;
+    this.masterKey = masterKey;
     this.locks = new Map();
-    this.activeReleases = new Map();
     this.statsPath = path.join(dataPath, '_stats.enc');
     this.polymarket = new PolymarketCredentialsService(this);
     this.secrets = new SecretVault(dataPath, masterKey);
-    logger.info(`Stockage initialise`, { path: this.dataPath });
+    logger.info('Stockage initialise', { path: this.dataPath });
   }
 
   async init() {
     await fs.mkdir(this.dataPath, { recursive: true });
     await this.secrets.init();
-    logger.info(`Stockage initialise`, { path: this.dataPath });
+    logger.info('Stockage initialise', { path: this.dataPath });
   }
 
   _getFilePath(chatId) {
     return path.join(this.dataPath, `${chatId}.enc`);
   }
 
-  async _acquireLock(chatId) {
-    const key = String(chatId);
+  async _acquireLock(key) {
+    key = String(key);
     const previousTail = this.locks.get(key) || Promise.resolve();
     let releaseCurrent;
     const currentLock = new Promise((resolve) => {
@@ -44,30 +44,28 @@ export class StorageService {
     this.locks.set(key, currentTail);
     await previousTail;
 
-    let released = false;
-    this.activeReleases.set(key, () => {
-      if (released) return;
-      released = true;
-      this.activeReleases.delete(key);
+    return () => {
       if (this.locks.get(key) === currentTail) {
         this.locks.delete(key);
       }
       releaseCurrent();
-    });
+    };
   }
 
-  _releaseLock(chatId) {
-    const release = this.activeReleases.get(String(chatId));
-    if (release) release();
+  async _withLock(key, fn) {
+    const release = await this._acquireLock(key);
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
   }
 
   /**
    * Load user data from encrypted file
    * @param {number} chatId
-   * @param {boolean} lock - Whether to acquire a lock (default: false)
    */
-  async loadUserData(chatId, lock = false) {
-    if (lock) await this._acquireLock(chatId);
+  async loadUserData(chatId) {
     const filePath = this._getFilePath(chatId);
 
     try {
@@ -94,18 +92,13 @@ export class StorageService {
    * Save user data to encrypted file
    * @param {number} chatId
    * @param {object} data
-   * @param {boolean} releaseLock - Whether to release the lock after saving (default: true)
    */
-  async saveUserData(chatId, data, releaseLock = true) {
-    try {
-      const filePath = this._getFilePath(chatId);
-      data.updatedAt = new Date().toISOString();
-      const jsonData = JSON.stringify(data, null, 2);
-      const encryptedData = encrypt(jsonData, this.masterKey);
-      await fs.writeFile(filePath, encryptedData, 'utf8');
-    } finally {
-      if (releaseLock) this._releaseLock(chatId);
-    }
+  async saveUserData(chatId, data) {
+    const filePath = this._getFilePath(chatId);
+    data.updatedAt = new Date().toISOString();
+    const jsonData = JSON.stringify(data, null, 2);
+    const encryptedData = encrypt(jsonData, this.masterKey);
+    await fs.writeFile(filePath, encryptedData, 'utf8');
   }
 
   /**
@@ -122,9 +115,9 @@ export class StorageService {
    * Add wallet - no passphrase needed
    */
   async addWallet(chatId, wallet) {
-    const data = await this.loadUserData(chatId, true); // Acquire lock
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
 
-    try {
       const encryptedPrivateKey = encrypt(wallet.privateKey, this.masterKey);
       const encryptedMnemonic = wallet.mnemonic ? encrypt(wallet.mnemonic, this.masterKey) : null;
 
@@ -141,16 +134,13 @@ export class StorageService {
       };
 
       data.wallets.push(walletData);
-      await this.saveUserData(chatId, data, true); // Save and release lock
+      await this.saveUserData(chatId, data); // Default: releaseLock = true but _withLock handles it
 
       // Update global stats
       await this.incrementStat('totalWallets');
 
       return walletData;
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+    });
   }
 
   /**
@@ -193,35 +183,29 @@ export class StorageService {
    * Delete a wallet
    */
   async deleteWallet(chatId, walletId) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       data.wallets = data.wallets.filter((w) => w.id !== walletId);
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+      await this.saveUserData(chatId, data);
+    });
   }
 
   /**
    * Update user settings
    */
   async updateSettings(chatId, settings) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       data.settings = { ...data.settings, ...settings };
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+      await this.saveUserData(chatId, data);
+    });
   }
 
   // Pending transactions for double-send protection
   async addPendingTransaction(chatId, txData) {
-    const data = await this.loadUserData(chatId, true);
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
 
-    try {
       const pendingTx = {
         id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         walletId: txData.walletId,
@@ -234,37 +218,31 @@ export class StorageService {
 
       data.pendingTransactions = data.pendingTransactions || [];
       data.pendingTransactions.push(pendingTx);
-      await this.saveUserData(chatId, data, true);
+      await this.saveUserData(chatId, data);
 
       return pendingTx.id;
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+    });
   }
 
   async hasPendingTransaction(chatId, walletId, toAddress, amount) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       const now = new Date();
 
       data.pendingTransactions = (data.pendingTransactions || []).filter(
         (tx) => new Date(tx.expiresAt) > now
       );
-      await this.saveUserData(chatId, data, true);
+      await this.saveUserData(chatId, data);
 
       return data.pendingTransactions.some(
         (tx) => tx.walletId === walletId && tx.toAddress === toAddress && tx.amount === amount
       );
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+    });
   }
 
   async completePendingTransaction(chatId, txId, _txHash) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       const tx = (data.pendingTransactions || []).find((t) => t.id === txId);
 
       if (tx) {
@@ -274,28 +252,22 @@ export class StorageService {
       }
 
       data.pendingTransactions = (data.pendingTransactions || []).filter((t) => t.id !== txId);
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+      await this.saveUserData(chatId, data);
+    });
   }
 
   async removePendingTransaction(chatId, txId) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       data.pendingTransactions = (data.pendingTransactions || []).filter((tx) => tx.id !== txId);
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+      await this.saveUserData(chatId, data);
+    });
   }
 
   // JitoSOL Unstake Tracking
   async addUnstakeRequest(chatId, request) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       data.unstakeRequests = data.unstakeRequests || [];
       const newRequest = {
         id: `unstake-${Date.now()}`,
@@ -309,12 +281,9 @@ export class StorageService {
         ...request,
       };
       data.unstakeRequests.push(newRequest);
-      await this.saveUserData(chatId, data, true);
+      await this.saveUserData(chatId, data);
       return newRequest;
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+    });
   }
 
   async getUnstakeRequests(chatId) {
@@ -323,31 +292,24 @@ export class StorageService {
   }
 
   async removeUnstakeRequest(chatId, requestId) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       data.unstakeRequests = (data.unstakeRequests || []).filter((r) => r.id !== requestId);
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+      await this.saveUserData(chatId, data);
+    });
   }
 
   async updateUnstakeRequest(chatId, requestId, updates) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       const index = (data.unstakeRequests || []).findIndex((r) => r.id === requestId);
       if (index !== -1) {
         data.unstakeRequests[index] = { ...data.unstakeRequests[index], ...updates };
-        await this.saveUserData(chatId, data, true);
+        await this.saveUserData(chatId, data);
         return data.unstakeRequests[index];
       }
-      this._releaseLock(chatId);
       return null;
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+    });
   }
 
   async loadStats() {
@@ -370,26 +332,20 @@ export class StorageService {
   }
 
   async incrementStat(key) {
-    await this._acquireLock('_global');
-    try {
+    return this._withLock('_global', async () => {
       const stats = await this.loadStats();
       stats[key] = (stats[key] || 0) + 1;
       await this.saveStats(stats);
-    } finally {
-      this._releaseLock('_global');
-    }
+    });
   }
 
   async incrementChainStat(chain, amount) {
-    await this._acquireLock('_global');
-    try {
+    return this._withLock('_global', async () => {
       const stats = await this.loadStats();
       stats.volumeByChain = stats.volumeByChain || {};
       stats.volumeByChain[chain] = (stats.volumeByChain[chain] || 0) + amount;
       await this.saveStats(stats);
-    } finally {
-      this._releaseLock('_global');
-    }
+    });
   }
 
   async getGlobalStats() {
@@ -457,7 +413,7 @@ export class StorageService {
           });
         } catch (e) {
           // Skip corrupted files
-          logger.error(`Error loading user`, { chatId, error: e.message });
+          logger.error('Error loading user', { chatId, error: e.message });
         }
       }
     } catch (e) {
@@ -530,8 +486,8 @@ export class StorageService {
 
   // Legacy for alerts if needed
   async updatePolymarketAlerts(chatId, enabled) {
-    const data = await this.loadUserData(chatId, true);
-    try {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
       if (data.pmCredentials) {
         data.pmCredentials.alertsEnabled = enabled;
       }
@@ -540,10 +496,7 @@ export class StorageService {
       if (active) {
         active.alertsEnabled = enabled;
       }
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+      await this.saveUserData(chatId, data);
+    });
   }
 }

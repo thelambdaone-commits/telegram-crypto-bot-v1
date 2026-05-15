@@ -1,7 +1,6 @@
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { config } from '../../../core/config.js';
 import { Markup } from 'telegraf';
 import { escapeMarkdown } from '../../../shared/utils/telegram.js';

@@ -6,12 +6,7 @@ import { formatPriceUpdateDate } from './price.js';
 
 const width = 800;
 const height = 400;
-const COINGECKO_API = process.env.COINGECKO_API_URL || 'https://api.coingecko.com/api/v3';
-const COINGECKO_API_KEY =
-  process.env.COINGECKO_API_KEY ||
-  process.env.COINGECKO_DEMO_API_KEY ||
-  process.env.CG_DEMO_API_KEY;
-const COINGECKO_API_KEY_HEADER = process.env.COINGECKO_API_KEY_HEADER || 'x-cg-demo-api-key';
+import { COINGECKO_API, COIN_IDS, buildHeaders, COINGECKO_API_KEY } from './coingecko.js';
 const GRAPH_USAGE = 'Usage : /graph btc 7|30|90|365|all';
 const SUPPORTED_PERIODS = new Set(['7', '30', '90', '365', 'all']);
 const PRICE_HISTORY_CACHE_TTL = 5 * 60 * 1000;
@@ -26,18 +21,7 @@ const chartJSNodeCanvas = new ChartJSNodeCanvas({
 const priceHistoryCache = new Map();
 const priceHistoryInflight = new Map();
 
-const COINGECKO_IDS = {
-  btc: 'bitcoin',
-  eth: 'ethereum',
-  sol: 'solana',
-  base: 'ethereum',
-  op: 'optimism',
-  pol: 'polygon-ecosystem-token',
-  usdc: 'usd-coin',
-  usdt: 'tether',
-  ltc: 'litecoin',
-  bch: 'bitcoin-cash',
-};
+const COINGECKO_IDS = COIN_IDS;
 
 const CHAIN_COLORS = {
   btc: { line: '#f7931a', fill: 'rgba(247, 147, 26, 0.2)' },
@@ -149,12 +133,7 @@ async function fetchCoinGeckoMarketChart(coinId, days) {
   }
 
   const url = `${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=eur&days=${days}`;
-  const headers = COINGECKO_API_KEY
-    ? {
-        accept: 'application/json',
-        [COINGECKO_API_KEY_HEADER]: COINGECKO_API_KEY,
-      }
-    : { accept: 'application/json' };
+  const headers = buildHeaders();
 
   const request = (async () => {
     const response = await fetch(url, { headers });

@@ -140,7 +140,7 @@ export function setupStartHandler(bot, storage, walletService) {
     } catch (error) {
       // Handle "bot was blocked by user" error gracefully
       if (error.message?.includes('blocked by the user') || error.response?.error_code === 403) {
-        logger.warn(`[START] User has blocked the bot`, {
+        logger.warn('[START] User has blocked the bot', {
           chatId,
           username: username || userName,
         });

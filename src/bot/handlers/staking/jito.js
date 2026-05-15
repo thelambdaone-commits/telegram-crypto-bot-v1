@@ -64,10 +64,11 @@ async function syncJitoUnstakes(chatId, storage) {
         }
       } else {
         // Update estimated date if it changed
-        if (request && (exit.estimatedAvailableAt || exit.status)) {
-          await storage.updateUnstakeRequest(chatId, request.id, {
-            estimatedAvailableAt: exit.estimatedAvailableAt || request.estimatedAvailableAt,
-            status: exit.status || request.status,
+        const existing = requests.find((r) => r.stakeAccountAddress === exit.address);
+        if (existing && (exit.estimatedAvailableAt || exit.status)) {
+          await storage.updateUnstakeRequest(chatId, existing.id, {
+            estimatedAvailableAt: exit.estimatedAvailableAt || existing.estimatedAvailableAt,
+            status: exit.status || existing.status,
           });
         }
       }

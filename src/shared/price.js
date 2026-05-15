@@ -2,26 +2,11 @@
  * Crypto price service using CoinGecko API
  * EUR only as per requirements
  */
-const COINGECKO_API = process.env.COINGECKO_API_URL || 'https://api.coingecko.com/api/v3';
-const COINGECKO_API_KEY =
-  process.env.COINGECKO_API_KEY ||
-  process.env.COINGECKO_DEMO_API_KEY ||
-  process.env.CG_DEMO_API_KEY;
-const COINGECKO_API_KEY_HEADER = process.env.COINGECKO_API_KEY_HEADER || 'x-cg-demo-api-key';
-
-const COIN_IDS = {
-  eth: 'ethereum',
-  btc: 'bitcoin',
-  sol: 'solana',
-  ltc: 'litecoin',
-  bch: 'bitcoin-cash',
-  usdc: 'usd-coin',
-  usdt: 'tether',
-  matic: 'polygon-ecosystem-token',
-  op: 'optimism',
-  base: 'ethereum',
-  jitosol: 'jito-staked-sol',
-};
+import {
+  COINGECKO_API,
+  COIN_IDS,
+  buildHeaders,
+} from './coingecko.js';
 
 let priceCache = {
   prices: {},
@@ -55,12 +40,7 @@ export async function getPricesEUR(force = false) {
 
   try {
     const ids = Object.values(COIN_IDS).join(',');
-    const headers = COINGECKO_API_KEY
-      ? {
-          accept: 'application/json',
-          [COINGECKO_API_KEY_HEADER]: COINGECKO_API_KEY,
-        }
-      : { accept: 'application/json' };
+    const headers = buildHeaders();
     const response = await fetch(`${COINGECKO_API}/simple/price?ids=${ids}&vs_currencies=eur`, {
       headers,
     });
