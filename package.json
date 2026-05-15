@@ -17,7 +17,7 @@
     "format": "prettier --write src/ --ignore-pattern node_modules/",
     "test": "node --test tests",
     "test:clob": "node --test tests/clob/*.test.js",
-    "test:watch": "node --watch --test tests/*.test.js"
+    "test:watch": "node --watch --test tests"
   },
   "keywords": [
     "telegram",
@@ -28,8 +28,12 @@
     "bitcoin",
     "solana"
   ],
-  "author": "",
+  "author": "thelambdaone-commits",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thelambdaone-commits/telegram-crypto-bot-v1.git"
+  },
   "dependencies": {
     "@polymarket/clob-client": "^5.8.1",
     "@solana/spl-token": "^0.4.14",
