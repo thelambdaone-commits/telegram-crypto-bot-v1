@@ -34,7 +34,7 @@ export class App {
 
     this._setupShutdown();
 
-    this.bot.launch();
+    await this.bot.launch();
     logger.info('Bot started successfully', { adminsCount: config.adminChatId.length });
     logger.info('Bot Telegram Crypto Wallet demarre');
     logger.info(
@@ -77,6 +77,9 @@ export class App {
     const shutdown = async (signal) => {
       logger.info(`Bot shutting down (${signal})`);
       cleanupAllFeeds();
+      if (this.depositMonitor) {
+        this.depositMonitor.stop();
+      }
       if (this.sessions) {
         await this.sessions.stop();
       }
