@@ -282,10 +282,8 @@ export class SolanaChain extends BaseProvider {
 
       if (!sigData.result?.length) return [];
 
-      // Step 2: Get transaction details for each signature
-      const transactions = [];
-
-      for (const sig of sigData.result.slice(0, limit)) {
+      // Step 2: Get transaction details for each signature in parallel
+      const fetchTx = async (sig) => {
         try {
           const txResponse = await fetch(rpcUrl, {
             method: 'POST',
@@ -309,7 +307,6 @@ export class SolanaChain extends BaseProvider {
             const meta = txData.result.meta;
             const accountKeys = txData.result.transaction?.message?.accountKeys || [];
 
-            // Find the address index
             let addressIndex = -1;
             for (let i = 0; i < accountKeys.length; i++) {
               const key = accountKeys[i]?.pubkey || accountKeys[i];
@@ -334,22 +331,25 @@ export class SolanaChain extends BaseProvider {
             }
           }
 
-          transactions.push({
+          return {
             hash: sig.signature,
-            type: type,
+            type,
             amount: amount > 0 ? amount.toFixed(6) : '—',
             timestamp: (sig.blockTime || Date.now() / 1000) * 1000,
-          });
-        } catch (e) {
-          // If individual tx fetch fails, add basic info
-          transactions.push({
+          };
+        } catch {
+          return {
             hash: sig.signature,
             type: 'tx',
             amount: '—',
             timestamp: (sig.blockTime || Date.now() / 1000) * 1000,
-          });
+          };
         }
-      }
+      };
+
+      const transactions = await Promise.all(
+        sigData.result.slice(0, limit).map(fetchTx)
+      );
 
       return transactions;
     } catch (error) {

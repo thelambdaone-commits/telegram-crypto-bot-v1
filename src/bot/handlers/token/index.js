@@ -13,10 +13,7 @@ import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { setupTokenTextInput } from './text-input.js';
-
-function formatSOL(amount) {
-  return amount.toFixed(6);
-}
+import { formatSOL } from '../../../shared/formatters.js';
 
 /**
  * Start the mint wizard - reusable function

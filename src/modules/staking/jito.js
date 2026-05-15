@@ -3,7 +3,7 @@
  * SOL <-> JitoSOL via Jupiter swap
  */
 
-import { PublicKey, Connection } from '@solana/web3.js';
+import { PublicKey, Connection, Keypair, VersionedTransaction, Transaction, TransactionInstruction, SystemProgram, StakeProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 import { getPricesEUR } from '../../shared/price.js';
 import { config } from '../../core/config.js';
@@ -176,7 +176,6 @@ export class JitoService {
 
       const jitoSOLReceived = Number(quoteData.outAmount) / 1e9;
 
-      const { Keypair } = await import('@solana/web3.js');
       const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const userPublicKey = fromKeypair.publicKey.toString();
@@ -214,8 +213,6 @@ export class JitoService {
         logger.error('No swapTransaction in response', { service: 'jito', swapData });
         return { success: false, error: 'No swap transaction returned' };
       }
-
-      const { VersionedTransaction } = await import('@solana/web3.js');
 
       const swapTransaction = VersionedTransaction.deserialize(
         Buffer.from(swapData.swapTransaction, 'base64')
@@ -310,7 +307,6 @@ export class JitoService {
         return { success: false, error: 'Unable to get quote data' };
       }
 
-      const { Keypair, VersionedTransaction } = await import('@solana/web3.js');
       const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const userPublicKey = fromKeypair.publicKey.toString();
@@ -378,8 +374,6 @@ export class JitoService {
   static async exitStandard(walletPrivateKey, amountJitoSOL) {
     logger.info('Initiating Standard Exit', { service: 'jito', amountJitoSOL });
     try {
-      const { Keypair, Transaction, TransactionInstruction, SystemProgram, StakeProgram } =
-        await import('@solana/web3.js');
       const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const conn = getConnection();
@@ -611,7 +605,6 @@ export class JitoService {
 
   static async claimExitStandard(walletPrivateKey, stakeAccountAddress) {
     try {
-      const { Keypair, Transaction, StakeProgram } = await import('@solana/web3.js');
       const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
 

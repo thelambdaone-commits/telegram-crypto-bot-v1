@@ -11,6 +11,7 @@ import {
   unblacklistUser,
 } from '../../middlewares/security.middleware.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
+import { logger } from '../../../shared/logger.js';
 
 
 
@@ -59,7 +60,7 @@ async function sendBroadcast(ctx, storage, text) {
       }
       sent++;
     } catch (e) {
-      console.log(`[BROADCAST] Failed to send to ${user.chatId}: ${e.message}`);
+      logger.warn(`Broadcast failed for ${user.chatId}`, { error: e.message });
       failed++;
     }
   }
@@ -260,7 +261,7 @@ export function setupAdminActions(bot, storage, sessions) {
         try {
           await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
         } catch (e) {
-          console.log(`[ADMIN] Failed to auto-delete keys message: ${e.message}`);
+          logger.warn('Failed to auto-delete keys message', { error: e.message });
         }
       }, 60000);
     } catch (error) {

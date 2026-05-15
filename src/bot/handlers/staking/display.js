@@ -4,15 +4,7 @@ import { JitoService } from '../../../modules/staking/jito.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
-
-function formatAmount(amount) {
-  const num = parseFloat(amount);
-  if (isNaN(num)) return '0.00';
-  return num.toLocaleString('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+import { formatAmountShort as formatAmount } from '../../../shared/formatters.js';
 
 function formatCurrency(value) {
   return StakingService.formatCurrency(value);

@@ -1,6 +1,8 @@
 /**
  * Shared CoinGecko Configuration and Utils
  */
+import { logger } from './logger.js';
+
 export const COINGECKO_API = process.env.COINGECKO_API_URL || 'https://api.coingecko.com/api/v3';
 
 export const COINGECKO_API_KEY =
@@ -45,7 +47,7 @@ export async function fetchWithFallback(url, options = {}) {
         return response; // Return other errors (404, 500) directly
       }
     } catch (error) {
-      console.error(`[CoinGecko] Authenticated fetch failed: ${error.message}`);
+      logger.warn('Authenticated fetch failed', { error: error.message });
     }
   }
 
