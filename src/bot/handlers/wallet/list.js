@@ -1,4 +1,8 @@
-import { walletListKeyboard, mainMenuKeyboard, walletActionsKeyboard } from '../../keyboards/index.js';
+import {
+  walletListKeyboard,
+  mainMenuKeyboard,
+  walletActionsKeyboard,
+} from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 
@@ -11,10 +15,13 @@ export function setupWalletList(bot, storage, walletService) {
     const wallets = await storage.getWallets(chatId);
 
     if (wallets.length === 0) {
-      return ctx.editMessageText(`🔍 *${MESSAGES.noWallets}*\n\nCrée ton premier wallet pour commencer !`, {
-        parse_mode: 'Markdown',
-        ...mainMenuKeyboard(),
-      });
+      return ctx.editMessageText(
+        `🔍 *${MESSAGES.noWallets}*\n\nCrée ton premier wallet pour commencer !`,
+        {
+          parse_mode: 'Markdown',
+          ...mainMenuKeyboard(),
+        }
+      );
     }
 
     let text = `${EMOJIS.wallet} *Tes Portefeuilles*\n\n`;
@@ -57,10 +64,9 @@ export function setupWalletList(bot, storage, walletService) {
     const chainEmoji = chainEmojis[wallet.chain] || '💎';
 
     // Show loading first
-    await ctx.editMessageText(
-      `${chainEmoji} *${wallet.label}*\n\n⏳ Chargement du solde...`,
-      { parse_mode: 'Markdown' }
-    );
+    await ctx.editMessageText(`${chainEmoji} *${wallet.label}*\n\n⏳ Chargement du solde...`, {
+      parse_mode: 'Markdown',
+    });
 
     // Fetch balance
     let balanceText = '_Erreur de récupération_';
@@ -68,7 +74,7 @@ export function setupWalletList(bot, storage, walletService) {
     try {
       const balance = await walletService.getBalance(chatId, walletId);
       balanceText = `*${balance.balance} ${wallet.chain.toUpperCase()}*`;
-      
+
       // Get EUR value
       const { convertToEUR, formatEUR } = await import('../../../shared/price.js');
       const conversion = await convertToEUR(wallet.chain, Number.parseFloat(balance.balance));
@@ -77,10 +83,10 @@ export function setupWalletList(bot, storage, walletService) {
 
     ctx.editMessageText(
       `${chainEmoji} *${wallet.label}*\n\n` +
-      `⛓ Réseau: ${wallet.chain.toUpperCase()}\n` +
-      `📬 Adresse:\n\`${wallet.address}\`\n` +
-      `💰 Solde: ${balanceText}${balanceEUR}\n\n` +
-      'Que veux-tu faire ?',
+        `⛓ Réseau: ${wallet.chain.toUpperCase()}\n` +
+        `📬 Adresse:\n\`${wallet.address}\`\n` +
+        `💰 Solde: ${balanceText}${balanceEUR}\n\n` +
+        'Que veux-tu faire ?',
       {
         parse_mode: 'Markdown',
         ...walletActionsKeyboard(walletId),
@@ -88,4 +94,3 @@ export function setupWalletList(bot, storage, walletService) {
     );
   });
 }
-

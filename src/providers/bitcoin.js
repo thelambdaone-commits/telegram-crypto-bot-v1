@@ -23,7 +23,7 @@ export class BitcoinChain extends BaseProvider {
     const root = bip32.fromSeed(seed, this.network);
 
     // BIP84 path for native SegWit (bech32)
-    const path = 'm/84\'/0\'/0\'/0/0';
+    const path = "m/84'/0'/0'/0/0";
     const child = root.derivePath(path);
 
     const { address } = bitcoin.payments.p2wpkh({
@@ -47,7 +47,7 @@ export class BitcoinChain extends BaseProvider {
     const root = bip32.fromSeed(seed, this.network);
 
     // BIP84 path for native SegWit (bech32)
-    const path = 'm/84\'/0\'/0\'/0/0';
+    const path = "m/84'/0'/0'/0/0";
     const child = root.derivePath(path);
 
     const { address } = bitcoin.payments.p2wpkh({
@@ -78,37 +78,38 @@ export class BitcoinChain extends BaseProvider {
   }
 
   async getBalance(address, tokenSymbol = null) {
-    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'BTC') return { balance: '0', symbol: tokenSymbol };
+    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'BTC')
+      return { balance: '0', symbol: tokenSymbol };
     // Multiple API fallbacks to avoid rate limiting
     const apis = [
       { url: `${this.apiUrl}/address/${address}`, type: 'mempool' },
       { url: `https://blockstream.info/api/address/${address}`, type: 'mempool' },
-      { url: `https://blockchain.info/rawaddr/${address}?limit=0`, type: 'blockchain' }
+      { url: `https://blockchain.info/rawaddr/${address}?limit=0`, type: 'blockchain' },
     ];
-    
+
     for (const api of apis) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-        
+
         const response = await fetch(api.url, {
-          signal: controller.signal
+          signal: controller.signal,
         });
         clearTimeout(timeout);
-        
+
         if (!response.ok) {
           throw new Error(`API responded with status ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         let balanceSats;
         if (api.type === 'mempool') {
           balanceSats = data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum;
         } else if (api.type === 'blockchain') {
           balanceSats = data.final_balance;
         }
-        
+
         const balanceBTC = balanceSats / 100000000;
 
         return {
@@ -121,12 +122,12 @@ export class BitcoinChain extends BaseProvider {
         continue;
       }
     }
-    
+
     return {
       balance: '0',
       balanceSats: '0',
       symbol: this.symbol,
-      error: 'Unable to fetch balance - network issue'
+      error: 'Unable to fetch balance - network issue',
     };
   }
 
@@ -136,27 +137,27 @@ export class BitcoinChain extends BaseProvider {
       { url: 'https://blockstream.info/api', type: 'blockstream' },
       { url: 'https://mempool.space/api', type: 'mempool2' },
     ];
-    
+
     for (const api of apis) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        
+
         const response = await fetch(`${api.url}/address/${address}/utxo`, {
-          signal: controller.signal
+          signal: controller.signal,
         });
         clearTimeout(timeout);
-        
+
         if (!response.ok) {
           throw new Error(`API responded with status ${response.status}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         continue;
       }
     }
-    
+
     throw new Error('Unable to fetch UTXOs - all APIs failed');
   }
 
@@ -166,17 +167,17 @@ export class BitcoinChain extends BaseProvider {
       { url: 'https://mempool.space/api', type: 'mempool2' },
     ];
     let feeEstimates = null;
-    
+
     for (const api of apis) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        
+
         const feeResponse = await fetch(`${api.url}/fee-estimates`, {
-          signal: controller.signal
+          signal: controller.signal,
         });
         clearTimeout(timeout);
-        
+
         if (feeResponse.ok) {
           feeEstimates = await feeResponse.json();
           break;
@@ -185,9 +186,9 @@ export class BitcoinChain extends BaseProvider {
         continue;
       }
     }
-    
+
     if (!feeEstimates) {
-      feeEstimates = { '1': 20, '6': 10, '144': 2 };
+      feeEstimates = { 1: 20, 6: 10, 144: 2 };
     }
 
     let utxos = [];
@@ -264,7 +265,8 @@ export class BitcoinChain extends BaseProvider {
         hash: utxo.txid,
         index: utxo.vout,
         witnessUtxo: {
-          script: bitcoin.payments.p2wpkh({ pubkey: keyPair.publicKey, network: this.network }).output,
+          script: bitcoin.payments.p2wpkh({ pubkey: keyPair.publicKey, network: this.network })
+            .output,
           value: utxo.value,
         },
       });
@@ -318,8 +320,8 @@ export class BitcoinChain extends BaseProvider {
       const response = await fetch(`https://mempool.space/api/address/${address}/txs`);
       const data = await response.json();
       if (!Array.isArray(data)) return [];
-      return data.slice(0, limit).map(tx => {
-        const isOut = tx.vin?.some(vin => vin.prevout?.scriptpubkey_address === address);
+      return data.slice(0, limit).map((tx) => {
+        const isOut = tx.vin?.some((vin) => vin.prevout?.scriptpubkey_address === address);
         let amount = 0;
         for (const vout of tx.vout || []) {
           if (isOut && vout.scriptpubkey_address !== address) {

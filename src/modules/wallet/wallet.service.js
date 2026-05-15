@@ -173,7 +173,13 @@ export class WalletService {
     }
 
     const chainHandler = this.chains[wallet.chain];
-    return await chainHandler.sendTransaction(wallet.privateKey, toAddress, amount, feeLevel, tokenSymbol);
+    return await chainHandler.sendTransaction(
+      wallet.privateKey,
+      toAddress,
+      amount,
+      feeLevel,
+      tokenSymbol
+    );
   }
 
   /**
@@ -191,11 +197,11 @@ export class WalletService {
     } else if (type === 'key') {
       walletData = await chainHandler.importFromKey(input);
     } else {
-      throw new Error('Type d\'importation invalide');
+      throw new Error("Type d'importation invalide");
     }
 
     walletData.chain = chain;
-    walletData.label = label || await this.getNextWalletLabel(chatId, chain);
+    walletData.label = label || (await this.getNextWalletLabel(chatId, chain));
 
     const savedWallet = await this.storage.addWallet(chatId, walletData);
 

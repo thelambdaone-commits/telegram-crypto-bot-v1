@@ -243,7 +243,10 @@ test('connected Polymarket menu includes trades by theme actions', async () => {
 
   assert.equal(typeof actions.get('pm_menu_themes'), 'function');
   assert.equal(typeof actions.get('pm_theme_current'), 'function');
-  assert.equal([...actions.keys()].some((key) => String(key).includes('pm_theme_')), true);
+  assert.equal(
+    [...actions.keys()].some((key) => String(key).includes('pm_theme_')),
+    true
+  );
 });
 
 test('filterPolymarketTradesByTheme matches structured fields and titles', () => {
@@ -254,15 +257,22 @@ test('filterPolymarketTradesByTheme matches structured fields and titles', () =>
     { id: 'other', title: 'Rain in New York tomorrow?' },
   ];
 
-  assert.deepEqual(filterPolymarketTradesByTheme(trades, 'crypto').map((trade) => trade.id), ['btc']);
-  assert.deepEqual(filterPolymarketTradesByTheme(trades, 'sports').map((trade) => trade.id), ['nba']);
-  assert.deepEqual(filterPolymarketTradesByTheme(trades, 'politics').map((trade) => trade.id), ['vote']);
-  assert.deepEqual(getPolymarketTradeThemes().map((theme) => theme.id), [
-    'politics',
-    'sports',
-    'crypto',
-    'world',
-  ]);
+  assert.deepEqual(
+    filterPolymarketTradesByTheme(trades, 'crypto').map((trade) => trade.id),
+    ['btc']
+  );
+  assert.deepEqual(
+    filterPolymarketTradesByTheme(trades, 'sports').map((trade) => trade.id),
+    ['nba']
+  );
+  assert.deepEqual(
+    filterPolymarketTradesByTheme(trades, 'politics').map((trade) => trade.id),
+    ['vote']
+  );
+  assert.deepEqual(
+    getPolymarketTradeThemes().map((theme) => theme.id),
+    ['politics', 'sports', 'crypto', 'world']
+  );
 });
 
 test('connect screen shows the active Polymarket wallet', async () => {

@@ -23,7 +23,10 @@ test('exports Polymarket credentials to a polymarket-copy-trade env file', async
   assert.equal(result.envPath, envPath);
   assert.match(content, /^EXISTING=value$/m);
   assert.match(content, /^POLYMARKET_API_KEY=api-key$/m);
-  assert.match(content, /^POLYMARKET_PRIVATE_KEY=0x1111111111111111111111111111111111111111111111111111111111111111$/m);
+  assert.match(
+    content,
+    /^POLYMARKET_PRIVATE_KEY=0x1111111111111111111111111111111111111111111111111111111111111111$/m
+  );
   assert.match(content, /^POLYMARKET_SECRET=api-secret$/m);
   assert.match(content, /^POLYMARKET_API_SECRET=api-secret$/m);
   assert.match(content, /^POLYMARKET_PASSPHRASE="api passphrase"$/m);
@@ -35,7 +38,8 @@ test('exports Polymarket credentials to a polymarket-copy-trade env file', async
 
 test('rejects incomplete Polymarket sessions', async () => {
   await assert.rejects(
-    () => exportPolymarketCredentialsToPolyfillEnv({ ...creds, apiSecret: '' }, '/tmp/not-used.env'),
+    () =>
+      exportPolymarketCredentialsToPolyfillEnv({ ...creds, apiSecret: '' }, '/tmp/not-used.env'),
     /Session Polymarket incomplete/
   );
 });

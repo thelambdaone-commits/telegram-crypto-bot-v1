@@ -3,7 +3,7 @@
  * @module ui/texts
  */
 
-import { separator, sectionTitle } from './formatters.js';
+import { sectionTitle } from './formatters.js';
 
 /**
  * Texte d'aide principal du bot
@@ -25,7 +25,7 @@ ${sectionTitle('💸', 'TRANSACTIONS')}
 ${sectionTitle('📊', 'INFOS MARCHÉ')}
 \`/price\` — 💹 Prix des cryptos
 \`/gas\` — ⛽ Prix du gas ETH
-\`/graph btc|eth|sol [période]\` — 📈 Graphique des prix
+\`/graph <token> 7|30|90|365|all\` — 📈 Graphique des prix
 \`/unit <montant> <unité>\` — 🔢 Conversion d'unités
 
 ${sectionTitle('🆘', 'GÉNÉRAL')}
@@ -57,9 +57,9 @@ ${sectionTitle('💸', 'TRANSACTIONS')}
 ${sectionTitle('📊', 'INFOS MARCHÉ')}
 \`/price btc|eth|sol\` — 💹 Prix actuel en EUR
 \`/gas\` — ⛽ Prix du gas Ethereum
-\`/graph btc|eth|sol [7j|30j|90j|1an]\` — 📈 Graphique des prix
+\`/graph <token> 7|30|90|365|all\` — 📈 Graphique des prix
 
-${sectionTitle('🔢', 'CONVERSION D\'UNITÉS')}
+${sectionTitle('🔢', "CONVERSION D'UNITÉS")}
 \`/unit <montant> <unité>\` — Convertit les unités crypto
 
 *Unités supportées :*

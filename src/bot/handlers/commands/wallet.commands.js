@@ -1,5 +1,10 @@
 import { Markup } from 'telegraf';
-import { mainMenuKeyboard, walletListKeyboard, mainReplyKeyboard, feeSelectionKeyboard } from '../../keyboards/index.js';
+import {
+  mainMenuKeyboard,
+  walletListKeyboard,
+  mainReplyKeyboard,
+  feeSelectionKeyboard,
+} from '../../keyboards/index.js';
 import { formatEUR, convertToEUR } from '../../../shared/price.js';
 import { formatNumber, formatCryptoAmount } from '../../ui/formatters.js';
 
@@ -11,14 +16,14 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
 
     if (wallets.length === 0) {
       return ctx.reply(
-        '😅 *Oups !* Tu n\'as pas encore de wallet.\n\n' +
-        '💡 Utilise `/gen eth`, `/gen btc` ou `/gen sol` pour en créer un !',
+        "😅 *Oups !* Tu n'as pas encore de wallet.\n\n" +
+          '💡 Utilise `/gen eth`, `/gen btc` ou `/gen sol` pour en créer un !',
         { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }
 
     let text = '👛 *Tes Wallets*\n\n';
-    
+
     for (const wallet of wallets) {
       const chainEmoji = { eth: '🔷', btc: '🟠', sol: '🟣' }[wallet.chain] || '💎';
       try {
@@ -33,9 +38,9 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       }
     }
 
-    await ctx.reply(text, { 
+    await ctx.reply(text, {
       parse_mode: 'Markdown',
-      ...walletListKeyboard(wallets, 'wallet_')
+      ...walletListKeyboard(wallets, 'wallet_'),
     });
   });
 
@@ -43,25 +48,23 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
   bot.command('gen', async (ctx) => {
     const chatId = ctx.chat.id;
     const args = ctx.message.text.split(' ').slice(1);
-    
+
     if (args.length === 0) {
       return ctx.reply(
         '🎲 *Génération de Wallet*\n\n' +
-        'Utilise cette commande avec le réseau souhaité :\n\n' +
-        '• `/gen eth` — Ethereum 🔷\n' +
-        '• `/gen btc` — Bitcoin 🟠\n' +
-        '• `/gen sol` — Solana 🟣',
+          'Utilise cette commande avec le réseau souhaité :\n\n' +
+          '• `/gen eth` — Ethereum 🔷\n' +
+          '• `/gen btc` — Bitcoin 🟠\n' +
+          '• `/gen sol` — Solana 🟣',
         { parse_mode: 'Markdown' }
       );
     }
 
     const chain = args[0].toLowerCase();
     if (!['eth', 'btc', 'sol'].includes(chain)) {
-      return ctx.reply(
-        '❌ *Réseau non supporté !*\n\n' +
-        'Choisis parmi : `eth`, `btc`, `sol`',
-        { parse_mode: 'Markdown' }
-      );
+      return ctx.reply('❌ *Réseau non supporté !*\n\n' + 'Choisis parmi : `eth`, `btc`, `sol`', {
+        parse_mode: 'Markdown',
+      });
     }
 
     const chainNames = { eth: 'Ethereum 🔷', btc: 'Bitcoin 🟠', sol: 'Solana 🟣' };
@@ -74,21 +77,21 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       let message = `🎉 *Wallet ${chainNames[chain]} créé !*\n\n`;
       message += `🏷 *Nom :* ${wallet.label}\n`;
       message += `📬 *Adresse :*\n\`${fullWallet.address}\`\n\n`;
-      
+
       if (fullWallet.mnemonic) {
         message += `🔐 *Phrase de récupération :*\n\`${fullWallet.mnemonic}\`\n\n`;
       }
-      
+
       message += '⚠️ *IMPORTANT :* Sauvegarde bien cette phrase ! Elle ne sera plus affichée.\n\n';
       message += '🕐 _Ce message sera supprimé dans 60 secondes._';
 
       try {
         await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
       } catch (e) {}
-      
-      const sentMsg = await ctx.reply(message, { 
+
+      const sentMsg = await ctx.reply(message, {
         parse_mode: 'Markdown',
-        ...mainReplyKeyboard()
+        ...mainReplyKeyboard(),
       });
 
       setTimeout(async () => {
@@ -97,7 +100,6 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
           ctx.reply('🔒 _Message de sécurité supprimé._', { parse_mode: 'Markdown' });
         } catch (e) {}
       }, 60000);
-
     } catch (error) {
       try {
         await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
@@ -113,11 +115,11 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     if (args.length < 2) {
       return ctx.reply(
         '💰 *Verification de solde*\n\n' +
-        'Utilisation : `/bal <reseau> <adresse>`\n\n' +
-        'Exemples :\n' +
-        '• `/bal eth 0x123...abc`\n' +
-        '• `/bal btc bc1q...xyz`\n' +
-        '• `/bal sol 5Yfk...123`',
+          'Utilisation : `/bal <reseau> <adresse>`\n\n' +
+          'Exemples :\n' +
+          '• `/bal eth 0x123...abc`\n' +
+          '• `/bal btc bc1q...xyz`\n' +
+          '• `/bal sol 5Yfk...123`',
         { parse_mode: 'Markdown' }
       );
     }
@@ -134,16 +136,17 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     try {
       const balanceData = await walletService.getPublicAddressBalance(network, address);
       const conversion = await convertToEUR(network, Number.parseFloat(balanceData.balance));
-      
-      const chainEmoji = { eth: '🔷', btc: '🟠', sol: '🟣', matic: '🟣', op: '🔵', base: '🟦' }[network] || '💎';
-      
+
+      const chainEmoji =
+        { eth: '🔷', btc: '🟠', sol: '🟣', matic: '🟣', op: '🔵', base: '🟦' }[network] || '💎';
+
       await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsg.message_id);
-      
+
       await ctx.reply(
         `${chainEmoji} *Solde ${network.toUpperCase()}*\n\n` +
-        `📬 Adresse : \`${address.slice(0, 8)}...${address.slice(-6)}\`\n` +
-        `💰 Solde : *${formatCryptoAmount(balanceData.balance, network)}*\n` +
-        `💶 Valeur : *${formatEUR(conversion.valueEUR)}*`,
+          `📬 Adresse : \`${address.slice(0, 8)}...${address.slice(-6)}\`\n` +
+          `💰 Solde : *${formatCryptoAmount(balanceData.balance, network)}*\n` +
+          `💶 Valeur : *${formatEUR(conversion.valueEUR)}*`,
         { parse_mode: 'Markdown' }
       );
     } catch (error) {
@@ -162,9 +165,9 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     if (args.length < 3) {
       return ctx.reply(
         '💸 *Envoi de cryptos*\n\n' +
-        'Utilisation : `/send <réseau> <adresse> <montant>`\n\n' +
-        'Exemple : `/send eth 0x123...abc 0.1`\n\n' +
-        '💡 Pour un envoi plus guidé, utilise le bouton *💸 Envoyer* du menu !',
+          'Utilisation : `/send <réseau> <adresse> <montant>`\n\n' +
+          'Exemple : `/send eth 0x123...abc 0.1`\n\n' +
+          '💡 Pour un envoi plus guidé, utilise le bouton *💸 Envoyer* du menu !',
         { parse_mode: 'Markdown' }
       );
     }
@@ -174,7 +177,9 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     const amount = Number.parseFloat(args[2].replace(',', '.'));
 
     if (!['eth', 'btc', 'sol'].includes(network)) {
-      return ctx.reply('❌ Réseau non supporté ! Choisis : `eth`, `btc`, `sol`', { parse_mode: 'Markdown' });
+      return ctx.reply('❌ Réseau non supporté ! Choisis : `eth`, `btc`, `sol`', {
+        parse_mode: 'Markdown',
+      });
     }
 
     if (Number.isNaN(amount) || amount <= 0) {
@@ -182,10 +187,12 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     }
 
     const wallets = await storage.getWallets(chatId);
-    const wallet = wallets.find(w => w.chain === network);
+    const wallet = wallets.find((w) => w.chain === network);
 
     if (!wallet) {
-      return ctx.reply(`❌ Tu n'as pas de wallet ${network.toUpperCase()} !`, { parse_mode: 'Markdown' });
+      return ctx.reply(`❌ Tu n'as pas de wallet ${network.toUpperCase()} !`, {
+        parse_mode: 'Markdown',
+      });
     }
 
     sessions.setData(chatId, {
@@ -193,30 +200,30 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       selectedChain: network,
       toAddress: toAddress,
       amount: amount,
-      amountType: 'native'
+      amountType: 'native',
     });
     sessions.setState(chatId, 'SELECT_FEE');
 
     try {
       const balanceData = await walletService.getBalance(chatId, wallet.id);
       const fees = await walletService.estimateFees(chatId, wallet.id, toAddress, amount);
-      
-      sessions.setData(chatId, { 
-        ...sessions.getData(chatId), 
+
+      sessions.setData(chatId, {
+        ...sessions.getData(chatId),
         fees,
-        currentBalance: Number.parseFloat(balanceData.balance)
+        currentBalance: Number.parseFloat(balanceData.balance),
       });
 
       const conversion = await convertToEUR(network, amount);
-      
+
       await ctx.reply(
-        '💸 *Préparation de l\'envoi*\n\n' +
-        `📤 De : ${wallet.label}\n` +
-        `📥 Vers : \`${toAddress.slice(0, 8)}...${toAddress.slice(-6)}\`\n` +
-        `💰 Montant : *${formatCryptoAmount(amount, network)}*\n` +
-        `💶 Valeur : ${formatEUR(conversion.valueEUR)}\n` +
-        `📊 Solde dispo : ${balanceData.balance} ${network.toUpperCase()}\n\n` +
-        'Choisis la vitesse de transaction :',
+        "💸 *Préparation de l'envoi*\n\n" +
+          `📤 De : ${wallet.label}\n` +
+          `📥 Vers : \`${toAddress.slice(0, 8)}...${toAddress.slice(-6)}\`\n` +
+          `💰 Montant : *${formatCryptoAmount(amount, network)}*\n` +
+          `💶 Valeur : ${formatEUR(conversion.valueEUR)}\n` +
+          `📊 Solde dispo : ${balanceData.balance} ${network.toUpperCase()}\n\n` +
+          'Choisis la vitesse de transaction :',
         { parse_mode: 'Markdown', ...feeSelectionKeyboard('slow') }
       );
     } catch (error) {
@@ -231,8 +238,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
 
     if (args.length < 2) {
       return ctx.reply(
-        '📜 *Historique des transactions*\n\n' +
-        'Utilisation : `/tx <réseau> <adresse> [limite]`',
+        '📜 *Historique des transactions*\n\n' + 'Utilisation : `/tx <réseau> <adresse> [limite]`',
         { parse_mode: 'Markdown' }
       );
     }
@@ -250,7 +256,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     try {
       const txHistory = await walletService.getTransactionHistory(network, address, limit);
       await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsg.message_id);
-      
+
       if (!txHistory || txHistory.length === 0) {
         return ctx.reply('📜 Aucune transaction trouvée.', { parse_mode: 'Markdown' });
       }
@@ -279,8 +285,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
 
     if (args.length < 2) {
       return ctx.reply(
-        '🔢 *Conversion d\'Unités Crypto*\n\n' +
-        'Utilisation : `/unit <montant> <unité>`',
+        "🔢 *Conversion d'Unités Crypto*\n\n" + 'Utilisation : `/unit <montant> <unité>`',
         { parse_mode: 'Markdown' }
       );
     }
@@ -295,23 +300,17 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     let result = '';
     if (unit === 'btc') {
       result = `🟠 *${formatNumber(amount)} BTC* = *${formatNumber(amount * 100_000_000, 0, 0)} satoshis*`;
-    } 
-    else if (unit === 'satoshi' || unit === 'sat') {
+    } else if (unit === 'satoshi' || unit === 'sat') {
       result = `🟠 *${formatNumber(amount, 0, 0)} satoshis* = *${formatNumber(amount / 100_000_000, 8, 8)} BTC*`;
-    }
-    else if (unit === 'eth') {
+    } else if (unit === 'eth') {
       result = `🔷 *${formatNumber(amount)} ETH* = *${formatNumber(amount * 1_000_000_000, 0, 0)} gwei*`;
-    }
-    else if (unit === 'gwei') {
+    } else if (unit === 'gwei') {
       result = `🔷 *${formatNumber(amount, 0, 0)} gwei* = *${formatNumber(amount / 1_000_000_000, 9, 9)} ETH*`;
-    }
-    else if (unit === 'sol') {
+    } else if (unit === 'sol') {
       result = `🟣 *${formatNumber(amount)} SOL* = *${formatNumber(amount * 1_000_000_000, 0, 0)} lamports*`;
-    }
-    else if (unit === 'lamport') {
+    } else if (unit === 'lamport') {
       result = `🟣 *${formatNumber(amount, 0, 0)} lamports* = *${formatNumber(amount / 1_000_000_000, 9, 9)} SOL*`;
-    }
-    else {
+    } else {
       return ctx.reply('❌ Unité non reconnue ! (btc, sat, eth, gwei, sol, lamport)');
     }
 

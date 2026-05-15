@@ -1,3 +1,4 @@
+import { logger } from '../logger.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -36,7 +37,7 @@ class AuditLogger {
     };
 
     this.logs.push(entry);
-    console.log(`[AUDIT] ${action} - ChatId: ${chatId}${isAdmin ? ' (ADMIN)' : ''}`);
+    logger.info(`[AUDIT] ${action} - ChatId: ${chatId}${isAdmin ? ' (ADMIN)' : ''}`);
 
     // Keep memory bounded
     if (this.logs.length > this.maxMemoryLogs * 2) {
@@ -76,7 +77,7 @@ class AuditLogger {
       const logText = logsToWrite.map((l) => JSON.stringify(l)).join('\n') + '\n';
       await fs.appendFile(LOG_FILE, logText, 'utf8');
     } catch (error) {
-      console.error('Audit flush error:', error.message);
+      logger.error('Audit flush error:', error.message);
       // If write fails, put logs back (optional, but safer)
       this.logs = [...logsToWrite, ...this.logs].slice(-this.maxMemoryLogs);
     }
@@ -90,7 +91,7 @@ class AuditLogger {
     try {
       await fs.writeFile(LOG_FILE, '', 'utf8');
     } catch (error) {
-      console.error('Audit clear error:', error.message);
+      logger.error('Audit clear error:', error.message);
     }
   }
 }

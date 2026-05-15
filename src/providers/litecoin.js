@@ -22,7 +22,7 @@ const LTC_NETWORK = {
 export class LitecoinChain extends BaseProvider {
   constructor(apiUrl = null) {
     super('Litecoin', 'LTC');
-    this.apiUrl = apiUrl || 'https://mempool.space/api/litecoin';
+    this.apiUrl = apiUrl || 'https://litecoinspace.org/api';
     this.network = LTC_NETWORK;
   }
 
@@ -55,8 +55,9 @@ export class LitecoinChain extends BaseProvider {
   }
 
   async getBalance(address, tokenSymbol = null) {
-    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'LTC') return { balance: '0', symbol: tokenSymbol };
-    const apis = [this.apiUrl, 'https://mempool.space/api/litecoin'];
+    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'LTC')
+      return { balance: '0', symbol: tokenSymbol };
+    const apis = [...new Set([this.apiUrl, 'https://litecoinspace.org/api'])];
 
     for (const api of apis) {
       try {
@@ -85,6 +86,34 @@ export class LitecoinChain extends BaseProvider {
       }
     }
 
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(
+        `https://api.blockcypher.com/v1/ltc/main/addrs/${address}/balance`,
+        {
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`BlockCypher responded with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const balanceSats = data.final_balance ?? data.balance ?? 0;
+
+      return {
+        balance: balanceSats / 100000000,
+        balanceSats: balanceSats.toString(),
+        symbol: this.symbol,
+      };
+    } catch {
+      // Fall through to the standard error response below.
+    }
+
     return {
       balance: '0',
       balanceSats: '0',
@@ -94,7 +123,7 @@ export class LitecoinChain extends BaseProvider {
   }
 
   async getUtxos(address) {
-    const apis = [this.apiUrl, 'https://mempool.space/api/litecoin'];
+    const apis = [...new Set([this.apiUrl, 'https://litecoinspace.org/api'])];
 
     for (const api of apis) {
       try {
@@ -119,8 +148,8 @@ export class LitecoinChain extends BaseProvider {
     return [];
   }
 
-  async estimateFees(fromAddress, toAddress, amount) {
-    const apis = [this.apiUrl, 'https://mempool.space/api/litecoin'];
+  async estimateFees(fromAddress, _toAddress, _amount) {
+    const apis = [...new Set([this.apiUrl, 'https://litecoinspace.org/api'])];
     let feeEstimates = null;
 
     for (const api of apis) {
@@ -143,7 +172,7 @@ export class LitecoinChain extends BaseProvider {
     }
 
     if (!feeEstimates) {
-      feeEstimates = { '1': 1, '6': 0.5, '144': 0.1 };
+      feeEstimates = { 1: 1, 6: 0.5, 144: 0.1 };
     }
 
     let utxos = [];
@@ -159,8 +188,14 @@ export class LitecoinChain extends BaseProvider {
 
     return {
       slow: { fee: estimatedFee.toFixed(0), feeSats: Math.floor(estimatedFee).toString() },
-      average: { fee: (estimatedFee * 1.5).toFixed(0), feeSats: Math.floor(estimatedFee * 1.5).toString() },
-      fast: { fee: (estimatedFee * 2).toFixed(0), feeSats: Math.floor(estimatedFee * 2).toString() },
+      average: {
+        fee: (estimatedFee * 1.5).toFixed(0),
+        feeSats: Math.floor(estimatedFee * 1.5).toString(),
+      },
+      fast: {
+        fee: (estimatedFee * 2).toFixed(0),
+        feeSats: Math.floor(estimatedFee * 2).toString(),
+      },
       feeRate: avgFeeRate,
     };
   }

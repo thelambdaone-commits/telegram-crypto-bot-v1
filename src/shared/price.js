@@ -2,7 +2,12 @@
  * Crypto price service using CoinGecko API
  * EUR only as per requirements
  */
-const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+const COINGECKO_API = process.env.COINGECKO_API_URL || 'https://api.coingecko.com/api/v3';
+const COINGECKO_API_KEY =
+  process.env.COINGECKO_API_KEY ||
+  process.env.COINGECKO_DEMO_API_KEY ||
+  process.env.CG_DEMO_API_KEY;
+const COINGECKO_API_KEY_HEADER = process.env.COINGECKO_API_KEY_HEADER || 'x-cg-demo-api-key';
 
 const COIN_IDS = {
   eth: 'ethereum',
@@ -40,13 +45,25 @@ export async function getPricesEUR(force = false) {
   const now = Date.now();
 
   // Return cached prices if fresh (unless force is true)
-  if (!force && now - priceCache.lastUpdate < CACHE_TTL && Object.keys(priceCache.prices).length > 0) {
+  if (
+    !force &&
+    now - priceCache.lastUpdate < CACHE_TTL &&
+    Object.keys(priceCache.prices).length > 0
+  ) {
     return priceCache.prices;
   }
 
   try {
     const ids = Object.values(COIN_IDS).join(',');
-    const response = await fetch(`${COINGECKO_API}/simple/price?ids=${ids}&vs_currencies=eur`);
+    const headers = COINGECKO_API_KEY
+      ? {
+          accept: 'application/json',
+          [COINGECKO_API_KEY_HEADER]: COINGECKO_API_KEY,
+        }
+      : { accept: 'application/json' };
+    const response = await fetch(`${COINGECKO_API}/simple/price?ids=${ids}&vs_currencies=eur`, {
+      headers,
+    });
 
     if (!response.ok) {
       throw new Error('Erreur API CoinGecko');
@@ -86,13 +103,13 @@ export async function getPricesEUR(force = false) {
  */
 export async function convertToEUR(chain, amount) {
   const prices = await getPricesEUR();
-  
+
   // Map L2 chains to ETH price if they use ETH as native currency
   let priceKey = chain;
   if (['arb', 'op', 'base'].includes(chain)) {
     priceKey = 'eth';
   }
-  
+
   const price = prices[priceKey] || 0;
   return {
     amount,
@@ -114,4 +131,42 @@ export function formatEUR(amount) {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(amount);
+}
+
+export function formatPriceUpdateDate(date = new Date()) {
+  const datePart = new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Europe/Paris',
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Europe/Paris',
+  }).format(date);
+
+  return `${datePart} à ${timePart}`;
+}
+
+export function formatCryptoPricesEUR(prices, date = new Date()) {
+  return (
+    '💹 Prix crypto\n\n' +
+    '🏛️ L1 / Mainnets\n' +
+    `🟠 Bitcoin (BTC) : ${formatEUR(prices.btc)}\n` +
+    `🔷 Ethereum (ETH) : ${formatEUR(prices.eth)}\n` +
+    `🟣 Solana (SOL) : ${formatEUR(prices.sol)}\n\n` +
+    '⚡ L2 / Scaling\n' +
+    `🟦 ETH on Base : ${formatEUR(prices.base)}\n` +
+    `🔵 Optimism (OP) : ${formatEUR(prices.op || 0)}\n` +
+    `🟣 Polygon (POL) : ${formatEUR(prices.matic || 0)}\n\n` +
+    '🏦 Stablecoins\n' +
+    `💵 USD Coin (USDC) : ${formatEUR(prices.usdc)}\n` +
+    `💵 Tether (USDT) : ${formatEUR(prices.usdt)}\n\n` +
+    '🪙 Legacy / Forks\n' +
+    `◈ Litecoin (LTC) : ${formatEUR(prices.ltc)}\n` +
+    `₿ Bitcoin Cash (BCH) : ${formatEUR(prices.bch)}\n\n` +
+    `🕒 Mis à jour en temps réel le ${formatPriceUpdateDate(date)}`
+  );
 }

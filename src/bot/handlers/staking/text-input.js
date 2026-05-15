@@ -5,7 +5,11 @@
 
 import { Markup } from 'telegraf';
 import { JitoService } from '../../../modules/staking/jito.js';
-import { confirmationKeyboard, mainMenuKeyboard, stakingExitKeyboard } from '../../keyboards/index.js';
+import {
+  confirmationKeyboard,
+  mainMenuKeyboard,
+  stakingExitKeyboard,
+} from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../shared/price.js';
 
@@ -57,10 +61,10 @@ export function setupStakingTextInput(bot, storage, walletService, sessions) {
     sessions.clearState(chatId);
     sessions.clearData(chatId);
 
-    await ctx.editMessageText(
-      '❌ Opération annulée.',
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
+    await ctx.editMessageText('❌ Opération annulée.', {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
   });
 
   bot.action('confirm_jito_enter', async (ctx) => {
@@ -89,7 +93,10 @@ async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService
   const data = sessions.getData(chatId);
 
   if (!data || !data.walletId) {
-    await ctx.reply('❌ Session expiree. Veuillez recommencer depuis le debut.', mainMenuKeyboard());
+    await ctx.reply(
+      '❌ Session expiree. Veuillez recommencer depuis le debut.',
+      mainMenuKeyboard()
+    );
     return;
   }
 
@@ -113,7 +120,7 @@ async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService
     const feeSOL = quote.fee || 0.000005;
     const priceImpact = quote.priceImpact !== undefined ? quote.priceImpact : 0;
     const amountOut = quote.amountOut || amount;
-    const minReceived = quote.minReceived || (amountOut * 0.995);
+    const minReceived = quote.minReceived || amountOut * 0.995;
     const estimatedValueEUR = amountOut * jitoPriceEur;
 
     sessions.setData(chatId, {
@@ -123,7 +130,8 @@ async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService
     });
     sessions.setState(chatId, 'JITO_EXIT_FAST_CONFIRM');
 
-    const text = '📊 *Sortie rapide JitoSOL*\n\n' +
+    const text =
+      '📊 *Sortie rapide JitoSOL*\n\n' +
       `Montant envoye : *${formatAmount(amount)} JitoSOL*\n` +
       `Estimation recue : *${formatAmount(amountOut)} SOL*\n` +
       `Minimum recu : *${formatAmount(minReceived)} SOL*\n\n` +
@@ -136,8 +144,8 @@ async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
         [Markup.button.callback('✅ Confirmer', 'confirm_jito_exit_fast')],
-        [Markup.button.callback('❌ Annuler', 'jito_staking')]
-      ])
+        [Markup.button.callback('❌ Annuler', 'jito_staking')],
+      ]),
     });
   } catch (error) {
     console.error('handleJitoExitQuickAmount error:', error);
@@ -150,10 +158,9 @@ async function handleJitoEnterAmount(ctx, text, storage, walletService, sessions
 
   const amount = parseFloat(text.replace(',', '.'));
   if (isNaN(amount) || amount <= 0) {
-    return ctx.reply(
-      '❌ Montant invalide.\n\nEntre un montant positif en SOL (ex: 1.5)',
-      { parse_mode: 'Markdown' }
-    );
+    return ctx.reply('❌ Montant invalide.\n\nEntre un montant positif en SOL (ex: 1.5)', {
+      parse_mode: 'Markdown',
+    });
   }
 
   try {
@@ -176,7 +183,7 @@ async function handleJitoEnterAmount(ctx, text, storage, walletService, sessions
       );
     }
 
-const quote = await JitoService.quoteEnter(amount);
+    const quote = await JitoService.quoteEnter(amount);
     const prices = await getPricesEUR();
     const solPrice = prices.sol || 0;
     const jitoPriceEur = prices.jitosol || 0;
@@ -206,23 +213,23 @@ const quote = await JitoService.quoteEnter(amount);
 
     await ctx.reply(
       '🔄 *Conversion SOL → JitoSOL*\n\n' +
-      `💼 Wallet: *${walletLabel}*\n` +
-      `📥 Montant envoyé: *${formatAmount(amount)} SOL*\n` +
-      `📤 Montant estimé reçu: *${amountOutDisplay} JitoSOL*\n\n` +
-      `⛽ Frais réseau: *${networkFee} SOL*\n` +
-      `📉 Impact de prix: *${slippage}*\n\n` +
-      `💶 Valeur estimée: ${formatEUR(estimatedValueEUR)}\n\n` +
-      '━━━━━━━━━━━━\n\n' +
-      '⚠️ Vérifiez le montant avant confirmation. La transaction ne pourra pas être annulée.\n' +
-      'Le montant reçu peut varier légèrement au moment de l\'exécution.',
+        `💼 Wallet: *${walletLabel}*\n` +
+        `📥 Montant envoyé: *${formatAmount(amount)} SOL*\n` +
+        `📤 Montant estimé reçu: *${amountOutDisplay} JitoSOL*\n\n` +
+        `⛽ Frais réseau: *${networkFee} SOL*\n` +
+        `📉 Impact de prix: *${slippage}*\n\n` +
+        `💶 Valeur estimée: ${formatEUR(estimatedValueEUR)}\n\n` +
+        '━━━━━━━━━━━━\n\n' +
+        '⚠️ Vérifiez le montant avant confirmation. La transaction ne pourra pas être annulée.\n' +
+        "Le montant reçu peut varier légèrement au moment de l'exécution.",
       { parse_mode: 'Markdown', ...keyboard }
     );
   } catch (error) {
     console.error('[JITO_ENTER_AMOUNT] Error:', error);
-    await ctx.reply(
-      `❌ Erreur: ${error.message}`,
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
+    await ctx.reply(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
     sessions.clearState(chatId);
   }
 }
@@ -238,21 +245,23 @@ async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
 
     const wallet = await storage.getWalletWithKey(chatId, walletId);
     if (!wallet) {
-      return ctx.editMessageText(
-        '❌ Wallet non trouvé.',
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-      );
+      return ctx.editMessageText('❌ Wallet non trouvé.', {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
     }
 
-    await ctx.editMessageText(`${Formatting.loading} *Stake en cours...*`, { parse_mode: 'Markdown' });
+    await ctx.editMessageText(`${Formatting.loading} *Stake en cours...*`, {
+      parse_mode: 'Markdown',
+    });
 
     const result = await JitoService.enter(wallet.privateKey, amount);
 
     if (!result.success) {
-      return ctx.editMessageText(
-        `❌ Erreur: ${result.error}`,
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-      );
+      return ctx.editMessageText(`❌ Erreur: ${result.error}`, {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
     }
 
     const prices = await getPricesEUR();
@@ -262,11 +271,11 @@ async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
 
     await ctx.editMessageText(
       '✅ *Stake réussi!*\n\n' +
-      `💰 Staked: ${formatAmount(amount)} SOL\n` +
-      `📤 Reçu: ${formatAmount(result.amountOut)} JitoSOL\n` +
-      `🔗 [Voir transaction](https://solscan.io/tx/${result.txHash})\n\n` +
-      `💰 Nouveau solde SOL: ${formatAmount(parseFloat(newBalance.balance))}\n` +
-      `📤 Solde JitoSOL: ${formatAmount(jitoBalanceResult.balance)}`,
+        `💰 Staked: ${formatAmount(amount)} SOL\n` +
+        `📤 Reçu: ${formatAmount(result.amountOut)} JitoSOL\n` +
+        `🔗 [Voir transaction](https://solscan.io/tx/${result.txHash})\n\n` +
+        `💰 Nouveau solde SOL: ${formatAmount(parseFloat(newBalance.balance))}\n` +
+        `📤 Solde JitoSOL: ${formatAmount(jitoBalanceResult.balance)}`,
       { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
     );
 
@@ -274,10 +283,10 @@ async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
     sessions.clearState(chatId);
   } catch (error) {
     console.error('[JITO_ENTER_CONFIRM] Error:', error);
-    await ctx.editMessageText(
-      `❌ Erreur: ${error.message}`,
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
+    await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
     sessions.clearState(chatId);
   }
 }
@@ -306,7 +315,7 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     if (cleanedText.includes('€') || !cleanedText.includes('%')) {
       const eurMatch = cleanedText.replace(/[€$]/g, '').trim();
       const eurAmount = parseFloat(eurMatch);
-      
+
       if (!isNaN(eurAmount) && eurAmount > 0 && !cleanedText.includes('%')) {
         // EUR input
         amount = eurAmount / jitoPriceEur;
@@ -329,14 +338,14 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     if (cleanedText.includes('%')) {
       const pctMatch = cleanedText.replace('%', '').trim();
       const percentage = parseFloat(pctMatch);
-      
+
       if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
         return ctx.reply(
           '❌ Pourcentage invalide.\n\nEntre un pourcentage entre 1 et 100 :\n• \`25%\` → 25% du solde\n• \`50%\` → 50% du solde\n• \`100%\` → tout le solde',
           { parse_mode: 'Markdown' }
         );
       }
-      
+
       amount = jitoBalance * (percentage / 100);
       inputLabel = `${percentage}% du solde → ${formatAmount(amount)} JitoSOL`;
     }
@@ -357,7 +366,7 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     if (amount > jitoBalance) {
       return ctx.reply(
         `❌ Solde JitoSOL insuffisant.\n\nSolde actuel: ${formatAmount(jitoBalance)} JitoSOL\nMontant demandé: ${formatAmount(amount)} JitoSOL\n\n` +
-        'Utilise un pourcentage (ex: `50%`) ou un montant inférieur.',
+          'Utilise un pourcentage (ex: `50%`) ou un montant inférieur.',
         { parse_mode: 'Markdown' }
       );
     }
@@ -366,7 +375,7 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     const feeSOL = quote.fee || 0.000005;
     const priceImpact = quote.priceImpact !== undefined ? quote.priceImpact : 0;
     const amountOut = quote.amountOut || 0;
-    const minReceived = quote.minReceived || (amountOut * 0.995);
+    const minReceived = quote.minReceived || amountOut * 0.995;
     const walletLabel = wallet?.label || wallet?.address?.slice(0, 8) + '...' || 'SOL';
     const estimatedValueEUR = amount * jitoPriceEur;
 
@@ -388,24 +397,24 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
 
     await ctx.reply(
       '⚡ *Conversion JitoSOL → SOL*\n\n' +
-      `💼 Wallet: *${walletLabel}*\n` +
-      `📥 Montant envoyé: *${formatAmount(amount)} JitoSOL*\n` +
-      `(~${formatEUR(estimatedValueEUR)})\n` +
-      `📤 Montant estimé reçu: *${amountOutDisplay} SOL*\n` +
-      `📉 Minimum reçu: *${formatAmount(minReceived)} SOL*\n\n` +
-      `⛽ Frais réseau: *${feeSOL.toFixed(6)} SOL*\n` +
-      `📉 Impact de prix: *${priceImpact.toFixed(2)}%*\n\n` +
-      '━━━━━━━━━━━━\n\n' +
-      '⚠️ Vérifiez le montant avant confirmation. La transaction ne pourra pas être annulée.\n' +
-      'Le montant reçu peut varier légèrement au moment de l\'exécution.',
+        `💼 Wallet: *${walletLabel}*\n` +
+        `📥 Montant envoyé: *${formatAmount(amount)} JitoSOL*\n` +
+        `(~${formatEUR(estimatedValueEUR)})\n` +
+        `📤 Montant estimé reçu: *${amountOutDisplay} SOL*\n` +
+        `📉 Minimum reçu: *${formatAmount(minReceived)} SOL*\n\n` +
+        `⛽ Frais réseau: *${feeSOL.toFixed(6)} SOL*\n` +
+        `📉 Impact de prix: *${priceImpact.toFixed(2)}%*\n\n` +
+        '━━━━━━━━━━━━\n\n' +
+        '⚠️ Vérifiez le montant avant confirmation. La transaction ne pourra pas être annulée.\n' +
+        "Le montant reçu peut varier légèrement au moment de l'exécution.",
       { parse_mode: 'Markdown', ...keyboard }
     );
   } catch (error) {
     console.error('[JITO_EXIT_FAST_AMOUNT] Error:', error);
-    await ctx.reply(
-      `❌ Erreur: ${error.message}`,
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
+    await ctx.reply(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
     sessions.clearState(chatId);
   }
 }
@@ -418,12 +427,12 @@ async function handleJitoExitManual(ctx, storage, walletService, sessions) {
 
   await ctx.reply(
     '✏️ *Saisie manuelle JitoSOL*\n\n' +
-    `Votre solde : *${formatAmount(jitoBalance)} JitoSOL*\n\n` +
-    'Entrez le montant que vous souhaitez retirer (en JitoSOL ou en €) :\n\n' +
-    '_Exemple: 0.05 ou 10€_',
-    { 
-      parse_mode: 'Markdown', 
-      ...Markup.inlineKeyboard([[Markup.button.callback('❌ Annuler', 'jito_staking')]]) 
+      `Votre solde : *${formatAmount(jitoBalance)} JitoSOL*\n\n` +
+      'Entrez le montant que vous souhaitez retirer (en JitoSOL ou en €) :\n\n' +
+      '_Exemple: 0.05 ou 10€_',
+    {
+      parse_mode: 'Markdown',
+      ...Markup.inlineKeyboard([[Markup.button.callback('❌ Annuler', 'jito_staking')]]),
     }
   );
 }
@@ -439,10 +448,10 @@ async function handleJitoExitFastConfirm(ctx, storage, walletService, sessions) 
 
     const wallet = await storage.getWalletWithKey(chatId, walletId);
     if (!wallet) {
-      return ctx.editMessageText(
-        '❌ Wallet non trouvé.',
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-      );
+      return ctx.editMessageText('❌ Wallet non trouvé.', {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
     }
 
     await ctx.editMessageText('⚡ *Swap en cours...*', { parse_mode: 'Markdown' });
@@ -450,10 +459,10 @@ async function handleJitoExitFastConfirm(ctx, storage, walletService, sessions) 
     const result = await JitoService.exitFast(wallet.privateKey, amount);
 
     if (!result.success) {
-      return ctx.editMessageText(
-        `❌ Erreur: ${result.error}`,
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-      );
+      return ctx.editMessageText(`❌ Erreur: ${result.error}`, {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
     }
 
     const prices = await getPricesEUR();
@@ -462,11 +471,11 @@ async function handleJitoExitFastConfirm(ctx, storage, walletService, sessions) 
 
     await ctx.editMessageText(
       '✅ *Swap réussi!*\n\n' +
-      `💰 Converti: ${formatAmount(amount)} JitoSOL\n` +
-      `📤 Reçu: ${formatAmount(result.amountOut)} SOL\n` +
-      `🔗 [Voir transaction](https://solscan.io/tx/${result.txHash})\n\n` +
-      `💰 Nouveau solde SOL: ${formatAmount(parseFloat(newBalance.balance))}\n` +
-      `📤 Solde JitoSOL: ${formatAmount(jitoBalanceResult.balance)}`,
+        `💰 Converti: ${formatAmount(amount)} JitoSOL\n` +
+        `📤 Reçu: ${formatAmount(result.amountOut)} SOL\n` +
+        `🔗 [Voir transaction](https://solscan.io/tx/${result.txHash})\n\n` +
+        `💰 Nouveau solde SOL: ${formatAmount(parseFloat(newBalance.balance))}\n` +
+        `📤 Solde JitoSOL: ${formatAmount(jitoBalanceResult.balance)}`,
       { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
     );
 
@@ -474,10 +483,10 @@ async function handleJitoExitFastConfirm(ctx, storage, walletService, sessions) 
     sessions.clearState(chatId);
   } catch (error) {
     console.error('[JITO_EXIT_FAST_CONFIRM] Error:', error);
-    await ctx.editMessageText(
-      `❌ Erreur: ${error.message}`,
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
+    await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
     sessions.clearState(chatId);
   }
 }
@@ -498,7 +507,7 @@ async function handleJitoExitStandardAmount(ctx, text, storage, walletService, s
     if (cleanedText.includes('€') || !cleanedText.includes('%')) {
       const eurMatch = cleanedText.replace(/[€$]/g, '').trim();
       const eurAmount = parseFloat(eurMatch);
-      
+
       if (!isNaN(eurAmount) && eurAmount > 0 && !cleanedText.includes('%')) {
         amount = eurAmount / jitoPriceEur;
       } else if (isNaN(eurAmount) || eurAmount <= 0) {
@@ -519,7 +528,9 @@ async function handleJitoExitStandardAmount(ctx, text, storage, walletService, s
     }
 
     if (amount <= 0 || amount > jitoBalance) {
-      return ctx.reply(`❌ Montant invalide ou solde insuffisant (${formatAmount(jitoBalance)} JitoSOL dispo).`);
+      return ctx.reply(
+        `❌ Montant invalide ou solde insuffisant (${formatAmount(jitoBalance)} JitoSOL dispo).`
+      );
     }
 
     const amountSOL = amount * (data.rateSol || 1.07);
@@ -529,16 +540,16 @@ async function handleJitoExitStandardAmount(ctx, text, storage, walletService, s
 
     await ctx.reply(
       '⚠️ *Confirmation Unstake Standard*\n\n' +
-      `📥 Montant à retirer : *${formatAmount(amount)} JitoSOL*\n` +
-      `📤 Valeur estimée : *${formatAmount(amountSOL)} SOL*\n\n` +
-      '• *Délai* : 2-3 jours (fin d\'epoch)\n\n' +
-      'Confirmer l\'opération ?',
+        `📥 Montant à retirer : *${formatAmount(amount)} JitoSOL*\n` +
+        `📤 Valeur estimée : *${formatAmount(amountSOL)} SOL*\n\n` +
+        "• *Délai* : 2-3 jours (fin d'epoch)\n\n" +
+        "Confirmer l'opération ?",
       {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
-          [Markup.button.callback('✅ Confirmer l\'Unstake', 'confirm_jito_exit_standard')],
-          [Markup.button.callback('❌ Annuler', 'jito_withdraw')]
-        ])
+          [Markup.button.callback("✅ Confirmer l'Unstake", 'confirm_jito_exit_standard')],
+          [Markup.button.callback('❌ Annuler', 'jito_withdraw')],
+        ]),
       }
     );
   } catch (error) {
@@ -550,7 +561,7 @@ async function handleJitoExitStandardAmount(ctx, text, storage, walletService, s
 async function handleJitoUnstakeManualAddress(ctx, text, storage, sessions) {
   const chatId = ctx.chat.id;
   const data = sessions.getData(chatId);
-  
+
   if (!data || !data.requestId) {
     return ctx.reply('❌ Session expirée.', mainMenuKeyboard());
   }
@@ -558,11 +569,15 @@ async function handleJitoUnstakeManualAddress(ctx, text, storage, sessions) {
   const requestId = data.requestId;
 
   if (!text || text.length < 32) {
-    return ctx.reply('❌ Adresse invalide. Veuillez entrer une adresse Solana valide (Stake Account).');
+    return ctx.reply(
+      '❌ Adresse invalide. Veuillez entrer une adresse Solana valide (Stake Account).'
+    );
   }
 
   if (text === data.walletAddress) {
-    return ctx.reply('❌ Vous avez saisi votre propre adresse de Wallet.\n\nVeuillez saisir l\'adresse du **Stake Account** (qui est différente). Vous pouvez la trouver sur Solscan dans les détails de votre transaction d\'unstake.');
+    return ctx.reply(
+      "❌ Vous avez saisi votre propre adresse de Wallet.\n\nVeuillez saisir l'adresse du **Stake Account** (qui est différente). Vous pouvez la trouver sur Solscan dans les détails de votre transaction d'unstake."
+    );
   }
 
   try {
@@ -570,10 +585,15 @@ async function handleJitoUnstakeManualAddress(ctx, text, storage, sessions) {
     sessions.clearState(chatId);
     sessions.clearData(chatId);
 
-    await ctx.reply(`✅ Adresse enregistrée !\n\nL'adresse \`${text}\` a été liée à votre demande d'unstake.\n\nVous pouvez maintenant retourner dans le menu de suivi pour réclamer vos SOL.`, {
-      parse_mode: 'Markdown',
-      ...Markup.inlineKeyboard([[Markup.button.callback('⏳ Retour au statut', `jito_unstake_status_${requestId}`)]])
-    });
+    await ctx.reply(
+      `✅ Adresse enregistrée !\n\nL'adresse \`${text}\` a été liée à votre demande d'unstake.\n\nVous pouvez maintenant retourner dans le menu de suivi pour réclamer vos SOL.`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('⏳ Retour au statut', `jito_unstake_status_${requestId}`)],
+        ]),
+      }
+    );
   } catch (error) {
     console.error('handleJitoUnstakeManualAddress error:', error);
     await ctx.reply(`❌ Erreur lors de l'enregistrement : ${error.message}`);

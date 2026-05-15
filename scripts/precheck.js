@@ -5,7 +5,7 @@ import { config } from '../src/core/config.js';
 import { StorageService } from '../src/core/storage.js';
 import { generateKey } from '../src/shared/encryption.js';
 
-const requiredEnv = ['BOT_TOKEN', 'MASTER_ENCRYPTION_KEY'];
+const requiredEnv = ['BOT_TOKEN', 'MASTER_ENCRYPTION_KEY', 'SOL_RPC_URL', 'ADMIN_USER_ID'];
 
 function assertRequiredEnv() {
   const missing = requiredEnv.filter((key) => !process.env[key]);

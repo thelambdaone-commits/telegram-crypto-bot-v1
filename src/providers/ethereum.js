@@ -58,13 +58,13 @@ export class EthereumChain extends BaseProvider {
 
   async getAllTokens(address) {
     const results = [];
-    
+
     for (const [symbol, config] of Object.entries(this.tokenAddresses)) {
       try {
         const contract = new ethers.Contract(config.address, ERC20_ABI, this.provider);
         const balance = await contract.balanceOf(address);
         const decimals = await contract.decimals();
-        
+
         if (balance > 0n) {
           results.push({
             symbol,
@@ -79,7 +79,7 @@ export class EthereumChain extends BaseProvider {
         continue;
       }
     }
-    
+
     return results;
   }
 
@@ -153,7 +153,7 @@ export class EthereumChain extends BaseProvider {
       if (data.status !== '1' || !data.result?.length) {
         return [];
       }
-      return data.result.map(tx => ({
+      return data.result.map((tx) => ({
         hash: tx.hash,
         type: tx.from.toLowerCase() === address.toLowerCase() ? 'out' : 'in',
         amount: (Number(tx.value) / 1e18).toFixed(6),

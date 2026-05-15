@@ -1,21 +1,13 @@
 /**
  * NFT Create Service - V1
  * Create simple NFT on Solana using @solana/spl-token
- * 
+ *
  * V1: Supply = 1, Decimals = 0, Metadata off-chain JSON
  * URL image only (PNG/JPG), no Telegram upload
  */
 
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-} from '@solana/web3.js';
-import {
-  createMint,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-} from '@solana/spl-token';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
 import { config } from '../../core/config.js';
 
 const connection = new Connection(config.rpc.sol, 'confirmed');
@@ -32,7 +24,7 @@ export const NFTService = {
   async createNFT(payerPrivateKey, name, description, imageUrl) {
     try {
       console.log('[NFT_SERVICE] createNFT - name:', name);
-      
+
       let keypair;
       if (payerPrivateKey.length === 64) {
         const secretKey = Buffer.from(payerPrivateKey, 'hex');
@@ -90,10 +82,10 @@ export const NFTService = {
           files: [
             {
               uri: imageUrl,
-              type: imageUrl.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'
-            }
-          ]
-        }
+              type: imageUrl.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg',
+            },
+          ],
+        },
       };
 
       return {
@@ -118,20 +110,18 @@ export const NFTService = {
    */
   validateImageUrl(url) {
     if (!url) {
-      return { valid: false, error: 'URL d\'image requise' };
+      return { valid: false, error: "URL d'image requise" };
     }
 
     try {
       const parsed = new URL(url);
-      
+
       if (!['http:', 'https:'].includes(parsed.protocol)) {
-        return { valid: false, error: 'L\'URL doit utiliser HTTP ou HTTPS' };
+        return { valid: false, error: "L'URL doit utiliser HTTP ou HTTPS" };
       }
 
       const lowerUrl = url.toLowerCase();
-      if (!lowerUrl.endsWith('.png') && 
-          !lowerUrl.endsWith('.jpg') && 
-          !lowerUrl.endsWith('.jpeg')) {
+      if (!lowerUrl.endsWith('.png') && !lowerUrl.endsWith('.jpg') && !lowerUrl.endsWith('.jpeg')) {
         return { valid: false, error: 'Seuls PNG et JPG sont acceptés' };
       }
 

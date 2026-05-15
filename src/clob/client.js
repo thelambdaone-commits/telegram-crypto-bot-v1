@@ -4,6 +4,31 @@ import { createWalletWithPolyfill, validatePrivateKey } from './credentials.js';
 import { config } from '../core/config.js';
 
 const clients = new Map();
+const lastAccess = new Map();
+const MAX_CLIENTS = 100;
+const CLIENT_TTL = 30 * 60 * 1000; // 30 minutes
+
+function cleanupClients() {
+  const now = Date.now();
+  for (const [chatId, time] of lastAccess.entries()) {
+    if (now - time > CLIENT_TTL) {
+      clients.delete(chatId);
+      lastAccess.delete(chatId);
+    }
+  }
+
+  if (clients.size > MAX_CLIENTS) {
+    const sorted = [...lastAccess.entries()].sort((a, b) => a[1] - b[1]);
+    const toRemove = sorted.slice(0, clients.size - MAX_CLIENTS);
+    for (const [chatId] of toRemove) {
+      clients.delete(chatId);
+      lastAccess.delete(chatId);
+    }
+  }
+}
+
+// Every 10 minutes
+setInterval(cleanupClients, 10 * 60 * 1000).unref?.();
 
 function ensureWebCrypto() {
   if (!globalThis.crypto?.subtle) {
@@ -35,6 +60,7 @@ export function buildClobClient(chatId, privateKey, creds) {
     passphrase: creds.apiPassphrase,
   });
   clients.set(chatId, client);
+  lastAccess.set(chatId, Date.now());
   return client;
 }
 
@@ -71,17 +97,26 @@ export async function getOrBuildClobClient(chatId, storage) {
 }
 
 export function getClobClient(chatId) {
-  return clients.get(chatId) || null;
+  const client = clients.get(chatId) || null;
+  if (client) {
+    lastAccess.set(chatId, Date.now());
+  }
+  return client;
 }
 
 export function removeClobClient(chatId) {
   clients.delete(chatId);
+  lastAccess.delete(chatId);
 }
 
 export async function getServerTime(chatId) {
   const client = getClobClient(chatId);
   if (!client) return null;
-  try { return await client.getServerTime(); } catch { return null; }
+  try {
+    return await client.getServerTime();
+  } catch {
+    return null;
+  }
 }
 
 export function hasClobClient(chatId) {

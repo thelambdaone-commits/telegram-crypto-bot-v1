@@ -4,7 +4,7 @@ export class DustService {
   static classifyEth(balanceEth, gasCostEth, priceEth) {
     const valueUsd = balanceEth * priceEth;
     const transferCostUsd = gasCostEth * priceEth;
-    
+
     return {
       isDust: valueUsd < transferCostUsd,
       valueUsd,
@@ -19,7 +19,7 @@ export class DustService {
   static classifyBtcUtxo(utxoValueSats, feeRateSatVb, txVbytes = 140) {
     const spendCostSats = feeRateSatVb * txVbytes;
     const utxoValueBtc = utxoValueSats / 100_000_000;
-    
+
     return {
       isDust: utxoValueSats <= spendCostSats,
       utxoValueSats,
@@ -32,7 +32,7 @@ export class DustService {
   static async analyzeWalletEth(address, btcChain, gasPriceGwei = 30) {
     const gasUnits = 21000;
     const gasCostEth = (gasPriceGwei * gasUnits) / 1_000_000_000;
-    
+
     return {
       address,
       gasCostEth,
@@ -58,9 +58,9 @@ export class DustService {
     if (!dustItems || dustItems.length === 0) {
       return { action: 'ok', text: '✅ Aucun dust détecté' };
     }
-    
+
     const totalValue = dustItems.reduce((s, i) => s + (i.valueUsd || i.valueBtcUsd || 0), 0);
-    
+
     if (totalValue < 1) {
       return { action: 'wait', text: '💤 Valeur trop faible - Patiente' };
     }
@@ -72,7 +72,7 @@ export class DustService {
 
   static async getDustSummary(wallets, chainAdapters, prices) {
     const results = { eth: [], btc: [], sol: [] };
-    
+
     for (const wallet of wallets) {
       if (wallet.chain === 'eth') {
         const analysis = await this.analyzeWalletEth(wallet.address, null, 30);
@@ -82,21 +82,25 @@ export class DustService {
           priceEth: prices.eth,
         });
       }
-      
+
       if (wallet.chain === 'btc') {
         try {
           const utxos = await chainAdapters.btc.getUtxos(wallet.address);
-          const feeEstimates = await chainAdapters.btc.estimateFees(wallet.address, wallet.address, 0);
+          const feeEstimates = await chainAdapters.btc.estimateFees(
+            wallet.address,
+            wallet.address,
+            0
+          );
           const avgFeeRate = feeEstimates.average.satPerVbyte;
-          
-          const classifiedUtxos = utxos.map(utxo => {
+
+          const classifiedUtxos = utxos.map((utxo) => {
             const classified = this.classifyBtcUtxo(utxo.value, avgFeeRate);
             const valueBtcUsd = classified.utxoValueBtc * prices.btc;
             return { ...utxo, ...classified, valueBtcUsd };
           });
-          
-          const dustUtxos = classifiedUtxos.filter(u => u.isDust);
-          
+
+          const dustUtxos = classifiedUtxos.filter((u) => u.isDust);
+
           results.btc.push({
             wallet,
             utxos: classifiedUtxos,
@@ -117,7 +121,7 @@ export class DustService {
         }
       }
     }
-    
+
     return results;
   }
 }

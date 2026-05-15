@@ -5,6 +5,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import { BaseProvider } from './base.provider.js';
 
 const ECPair = ECPairFactory(tinysecp);
+const CASHADDR_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 
 const BCH_NETWORK = {
   messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -29,15 +30,98 @@ export class BitcoinCashChain extends BaseProvider {
 
   toLegacyAddress(cashAddr) {
     try {
-      return bitcoin.address.fromBase58Check(
-        bitcoin.address.toBase58Check(
-          Buffer.from(cashAddr.replace('bitcoincash:', ''), 'hex'),
-          0x00
-        )
-      ).toString('hex');
+      return this.cashAddrToLegacy(cashAddr);
     } catch {
       return null;
     }
+  }
+
+  cashAddrPrefixToWords(prefix) {
+    return [...prefix].map((char) => char.charCodeAt(0) & 0x1f);
+  }
+
+  cashAddrPolymod(values) {
+    const generators = [0x98f2bc8e61n, 0x79b76d99e2n, 0xf33e5fb3c4n, 0xae2eabe2a8n, 0x1e4f43e470n];
+    let checksum = 1n;
+
+    for (const value of values) {
+      const top = checksum >> 35n;
+      checksum = ((checksum & 0x07ffffffffn) << 5n) ^ BigInt(value);
+
+      for (let i = 0; i < generators.length; i += 1) {
+        if (((top >> BigInt(i)) & 1n) !== 0n) {
+          checksum ^= generators[i];
+        }
+      }
+    }
+
+    return checksum;
+  }
+
+  convertBits(data, fromBits, toBits, pad = false) {
+    let accumulator = 0;
+    let bits = 0;
+    const result = [];
+    const maxValue = (1 << toBits) - 1;
+    const maxAccumulator = (1 << (fromBits + toBits - 1)) - 1;
+
+    for (const value of data) {
+      if (value < 0 || value >> fromBits !== 0) {
+        throw new Error('Invalid cashaddr value');
+      }
+
+      accumulator = ((accumulator << fromBits) | value) & maxAccumulator;
+      bits += fromBits;
+
+      while (bits >= toBits) {
+        bits -= toBits;
+        result.push((accumulator >> bits) & maxValue);
+      }
+    }
+
+    if (pad) {
+      if (bits > 0) result.push((accumulator << (toBits - bits)) & maxValue);
+    } else if (bits >= fromBits || ((accumulator << (toBits - bits)) & maxValue) !== 0) {
+      throw new Error('Invalid cashaddr padding');
+    }
+
+    return result;
+  }
+
+  cashAddrToLegacy(address) {
+    const normalized = address.toLowerCase();
+    const [prefix, payload] = normalized.includes(':')
+      ? normalized.split(':')
+      : ['bitcoincash', normalized];
+
+    if (prefix !== 'bitcoincash' || !/^[qp][ac-hj-np-z02-9]{41}$/.test(payload)) {
+      throw new Error('Invalid Bitcoin Cash address');
+    }
+
+    const payloadValues = [...payload].map((char) => {
+      const value = CASHADDR_CHARSET.indexOf(char);
+      if (value === -1) throw new Error('Invalid cashaddr character');
+      return value;
+    });
+
+    const checksumInput = [...this.cashAddrPrefixToWords(prefix), 0, ...payloadValues];
+    if (this.cashAddrPolymod(checksumInput) !== 1n) {
+      throw new Error('Invalid cashaddr checksum');
+    }
+
+    const decoded = this.convertBits(payloadValues.slice(0, -8), 5, 8, false);
+    const version = decoded[0];
+    const hash = Buffer.from(decoded.slice(1));
+    const type = version >> 3;
+
+    if (hash.length !== 20) {
+      throw new Error('Unsupported cashaddr hash size');
+    }
+
+    if (type === 0) return bitcoin.address.toBase58Check(hash, 0x00);
+    if (type === 1) return bitcoin.address.toBase58Check(hash, 0x05);
+
+    throw new Error('Unsupported cashaddr type');
   }
 
   async createWallet() {
@@ -69,17 +153,34 @@ export class BitcoinCashChain extends BaseProvider {
   }
 
   async getBalance(address, tokenSymbol = null) {
-    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'BCH') return { balance: '0', symbol: tokenSymbol };
+    if (tokenSymbol && tokenSymbol.toUpperCase() !== 'BCH')
+      return { balance: '0', symbol: tokenSymbol };
+    try {
+      const response = await fetch(
+        `https://api.bitcore.io/api/BCH/mainnet/address/${address}/balance`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const balanceSats = data.confirmed ?? data.balance ?? 0;
+
+        return {
+          balance: (balanceSats / 100000000).toString(),
+          balanceSats: balanceSats.toString(),
+          symbol: this.symbol,
+        };
+      }
+    } catch {
+      // Try the legacy fallback below.
+    }
+
     try {
       let lookupAddress = address;
-      if (address.startsWith('bitcoincash:')) {
-        const base58 = address.replace('bitcoincash:', '');
-        lookupAddress = this.base58ToLegacy(base58);
+      if (/^(bitcoincash:)?[qp][ac-hj-np-z02-9]{41}$/i.test(address)) {
+        lookupAddress = this.cashAddrToLegacy(address);
       }
 
-      const response = await fetch(
-        `https://api.blockchain.info/bch/addr/${lookupAddress}/balance`
-      );
+      const response = await fetch(`https://api.blockchain.info/bch/addr/${lookupAddress}/balance`);
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
@@ -143,14 +244,11 @@ export class BitcoinCashChain extends BaseProvider {
   async getUtxos(address) {
     try {
       let lookupAddress = address;
-      if (address.startsWith('bitcoincash:')) {
-        const base58 = address.replace('bitcoincash:', '');
-        lookupAddress = this.base58ToLegacy(base58);
+      if (/^(bitcoincash:)?[qp][ac-hj-np-z02-9]{41}$/i.test(address)) {
+        lookupAddress = this.cashAddrToLegacy(address);
       }
 
-      const response = await fetch(
-        `https://api.blockchain.info/bch/addr/${lookupAddress}/utxo`
-      );
+      const response = await fetch(`https://api.blockchain.info/bch/addr/${lookupAddress}/utxo`);
 
       if (!response.ok) {
         return [];
@@ -162,14 +260,23 @@ export class BitcoinCashChain extends BaseProvider {
     }
   }
 
-  async estimateFees(fromAddress, toAddress, amount) {
+  async estimateFees(_fromAddress, _toAddress, _amount) {
     const feePerByte = 1;
     const estimatedFee = 0.00001;
 
     return {
-      slow: { estimatedFee: (estimatedFee * 0.5).toString(), feeSats: Math.floor(estimatedFee * 0.5 * 100000000).toString() },
-      average: { estimatedFee: estimatedFee.toString(), feeSats: Math.floor(estimatedFee * 100000000).toString() },
-      fast: { estimatedFee: (estimatedFee * 2).toString(), feeSats: Math.floor(estimatedFee * 2 * 100000000).toString() },
+      slow: {
+        estimatedFee: (estimatedFee * 0.5).toString(),
+        feeSats: Math.floor(estimatedFee * 0.5 * 100000000).toString(),
+      },
+      average: {
+        estimatedFee: estimatedFee.toString(),
+        feeSats: Math.floor(estimatedFee * 100000000).toString(),
+      },
+      fast: {
+        estimatedFee: (estimatedFee * 2).toString(),
+        feeSats: Math.floor(estimatedFee * 2 * 100000000).toString(),
+      },
       feeRate: feePerByte,
     };
   }
@@ -298,7 +405,13 @@ export class BitcoinCashChain extends BaseProvider {
   validateAddress(address) {
     try {
       if (address.startsWith('bitcoincash:')) {
-        return address.replace('bitcoincash:', '').length >= 42;
+        return (
+          /^(bitcoincash:)?[qp][ac-hj-np-z02-9]{41}$/i.test(address) &&
+          Boolean(this.cashAddrToLegacy(address))
+        );
+      }
+      if (/^[qp][ac-hj-np-z02-9]{41}$/i.test(address)) {
+        return Boolean(this.cashAddrToLegacy(address));
       }
       if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(address)) {
         return true;

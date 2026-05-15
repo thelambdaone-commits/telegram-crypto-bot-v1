@@ -25,7 +25,7 @@ async function handleStakeCommand(ctx, storage) {
   try {
     const apyData = await Promise.race([
       StakingService.getAllApy(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
     ]);
 
     const defaultAmount = 1000;
@@ -43,7 +43,7 @@ async function handleStakeCommand(ctx, storage) {
         amount: defaultAmount,
         apy,
         months: 12,
-        protocol: 'aave-v3'
+        protocol: 'aave-v3',
       });
 
       text += `USDC • APY: *${StakingService.formatApy(apy)}*\n\n`;
@@ -60,7 +60,7 @@ async function handleStakeCommand(ctx, storage) {
         amount: defaultAmount,
         apy,
         months: 12,
-        protocol: 'aave-v3'
+        protocol: 'aave-v3',
       });
 
       text += `USDT • APY: *${StakingService.formatApy(apy)}*\n\n`;
@@ -81,7 +81,7 @@ async function handleStakeCommand(ctx, storage) {
         amount: defaultAmount,
         apy,
         months: 12,
-        protocol: 'kamino'
+        protocol: 'kamino',
       });
 
       text += `USDC • APY: *${StakingService.formatApy(apy)}*\n\n`;
@@ -102,7 +102,7 @@ async function handleStakeCommand(ctx, storage) {
         amount: defaultAmount,
         apy,
         months: 12,
-        protocol: 'jupiter'
+        protocol: 'jupiter',
       });
 
       text += `USDC • APY: *${StakingService.formatApy(apy)}*\n\n`;
@@ -119,7 +119,7 @@ async function handleStakeCommand(ctx, storage) {
         amount: defaultAmount,
         apy,
         months: 12,
-        protocol: 'jupiter'
+        protocol: 'jupiter',
       });
 
       text += `USDT • APY: *${StakingService.formatApy(apy)}*\n\n`;
@@ -147,12 +147,12 @@ async function handleStakeCommand(ctx, storage) {
     } catch (e) {}
     ctx.reply(
       '❌ Impossible de charger les rendements.\n\n' +
-      '━━━━━━━━━━━━\n' +
-      '🔷 Arbitrum - Aave V3: USDC ~1.65%, USDT ~2.13%\n' +
-      '🟣 Solana - Kamino: USDC ~3.80%\n' +
-      '🟣 Solana - Jupiter: USDC ~5.20%, USDT ~4.80%\n' +
-      '━━━━━━━━━━━━\n' +
-      '_Ces taux sont approximatifs_',
+        '━━━━━━━━━━━━\n' +
+        '🔷 Arbitrum - Aave V3: USDC ~1.65%, USDT ~2.13%\n' +
+        '🟣 Solana - Kamino: USDC ~3.80%\n' +
+        '🟣 Solana - Jupiter: USDC ~5.20%, USDT ~4.80%\n' +
+        '━━━━━━━━━━━━\n' +
+        '_Ces taux sont approximatifs_',
       mainMenuKeyboard()
     );
   }
@@ -182,7 +182,7 @@ async function handleYieldCommand(ctx, storage, walletService) {
         try {
           const positions = await Promise.race([
             StakingService.getUserAavePosition(wallet.address, 'arbitrum'),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
           ]);
 
           for (const [symbol, pos] of Object.entries(positions)) {
@@ -213,7 +213,7 @@ async function handleYieldCommand(ctx, storage, walletService) {
         try {
           const kaminoPos = await Promise.race([
             StakingService.getUserKaminoPosition(wallet.address),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
           ]);
 
           for (const token of kaminoPos.tokens || []) {
@@ -225,7 +225,7 @@ async function handleYieldCommand(ctx, storage, walletService) {
         try {
           const jupiterPos = await Promise.race([
             StakingService.getUserJupiterPosition(wallet.address),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
           ]);
 
           for (const token of jupiterPos.tokens || []) {
@@ -282,10 +282,10 @@ async function handleYieldCommand(ctx, storage, walletService) {
     } catch (e) {}
     ctx.reply(
       '❌ Impossible de charger les positions.\n\n' +
-      '━━━━━━━━━━━━\n' +
-      'Le service est temporairement indisponible.\n' +
-      '━━━━━━━━━━━━\n' +
-      '_Utilisez /stake pour voir les rendements_',
+        '━━━━━━━━━━━━\n' +
+        'Le service est temporairement indisponible.\n' +
+        '━━━━━━━━━━━━\n' +
+        '_Utilisez /stake pour voir les rendements_',
       mainMenuKeyboard()
     );
   }
@@ -297,17 +297,17 @@ async function handleCalcCommand(ctx, args) {
   if (!args || args.length < 2) {
     return ctx.reply(
       '📊 *Calculateur de Gains*\n\n' +
-      '━━━━━━━━━━━━\n' +
-      '*Usage:*\n' +
-      '`/calc <montant> <token> [protocole]`\n\n' +
-      '*Exemples:*\n' +
-      '`/calc 1000 USDC`\n' +
-      '`/calc 500 USDT aave`\n' +
-      '`/calc 1000 USDC kamino`\n' +
-      '`/calc 1000 USDC jupiter`\n\n' +
-      '*Protocoles:* aave, kamino, jupiter\n' +
-      '*Tokens:* USDC, USDT\n' +
-      '━━━━━━━━━━━━',
+        '━━━━━━━━━━━━\n' +
+        '*Usage:*\n' +
+        '`/calc <montant> <token> [protocole]`\n\n' +
+        '*Exemples:*\n' +
+        '`/calc 1000 USDC`\n' +
+        '`/calc 500 USDT aave`\n' +
+        '`/calc 1000 USDC kamino`\n' +
+        '`/calc 1000 USDC jupiter`\n\n' +
+        '*Protocoles:* aave, kamino, jupiter\n' +
+        '*Tokens:* USDC, USDT\n' +
+        '━━━━━━━━━━━━',
       { parse_mode: 'Markdown', ...mainMenuKeyboard() }
     );
   }
@@ -318,18 +318,14 @@ async function handleCalcCommand(ctx, args) {
 
   if (isNaN(amount) || amount <= 0) {
     return ctx.reply(
-      '❌ *Montant invalide*\n\n' +
-      'Le montant doit etre un nombre positif.\n' +
-      '━━━━━━━━━━━━',
+      '❌ *Montant invalide*\n\n' + 'Le montant doit etre un nombre positif.\n' + '━━━━━━━━━━━━',
       { parse_mode: 'Markdown', ...mainMenuKeyboard() }
     );
   }
 
   if (token !== 'USDC' && token !== 'USDT') {
     return ctx.reply(
-      '❌ *Token invalide*\n\n' +
-      'Tokens supportes: USDC, USDT\n' +
-      '━━━━━━━━━━━━',
+      '❌ *Token invalide*\n\n' + 'Tokens supportes: USDC, USDT\n' + '━━━━━━━━━━━━',
       { parse_mode: 'Markdown', ...mainMenuKeyboard() }
     );
   }
@@ -412,8 +408,8 @@ async function handleCalcCommand(ctx, args) {
 
       text += '💰 *Gains nets*\n';
       text += `1 mois: *+${formatCurrency(profit.netProfit / 12)}*\n`;
-      text += `3 mois: *+${formatCurrency(profit.netProfit / 12 * 3)}*\n`;
-      text += `6 mois: *+${formatCurrency(profit.netProfit / 12 * 6)}*\n`;
+      text += `3 mois: *+${formatCurrency((profit.netProfit / 12) * 3)}*\n`;
+      text += `6 mois: *+${formatCurrency((profit.netProfit / 12) * 6)}*\n`;
       text += `1 an: *+${formatCurrency(profit.netProfit)}*\n\n`;
 
       text += `📊 ROI annualise: *${profit.roi}%*\n`;
@@ -424,11 +420,11 @@ async function handleCalcCommand(ctx, args) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
       return ctx.reply(
         '❌ *Aucune donnee disponible*\n\n' +
-        `Pour ${token}, les protocoles disponibles sont:\n` +
-        '- Aave V3 (USDC, USDT)\n' +
-        '- Jupiter Lend (USDC, USDT)\n' +
-        '- Kamino (USDC uniquement)\n' +
-        '━━━━━━━━━━━━',
+          `Pour ${token}, les protocoles disponibles sont:\n` +
+          '- Aave V3 (USDC, USDT)\n' +
+          '- Jupiter Lend (USDC, USDT)\n' +
+          '- Kamino (USDC uniquement)\n' +
+          '━━━━━━━━━━━━',
         { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }
@@ -447,9 +443,7 @@ async function handleCalcCommand(ctx, args) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
     } catch (e) {}
     ctx.reply(
-      '❌ Erreur lors du calcul.\n' +
-      '━━━━━━━━━━━━\n' +
-      '_Reessayez plus tard_',
+      '❌ Erreur lors du calcul.\n' + '━━━━━━━━━━━━\n' + '_Reessayez plus tard_',
       mainMenuKeyboard()
     );
   }
@@ -457,22 +451,28 @@ async function handleCalcCommand(ctx, args) {
 
 export function setupStakingHandlers(bot, storage, walletService, sessions) {
   // Import and setup Jito handlers
-  import('./jito.js').then(({ setupJitoHandlers }) => {
-    setupJitoHandlers(bot, storage, walletService, sessions);
-    console.log('[STAKING] Jito handlers loaded');
-  }).catch(err => console.error('[STAKING] Failed to load Jito handlers:', err));
+  import('./jito.js')
+    .then(({ setupJitoHandlers }) => {
+      setupJitoHandlers(bot, storage, walletService, sessions);
+      console.log('[STAKING] Jito handlers loaded');
+    })
+    .catch((err) => console.error('[STAKING] Failed to load Jito handlers:', err));
 
   // Import and setup Marinade handlers
-  import('./marinade.js').then(({ setupMarinadeHandlers }) => {
-    setupMarinadeHandlers(bot, storage, walletService, sessions);
-    console.log('[STAKING] Marinade handlers loaded');
-  }).catch(err => console.error('[STAKING] Failed to load Marinade handlers:', err));
+  import('./marinade.js')
+    .then(({ setupMarinadeHandlers }) => {
+      setupMarinadeHandlers(bot, storage, walletService, sessions);
+      console.log('[STAKING] Marinade handlers loaded');
+    })
+    .catch((err) => console.error('[STAKING] Failed to load Marinade handlers:', err));
 
   // Import and setup Staking text input handlers
-  import('./text-input.js').then(({ setupStakingTextInput }) => {
-    setupStakingTextInput(bot, storage, walletService, sessions);
-    console.log('[STAKING] Text input handlers loaded');
-  }).catch(err => console.error('[STAKING] Failed to load text input handlers:', err));
+  import('./text-input.js')
+    .then(({ setupStakingTextInput }) => {
+      setupStakingTextInput(bot, storage, walletService, sessions);
+      console.log('[STAKING] Text input handlers loaded');
+    })
+    .catch((err) => console.error('[STAKING] Failed to load text input handlers:', err));
 
   bot.command('stake', async (ctx) => {
     await handleStakeCommand(ctx, storage);
@@ -500,13 +500,13 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
   bot.action('liquid_staking_menu', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     const { liquidStakingKeyboard, mainMenuKeyboard } = await import('../../keyboards/index.js');
-    
+
     await ctx.editMessageText(
       '📈 *Liquid Staking Solana*\n\n' +
-      'Stakez votre SOL et recevez des tokens liquides.\n\n' +
-      '🥇 *JitoSOL* - Rendement eleve\n' +
-      '🥈 *Marinade* - Equilibre\n\n' +
-      '_Les deux offrent une sortie rapide_',
+        'Stakez votre SOL et recevez des tokens liquides.\n\n' +
+        '🥇 *JitoSOL* - Rendement eleve\n' +
+        '🥈 *Marinade* - Equilibre\n\n' +
+        '_Les deux offrent une sortie rapide_',
       { parse_mode: 'Markdown', ...liquidStakingKeyboard() }
     );
   });
@@ -515,7 +515,7 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
     await safeAnswerCbQuery(ctx);
     ctx.reply(
       '🔷 *Depot Aave USDC*\n\n' +
-        '1. Ouvrez l\'app Aave:\n' +
+        "1. Ouvrez l'app Aave:\n" +
         'https://app.aave.com\n\n' +
         '2. Selectionnez Arbitrum\n' +
         '3. Deposez USDC\n\n' +
@@ -528,7 +528,7 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
     await safeAnswerCbQuery(ctx);
     ctx.reply(
       '🔷 *Depot Aave USDT*\n\n' +
-        '1. Ouvrez l\'app Aave:\n' +
+        "1. Ouvrez l'app Aave:\n" +
         'https://app.aave.com\n\n' +
         '2. Selectionnez Arbitrum\n' +
         '3. Deposez USDT\n\n' +

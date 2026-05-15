@@ -69,7 +69,7 @@ export class MarinadeService {
       // Approximate 1 mSOL = 1.0X SOL depending on epoch
       // For now use 1:1 with small spread
       const mSOLReceived = amountSOL * 0.998; // ~0.2% spread
-      
+
       return {
         success: true,
         amountIn: amountSOL,
@@ -116,7 +116,7 @@ export class MarinadeService {
     try {
       // Fast exit through Jupiter swap - price impact possible
       const receivedSOL = amountmSOL * 0.995; // ~0.5% spread
-      
+
       return {
         success: true,
         amountIn: amountmSOL,
@@ -162,7 +162,7 @@ export class MarinadeService {
     try {
       // Standard exit through Marinade - delayed unstake
       const receivedSOL = amountmSOL * 0.999; // ~0.1% fee
-      
+
       return {
         success: true,
         amountIn: amountmSOL,

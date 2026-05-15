@@ -27,9 +27,7 @@ export function adminExtendedKeyboard() {
       Markup.button.callback('🚫 Ban User', 'admin_ban'),
       Markup.button.callback('✅ Unban User', 'admin_unban'),
     ],
-    [
-      Markup.button.callback('📢 Broadcast', 'admin_broadcast'),
-    ],
+    [Markup.button.callback('📢 Broadcast', 'admin_broadcast')],
   ]);
 }
 
@@ -41,7 +39,5 @@ export function adminUserKeyboard(targetUserId) {
 }
 
 export function adminCancelKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('❌ Annuler', 'admin_panel')],
-  ]);
+  return Markup.inlineKeyboard([[Markup.button.callback('❌ Annuler', 'admin_panel')]]);
 }

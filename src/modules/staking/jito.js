@@ -33,14 +33,14 @@ const getConnection = () => {
 export class JitoService {
   static async getBalance(walletAddress, retryCount = 3) {
     console.log(`[JITO] getBalance for: ${walletAddress}`);
-    
+
     try {
       const walletPubkey = new PublicKey(walletAddress);
       const mintPubkey = new PublicKey(JITO_MINT);
       const conn = getConnection();
-      
+
       const ata = await getAssociatedTokenAddress(walletPubkey, mintPubkey);
-      
+
       let balance = 0;
       let hasAccount = false;
 
@@ -51,7 +51,7 @@ export class JitoService {
       } catch (error) {
         // Fallback to parsed accounts
         const tokenAccounts = await conn.getParsedTokenAccountsByOwner(walletPubkey, {
-          mint: mintPubkey
+          mint: mintPubkey,
         });
         if (tokenAccounts.value.length > 0) {
           balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
@@ -60,7 +60,7 @@ export class JitoService {
       }
 
       // Get real rate SOL/JitoSOL from price service (most reliable)
-      let rateSol = 1.07; 
+      let rateSol = 1.07;
       try {
         const prices = await getPricesEUR();
         if (prices.jitosol && prices.sol) {
@@ -75,14 +75,14 @@ export class JitoService {
           }
         } catch (e2) {}
       }
-      
+
       return {
         success: true,
         balance: balance,
         symbol: 'JitoSOL',
         decimals: 9,
         rateSol: rateSol,
-        hasAccount: hasAccount
+        hasAccount: hasAccount,
       };
     } catch (error) {
       console.log('[JITO] getBalance error:', error.message || error);
@@ -144,7 +144,9 @@ export class JitoService {
       const SOL_MINT = 'So11111111111111111111111111111111111111112';
       const amountLamports = Math.floor(amountSOL * 1e9);
 
-      console.log(`[JITO] Enter: Calling Jupiter quote for SOL->JitoSOL, amountLamports=${amountLamports}`);
+      console.log(
+        `[JITO] Enter: Calling Jupiter quote for SOL->JitoSOL, amountLamports=${amountLamports}`
+      );
 
       const quoteResponse = await fetch(
         `${JUPITER_API}/swap/v1/quote?inputMint=${SOL_MINT}&outputMint=${JITO_MINT}&amount=${amountLamports}&slippageBps=50`
@@ -187,7 +189,10 @@ export class JitoService {
       if (!swapTxResponse.ok) {
         const errText = await swapTxResponse.text();
         console.error(`[JITO] Swap build failed: ${swapTxResponse.status} - ${errText}`);
-        return { success: false, error: `Failed to build swap transaction: ${swapTxResponse.status}` };
+        return {
+          success: false,
+          error: `Failed to build swap transaction: ${swapTxResponse.status}`,
+        };
       }
 
       const swapData = await swapTxResponse.json();
@@ -327,7 +332,7 @@ export class JitoService {
       );
 
       swapTransaction.sign([fromKeypair]);
-      
+
       const signature = await conn.sendTransaction(swapTransaction);
       console.log(`[JITO] ExitFast Transaction sent: ${signature}`);
 
@@ -357,7 +362,8 @@ export class JitoService {
   static async exitStandard(walletPrivateKey, amountJitoSOL) {
     console.log(`[JITO] Initiating real Standard Exit for ${amountJitoSOL} JitoSOL`);
     try {
-      const { Keypair, Transaction, TransactionInstruction, SystemProgram, StakeProgram } = await import('@solana/web3.js');
+      const { Keypair, Transaction, TransactionInstruction, SystemProgram, StakeProgram } =
+        await import('@solana/web3.js');
       const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
       const conn = getConnection();
@@ -366,8 +372,11 @@ export class JitoService {
       if (lamports <= 0) throw new Error('Montant invalide');
 
       // 1. Find user's JitoSOL token account
-      const userPoolTokenAccount = await getAssociatedTokenAddress(new PublicKey(JITO_MINT), fromKeypair.publicKey);
-      
+      const userPoolTokenAccount = await getAssociatedTokenAddress(
+        new PublicKey(JITO_MINT),
+        fromKeypair.publicKey
+      );
+
       // 2. Create temporary stake account
       const tempStakeAccount = Keypair.generate();
       const stakeRentExempt = await conn.getMinimumBalanceForRentExemption(StakeProgram.space);
@@ -396,7 +405,7 @@ export class JitoService {
       // We need to fetch the Stake Pool account to find the validator list
       const poolInfo = await conn.getAccountInfo(JITO_STAKE_POOL_ADDRESS);
       if (!poolInfo) throw new Error('Impossible de récupérer les infos de la pool Jito');
-      
+
       // The validator list address is at offset 65 in the Stake Pool account data
       const validatorListAddr = new PublicKey(poolInfo.data.slice(65, 65 + 32));
       const validatorListAcc = await conn.getAccountInfo(validatorListAddr);
@@ -408,17 +417,17 @@ export class JitoService {
       let validatorStakeAccount = null;
 
       for (let i = 0; i < validatorCount; i++) {
-        const offset = 5 + (i * 73);
+        const offset = 5 + i * 73;
         const voteAddr = new PublicKey(validatorListAcc.data.slice(offset, offset + 32));
         const status = validatorListAcc.data[offset + 32]; // 0 = Active
-        
+
         if (status === 0) {
-           const [derived] = PublicKey.findProgramAddressSync(
-             [voteAddr.toBuffer(), JITO_STAKE_POOL_ADDRESS.toBuffer()],
-             STAKE_POOL_PROGRAM_ID
-           );
-           validatorStakeAccount = derived;
-           break;
+          const [derived] = PublicKey.findProgramAddressSync(
+            [voteAddr.toBuffer(), JITO_STAKE_POOL_ADDRESS.toBuffer()],
+            STAKE_POOL_PROGRAM_ID
+          );
+          validatorStakeAccount = derived;
+          break;
         }
       }
 
@@ -430,46 +439,54 @@ export class JitoService {
       approveData.writeUInt8(4, 0);
       approveData.writeBigUint64LE(BigInt(lamports), 1);
 
-      transaction.add(new TransactionInstruction({
-        keys: [
-          { pubkey: userPoolTokenAccount, isSigner: false, isWritable: true },
-          { pubkey: withdrawAuthority, isSigner: false, isWritable: false },
-          { pubkey: fromKeypair.publicKey, isSigner: true, isWritable: false },
-        ],
-        programId: TOKEN_PROGRAM_ID,
-        data: approveData,
-      }));
+      transaction.add(
+        new TransactionInstruction({
+          keys: [
+            { pubkey: userPoolTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: withdrawAuthority, isSigner: false, isWritable: false },
+            { pubkey: fromKeypair.publicKey, isSigner: true, isWritable: false },
+          ],
+          programId: TOKEN_PROGRAM_ID,
+          data: approveData,
+        })
+      );
 
       // Step D: Withdraw Stake instruction (Instruction index 10)
       const withdrawData = Buffer.alloc(9);
       withdrawData.writeUInt8(10, 0); // WithdrawStake index
       withdrawData.writeBigUint64LE(BigInt(lamports), 1);
 
-      transaction.add(new TransactionInstruction({
-        programId: STAKE_POOL_PROGRAM_ID,
-        keys: [
-          { pubkey: JITO_STAKE_POOL_ADDRESS, isSigner: false, isWritable: true },
-          { pubkey: validatorListAddr, isSigner: false, isWritable: true },
-          { pubkey: withdrawAuthority, isSigner: false, isWritable: false },
-          { pubkey: validatorStakeAccount, isSigner: false, isWritable: true },
-          { pubkey: tempStakeAccount.publicKey, isSigner: false, isWritable: true },
-          { pubkey: fromKeypair.publicKey, isSigner: false, isWritable: false }, // Stake authority
-          { pubkey: withdrawAuthority, isSigner: false, isWritable: false }, // Transfer authority (the delegate we approved)
-          { pubkey: userPoolTokenAccount, isSigner: false, isWritable: true },
-          { pubkey: new PublicKey('JitoFeeY9mJ3p7Z3CndYfncZfN8Jp5DrsA7uB6u5j7j'), isSigner: false, isWritable: true }, // Manager fee account (placeholder, should be from pool info)
-          { pubkey: new PublicKey(JITO_MINT), isSigner: false, isWritable: true },
-          { pubkey: SYSVAR_CLOCK_ID, isSigner: false, isWritable: false },
-          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-          { pubkey: STAKE_PROGRAM_ID, isSigner: false, isWritable: false },
-        ],
-        data: withdrawData,
-      }));
+      transaction.add(
+        new TransactionInstruction({
+          programId: STAKE_POOL_PROGRAM_ID,
+          keys: [
+            { pubkey: JITO_STAKE_POOL_ADDRESS, isSigner: false, isWritable: true },
+            { pubkey: validatorListAddr, isSigner: false, isWritable: true },
+            { pubkey: withdrawAuthority, isSigner: false, isWritable: false },
+            { pubkey: validatorStakeAccount, isSigner: false, isWritable: true },
+            { pubkey: tempStakeAccount.publicKey, isSigner: false, isWritable: true },
+            { pubkey: fromKeypair.publicKey, isSigner: false, isWritable: false }, // Stake authority
+            { pubkey: withdrawAuthority, isSigner: false, isWritable: false }, // Transfer authority (the delegate we approved)
+            { pubkey: userPoolTokenAccount, isSigner: false, isWritable: true },
+            {
+              pubkey: new PublicKey('JitoFeeY9mJ3p7Z3CndYfncZfN8Jp5DrsA7uB6u5j7j'),
+              isSigner: false,
+              isWritable: true,
+            }, // Manager fee account (placeholder, should be from pool info)
+            { pubkey: new PublicKey(JITO_MINT), isSigner: false, isWritable: true },
+            { pubkey: SYSVAR_CLOCK_ID, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: STAKE_PROGRAM_ID, isSigner: false, isWritable: false },
+          ],
+          data: withdrawData,
+        })
+      );
 
       transaction.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
       transaction.feePayer = fromKeypair.publicKey;
 
       const signature = await conn.sendTransaction(transaction, [fromKeypair, tempStakeAccount]);
-      
+
       return {
         success: true,
         txHash: signature,
@@ -482,11 +499,13 @@ export class JitoService {
   }
 
   static async getPendingStandardExits(walletAddress, specificAddress = null) {
-    console.log(`[JITO] Checking pending exits for wallet ${walletAddress}${specificAddress ? ` (specific: ${specificAddress})` : ''}`);
+    console.log(
+      `[JITO] Checking pending exits for wallet ${walletAddress}${specificAddress ? ` (specific: ${specificAddress})` : ''}`
+    );
     try {
       const conn = getConnection();
       const STAKE_PROGRAM_ID = new PublicKey('Stake11111111111111111111111111111111111111');
-      
+
       let stakeAccounts = [];
 
       if (specificAddress) {
@@ -495,10 +514,12 @@ export class JitoService {
           const pubkey = new PublicKey(specificAddress);
           const acc = await conn.getParsedAccountInfo(pubkey);
           if (acc.value) {
-            console.log(`[JITO] Found account ${specificAddress}. Owner: ${acc.value.owner.toString()}`);
+            console.log(
+              `[JITO] Found account ${specificAddress}. Owner: ${acc.value.owner.toString()}`
+            );
             stakeAccounts.push({
               pubkey: pubkey,
-              account: acc.value
+              account: acc.value,
             });
           } else {
             console.log(`[JITO] Account ${specificAddress} NOT FOUND on blockchain.`);
@@ -511,22 +532,16 @@ export class JitoService {
       // If no specific or not found, try by wallet
       if (stakeAccounts.length === 0) {
         // Try staker authority (offset 12)
-        const byStaker = await conn.getParsedProgramAccounts(
-          STAKE_PROGRAM_ID,
-          {
-            filters: [{ memcmp: { offset: 12, bytes: walletAddress } }],
-          }
-        );
+        const byStaker = await conn.getParsedProgramAccounts(STAKE_PROGRAM_ID, {
+          filters: [{ memcmp: { offset: 12, bytes: walletAddress } }],
+        });
         stakeAccounts = byStaker;
 
         // If still empty, try withdrawer authority (offset 44)
         if (stakeAccounts.length === 0) {
-          const byWithdrawer = await conn.getParsedProgramAccounts(
-            STAKE_PROGRAM_ID,
-            {
-              filters: [{ memcmp: { offset: 44, bytes: walletAddress } }],
-            }
-          );
+          const byWithdrawer = await conn.getParsedProgramAccounts(STAKE_PROGRAM_ID, {
+            filters: [{ memcmp: { offset: 44, bytes: walletAddress } }],
+          });
           stakeAccounts = byWithdrawer;
         }
       }
@@ -550,7 +565,7 @@ export class JitoService {
 
         const stakeState = data.stake.delegation?.stake || account.account.lamports;
         const deactivationEpoch = Number(data.stake.delegation?.deactivationEpoch) || 0;
-        
+
         // On Solana, a stake account is ready to withdraw if its deactivationEpoch <= currentEpoch
         const isReady = deactivationEpoch <= epochInfo.epoch && deactivationEpoch !== 0;
 
@@ -570,7 +585,7 @@ export class JitoService {
       };
     } catch (error) {
       console.error('[JITO] getPendingStandardExits error:', error.message);
-      
+
       // Basic fallback to at least get epoch info if possible
       try {
         const conn = getConnection();
@@ -587,31 +602,44 @@ export class JitoService {
       const { Keypair, Transaction, StakeProgram } = await import('@solana/web3.js');
       const secretKey = Uint8Array.from(Buffer.from(walletPrivateKey, 'hex'));
       const fromKeypair = Keypair.fromSecretKey(secretKey);
-      
+
       const conn = getConnection();
-      
-      if (!stakeAccountAddress || typeof stakeAccountAddress !== 'string' || stakeAccountAddress.length < 32 || stakeAccountAddress === 'UNKNOWN') {
-        throw new Error(`Adresse de compte de stake invalide ou manquante : ${stakeAccountAddress}`);
+
+      if (
+        !stakeAccountAddress ||
+        typeof stakeAccountAddress !== 'string' ||
+        stakeAccountAddress.length < 32 ||
+        stakeAccountAddress === 'UNKNOWN'
+      ) {
+        throw new Error(
+          `Adresse de compte de stake invalide ou manquante : ${stakeAccountAddress}`
+        );
       }
 
       const stakePubkey = new PublicKey(stakeAccountAddress);
-      
+
       // 1. Get stake account info and check state
       const accountInfo = await conn.getParsedAccountInfo(stakePubkey);
-      
+
       if (!accountInfo.value) {
-          // Double check with non-parsed call
-          const rawInfo = await conn.getAccountInfo(stakePubkey);
-          if (!rawInfo) {
-              throw new Error(`Compte de stake non trouvé sur la blockchain (Adresse: ${stakeAccountAddress}). Assurez-vous que l'adresse est correcte et que le compte n'a pas déjà été fermé.`);
-          }
-          throw new Error(`Le compte existe mais n'est pas un compte de stake valide (Propriétaire: ${rawInfo.owner.toString()}).`);
+        // Double check with non-parsed call
+        const rawInfo = await conn.getAccountInfo(stakePubkey);
+        if (!rawInfo) {
+          throw new Error(
+            `Compte de stake non trouvé sur la blockchain (Adresse: ${stakeAccountAddress}). Assurez-vous que l'adresse est correcte et que le compte n'a pas déjà été fermé.`
+          );
+        }
+        throw new Error(
+          `Le compte existe mais n'est pas un compte de stake valide (Propriétaire: ${rawInfo.owner.toString()}).`
+        );
       }
-      
+
       const parsedData = accountInfo.value.data?.parsed;
       if (!parsedData || parsedData.program !== 'stake') {
         const owner = accountInfo.value.owner.toString();
-        throw new Error(`L'adresse fournie (${stakeAccountAddress.slice(0, 8)}...) n'est pas un compte de stake (Propriétaire: ${owner}). Veuillez entrer l'adresse du STAKE ACCOUNT créé lors de l'unstake.`);
+        throw new Error(
+          `L'adresse fournie (${stakeAccountAddress.slice(0, 8)}...) n'est pas un compte de stake (Propriétaire: ${owner}). Veuillez entrer l'adresse du STAKE ACCOUNT créé lors de l'unstake.`
+        );
       }
 
       const data = parsedData.info;
@@ -622,14 +650,21 @@ export class JitoService {
 
       // Check if ready (deactivationEpoch <= currentEpoch)
       if (deactivationEpoch > epochInfo.epoch || deactivationEpoch === 0) {
-        throw new Error(`Le compte n'est pas encore désactivé par le réseau Solana. Il sera prêt au début de l'Epoch ${deactivationEpoch}. (Epoch actuelle : ${epochInfo.epoch})`);
+        throw new Error(
+          `Le compte n'est pas encore désactivé par le réseau Solana. Il sera prêt au début de l'Epoch ${deactivationEpoch}. (Epoch actuelle : ${epochInfo.epoch})`
+        );
       }
 
       // Check authority
       const staker = data.meta?.authorized?.staker;
       const withdrawer = data.meta?.authorized?.withdrawer;
-      if (staker !== fromKeypair.publicKey.toString() && withdrawer !== fromKeypair.publicKey.toString()) {
-         throw new Error(`Ce compte appartient à un autre wallet (Autorité : ${withdrawer}). Assurez-vous d'utiliser le wallet correct.`);
+      if (
+        staker !== fromKeypair.publicKey.toString() &&
+        withdrawer !== fromKeypair.publicKey.toString()
+      ) {
+        throw new Error(
+          `Ce compte appartient à un autre wallet (Autorité : ${withdrawer}). Assurez-vous d'utiliser le wallet correct.`
+        );
       }
 
       // 2. Build withdraw instruction

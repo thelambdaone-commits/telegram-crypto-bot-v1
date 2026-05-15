@@ -31,10 +31,7 @@ describe('Markets API', () => {
   });
 
   test('getMarkets throws without client', async () => {
-    await assert.rejects(
-      () => getMarkets(chatId),
-      /Client non initialise/
-    );
+    await assert.rejects(() => getMarkets(chatId), /Client non initialise/);
   });
 
   test('getMarkets returns data', async () => {

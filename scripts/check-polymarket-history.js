@@ -24,7 +24,10 @@ for (const summary of list) {
   }
 
   try {
-    const { userAddress, activity } = await getUserActivity(creds.address, { limit: 10, type: 'TRADE' });
+    const { userAddress, activity } = await getUserActivity(creds.address, {
+      limit: 10,
+      type: 'TRADE',
+    });
     removeClobClient(chatId);
     const client = buildClobClient(chatId, creds.privateKey, creds);
     const allTradesResult = await client.getTradesPaginated();
@@ -41,7 +44,9 @@ for (const summary of list) {
 
     const sample = activity[0] || allTrades[0] || makerTrades[0];
     if (sample) {
-      console.log(`  sample=${sample.title || sample.id || sample.market || sample.asset_id} side=${sample.side || 'N/A'} size=${sample.size || 'N/A'} price=${sample.price || 'N/A'}`);
+      console.log(
+        `  sample=${sample.title || sample.id || sample.market || sample.asset_id} side=${sample.side || 'N/A'} size=${sample.size || 'N/A'} price=${sample.price || 'N/A'}`
+      );
     }
   } catch (error) {
     console.log(`- ${summary.active ? '*' : ' '} ${creds.address}`);

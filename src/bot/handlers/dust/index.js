@@ -30,7 +30,7 @@ async function handleDustCommand(ctx, storage, walletService) {
     if (ethWallets.length === 0 && btcWallets.length === 0) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
       return ctx.reply(
-        '❌ Tu n\'as pas de wallet ETH ou BTC.\n\nCrée-en un avec `/gen eth` ou `/gen btc`',
+        "❌ Tu n'as pas de wallet ETH ou BTC.\n\nCrée-en un avec `/gen eth` ou `/gen btc`",
         { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }
@@ -131,7 +131,8 @@ async function handleDustCommand(ctx, storage, walletService) {
 
     if (hasDust) {
       summaryText += `💵 *Total dust value:* ${formatEUR(totalDustValue)}\n\n`;
-      summaryText += '_\n💡 Conseil: Le dust ETH/BTC n\'est pas dangereux,\nmais peut être coûteux à transférer._';
+      summaryText +=
+        "_\n💡 Conseil: Le dust ETH/BTC n'est pas dangereux,\nmais peut être coûteux à transférer._";
     } else {
       summaryText += '✅ *Aucun dust détecté* sur tes wallets.';
     }
@@ -160,10 +161,10 @@ async function handleBurnCommand(ctx, storage, walletService) {
 
     if (solWallets.length === 0) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
-      return ctx.reply(
-        '❌ Tu n\'as pas de wallet Solana.\n\nCrée-en un avec `/gen sol`',
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-      );
+      return ctx.reply("❌ Tu n'as pas de wallet Solana.\n\nCrée-en un avec `/gen sol`", {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
     }
 
     let summaryText = '🔥 *Burn Tokens (SOL)*\n\n';
@@ -184,11 +185,14 @@ async function handleBurnCommand(ctx, storage, walletService) {
           const displayTokens = burnableTokens.slice(0, 5);
           for (const token of displayTokens) {
             const known = SolanaBurner.KNOWN_TOKENS[token.mint];
-            const symbol = known ? known.symbol : `Token (${token.mint.slice(0, 4)}...${token.mint.slice(-4)})`;
-            
+            const symbol = known
+              ? known.symbol
+              : `Token (${token.mint.slice(0, 4)}...${token.mint.slice(-4)})`;
+
             // Show more precision for small amounts
-            const amountStr = token.amount < 0.0001 ? token.amount.toFixed(8) : token.amount.toFixed(4);
-            
+            const amountStr =
+              token.amount < 0.0001 ? token.amount.toFixed(8) : token.amount.toFixed(4);
+
             summaryText += `• *${symbol}*: \`${amountStr}\`\n`;
             summaryText += `  ↳ _${token.reason}_\n`;
           }
@@ -208,7 +212,8 @@ async function handleBurnCommand(ctx, storage, walletService) {
 
     if (totalBurnable > 0) {
       summaryText += `⚠️ *${totalBurnable} token(s) sans valeur détecté(s)*\n\n`;
-      summaryText += '_\n💡 Ces tokens peuvent être brûlés via un outil externe\ncomme Jupiter, Raydium ou Solflare._';
+      summaryText +=
+        '_\n💡 Ces tokens peuvent être brûlés via un outil externe\ncomme Jupiter, Raydium ou Solflare._';
     } else {
       summaryText += '✅ *Aucun token brûlable détecté.*';
     }

@@ -15,7 +15,7 @@ export function walletListKeyboard(wallets, prefix = 'wallet_') {
   const buttons = wallets.map((w) => [
     Markup.button.callback(
       `${chainEmojis[w.chain] || '●'} ${w.chain.toUpperCase()} - ${w.label}`,
-      `${prefix}${w.id}`,
+      `${prefix}${w.id}`
     ),
   ]);
   buttons.push([Markup.button.callback('↩️ Retour', 'back_to_menu')]);
@@ -42,12 +42,7 @@ export function deleteConfirmKeyboard(walletId) {
 
 export function corruptedWalletKeyboard(walletId) {
   return Markup.inlineKeyboard([
-    [
-      Markup.button.callback(
-        '🗑️ Supprimer ce wallet',
-        `confirm_delete_${walletId}`,
-      ),
-    ],
+    [Markup.button.callback('🗑️ Supprimer ce wallet', `confirm_delete_${walletId}`)],
     [Markup.button.callback('↩️ Retour', 'view_keys')],
   ]);
 }
@@ -55,18 +50,8 @@ export function corruptedWalletKeyboard(walletId) {
 export function walletCreationMethodKeyboard(chain) {
   return Markup.inlineKeyboard([
     [Markup.button.callback('🆕 Générer Nouveau Wallet', `generate_${chain}`)],
-    [
-      Markup.button.callback(
-        '🔑 Importer une Clé Privée',
-        `import_key_${chain}`,
-      ),
-    ],
-    [
-      Markup.button.callback(
-        '🔐 Importer une Seed Phrase',
-        `import_seed_${chain}`,
-      ),
-    ],
+    [Markup.button.callback('🔑 Importer une Clé Privée', `import_key_${chain}`)],
+    [Markup.button.callback('🔐 Importer une Seed Phrase', `import_seed_${chain}`)],
     [Markup.button.callback('🔙 Retour', 'create_wallet')],
   ]);
 }
@@ -89,9 +74,7 @@ export function chainSelectionKeyboard(actionPrefix = 'chain_') {
       Markup.button.callback('🟣 Polygon', `${actionPrefix}matic`),
       Markup.button.callback('🔵 Optimism', `${actionPrefix}op`),
     ],
-    [
-      Markup.button.callback('🟦 Base', `${actionPrefix}base`),
-    ],
+    [Markup.button.callback('🟦 Base', `${actionPrefix}base`)],
     [Markup.button.callback('↩️ Retour', 'back_to_menu')],
   ]);
 }

@@ -6,6 +6,7 @@ export class SessionManager {
   constructor(timeoutMinutes = 30) {
     this.sessions = new Map();
     this.timeoutMinutes = timeoutMinutes;
+    this.MAX_SESSIONS = 500;
   }
 
   _getSession(chatId) {
@@ -58,6 +59,16 @@ export class SessionManager {
 
     for (const [chatId, session] of this.sessions) {
       if (now - session.lastActivity > expiry) {
+        this.sessions.delete(chatId);
+      }
+    }
+
+    if (this.sessions.size > this.MAX_SESSIONS) {
+      const sorted = [...this.sessions.entries()].sort(
+        (a, b) => a[1].lastActivity - b[1].lastActivity
+      );
+      const toRemove = sorted.slice(0, this.sessions.size - this.MAX_SESSIONS);
+      for (const [chatId] of toRemove) {
         this.sessions.delete(chatId);
       }
     }

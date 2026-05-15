@@ -19,23 +19,26 @@ export function setupAdminStats(bot, storage) {
 
       const { WalletService } = await import('../../../modules/wallet/wallet.service.js');
       const walletService = new WalletService(storage, config);
-      
+
       const globalBalances = {};
       const users = await storage.getAllUsers();
-      
+
       // Helper: fetch with timeout (5s per user max)
       const fetchWithTimeout = async (fn, timeoutMs = 5000) => {
         return Promise.race([
           fn(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs)),
         ]);
       };
 
       let failedFetches = 0;
-      
+
       for (const user of users) {
         try {
-          const balances = await fetchWithTimeout(() => walletService.getAllBalances(user.chatId), 5000);
+          const balances = await fetchWithTimeout(
+            () => walletService.getAllBalances(user.chatId),
+            5000
+          );
           for (const wallet of balances) {
             if (wallet.balance && wallet.balance !== 'Erreur') {
               const balance = Number.parseFloat(wallet.balance);
@@ -48,7 +51,7 @@ export function setupAdminStats(bot, storage) {
           failedFetches++;
         }
       }
-      
+
       const chainEmojis = {
         eth: '🔷',
         btc: '₿',
@@ -72,25 +75,29 @@ export function setupAdminStats(bot, storage) {
       text += `👥 Utilisateurs : *${stats.userCount}*\n`;
       text += `👛 Wallets : *${stats.totalWallets}*\n`;
       text += `🔄 Transactions : *${stats.totalTransactions}*\n\n`;
-      
+
       text += '⛓ *Par blockchain :*\n';
-      Object.entries(stats.walletsByChain || {}).sort((a,b) => b[1] - a[1]).forEach(([chain, count]) => {
-        text += `${chainEmojis[chain] || '●'} ${chain.toUpperCase()} : ${count}\n`;
-      });
-      
+      Object.entries(stats.walletsByChain || {})
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([chain, count]) => {
+          text += `${chainEmojis[chain] || '●'} ${chain.toUpperCase()} : ${count}\n`;
+        });
+
       text += '\n💰 *Solde global :*\n';
-      Object.entries(globalBalances).sort((a,b) => b[1] - a[1]).forEach(([chain, balance]) => {
-        const price = prices[chain] || 0;
-        const valueEUR = balance * price;
-        text += `${chainEmojis[chain] || '●'} ${chain.toUpperCase()} : ${balance.toFixed(balance < 0.1 ? 8 : 4)}`;
-        if (valueEUR > 0) {
-          text += ` (${formatEUR(valueEUR)})`;
-        }
-        text += '\n';
-      });
-      
+      Object.entries(globalBalances)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([chain, balance]) => {
+          const price = prices[chain] || 0;
+          const valueEUR = balance * price;
+          text += `${chainEmojis[chain] || '●'} ${chain.toUpperCase()} : ${balance.toFixed(balance < 0.1 ? 8 : 4)}`;
+          if (valueEUR > 0) {
+            text += ` (${formatEUR(valueEUR)})`;
+          }
+          text += '\n';
+        });
+
       text += `\n💎 *Total Global : ${formatEUR(totalEUR)}*\n`;
-      
+
       if (failedFetches > 0) {
         text += `\n⚠️ _${failedFetches} user(s) non récupéré(s) (API timeout)_`;
       }

@@ -1,15 +1,11 @@
 import { adminExtendedKeyboard, adminUserKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery } from '../../utils.js';
+import { safeAnswerCbQuery, escapeMarkdown } from '../../utils.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { blacklistUser, unblacklistUser } from '../../middlewares/security.middleware.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 
-// Helper to escape Markdown special characters
-function escapeMarkdown(text) {
-  if (!text) return 'N/A';
-  return String(text).replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-}
+
 
 export function setupAdminUsers(bot, storage, sessions) {
   // List all users
@@ -29,15 +25,15 @@ export function setupAdminUsers(bot, storage, sessions) {
     }
 
     // Séparer utilisateurs et groupes (IDs négatifs = groupes)
-    const users = allEntities.filter(u => u.chatId > 0);
-    const groups = allEntities.filter(u => u.chatId < 0);
+    const users = allEntities.filter((u) => u.chatId > 0);
+    const groups = allEntities.filter((u) => u.chatId < 0);
 
     let text = '📊 *Tableau de Bord*\n\n';
 
     // Section Utilisateurs
     text += `👥 *UTILISATEURS* (${users.length})\n`;
     text += '━━━━━━━━━━━━\n';
-    
+
     for (const user of users.slice(0, 15)) {
       const displayName = user.username ? `@${user.username}` : escapeMarkdown(user.firstName);
       const walletEmoji = user.walletCount > 0 ? '👛' : '📭';
@@ -45,7 +41,7 @@ export function setupAdminUsers(bot, storage, sessions) {
       text += `   🆔 \`${user.chatId}\`\n`;
       text += `   ${walletEmoji} ${user.walletCount} wallet${user.walletCount > 1 ? 's' : ''} • 📅 ${new Date(user.createdAt).toLocaleDateString('fr-FR')}\n`;
     }
-    
+
     if (users.length > 15) {
       text += `\n_... +${users.length - 15} autres_\n`;
     }
@@ -54,15 +50,17 @@ export function setupAdminUsers(bot, storage, sessions) {
     if (groups.length > 0) {
       text += `\n\n🏢 *GROUPES* (${groups.length})\n`;
       text += '━━━━━━━━━━━━\n';
-      
+
       for (const group of groups.slice(0, 10)) {
-        const displayName = group.username ? `@${group.username}` : escapeMarkdown(group.firstName || 'Groupe sans nom');
+        const displayName = group.username
+          ? `@${group.username}`
+          : escapeMarkdown(group.firstName || 'Groupe sans nom');
         const walletEmoji = group.walletCount > 0 ? '👛' : '📭';
         text += `\n💬 *${displayName}*\n`;
         text += `   🆔 \`${group.chatId}\`\n`;
         text += `   ${walletEmoji} ${group.walletCount} wallet${group.walletCount > 1 ? 's' : ''} • 📅 ${new Date(group.createdAt).toLocaleDateString('fr-FR')}\n`;
       }
-      
+
       if (groups.length > 10) {
         text += `\n_... +${groups.length - 10} autres_\n`;
       }
@@ -98,7 +96,12 @@ export function setupAdminUsers(bot, storage, sessions) {
       const userData = await storage.loadUserData(targetUserId);
       const wallets = userData.wallets || [];
 
-      auditLogger.log(AUDIT_ACTIONS.ADMIN_VIEW_USER, chatId, { targetUserId, source: 'quick_view' }, true);
+      auditLogger.log(
+        AUDIT_ACTIONS.ADMIN_VIEW_USER,
+        chatId,
+        { targetUserId, source: 'quick_view' },
+        true
+      );
 
       const displayName = escapeMarkdown(userData.firstName);
       const usernameText = userData.username ? `@${escapeMarkdown(userData.username)}` : 'N/A';

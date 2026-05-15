@@ -77,4 +77,3 @@ export function verifyPassphrase(passphrase, storedHash) {
   const hash = crypto.pbkdf2Sync(passphrase, salt, ITERATIONS, 32, 'sha512');
   return crypto.timingSafeEqual(hash, storedHashBytes);
 }
-

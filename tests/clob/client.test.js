@@ -50,7 +50,12 @@ describe('CLOB Client', () => {
 
   test('buildClobClient rejects invalid private key', () => {
     assert.throws(
-      () => buildClobClient(chatId, 'not-a-key', { apiKey: 'key', apiSecret: 'secret', apiPassphrase: 'pass' }),
+      () =>
+        buildClobClient(chatId, 'not-a-key', {
+          apiKey: 'key',
+          apiSecret: 'secret',
+          apiPassphrase: 'pass',
+        }),
       /Private key Polymarket invalide/
     );
   });

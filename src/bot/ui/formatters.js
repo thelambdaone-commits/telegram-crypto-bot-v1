@@ -13,8 +13,8 @@ export function separator() {
 
 /**
  * Titre de section formaté avec séparateur
- * @param {string} emoji 
- * @param {string} title 
+ * @param {string} emoji
+ * @param {string} title
  * @returns {string}
  */
 export function sectionTitle(emoji, title) {
@@ -23,7 +23,7 @@ export function sectionTitle(emoji, title) {
 
 /**
  * Formate une adresse crypto de manière lisible
- * @param {string} address 
+ * @param {string} address
  * @param {number} start - caractères au début
  * @param {number} end - caractères à la fin
  * @returns {string}
@@ -38,8 +38,8 @@ export function truncateAddress(address, start = 8, end = 6) {
  */
 export const CHAIN_EMOJIS = {
   eth: '🔷',
-  btc: '🟠', 
-  sol: '🟣'
+  btc: '🟠',
+  sol: '🟣',
 };
 
 /**
@@ -48,7 +48,7 @@ export const CHAIN_EMOJIS = {
 export const CHAIN_NAMES = {
   eth: 'Ethereum',
   btc: 'Bitcoin',
-  sol: 'Solana'
+  sol: 'Solana',
 };
 
 /**

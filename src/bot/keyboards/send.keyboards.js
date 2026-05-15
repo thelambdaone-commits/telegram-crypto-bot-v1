@@ -5,21 +5,16 @@ export function feeSelectionKeyboard(recommendedLevel = 'slow') {
     [
       Markup.button.callback(
         `🐢 Lent (Economique)${recommendedLevel === 'slow' ? ' ✅' : ''}`,
-        'fee_slow',
+        'fee_slow'
       ),
     ],
     [
       Markup.button.callback(
         `🚗 Moyen${recommendedLevel === 'average' ? ' ✅' : ''}`,
-        'fee_average',
+        'fee_average'
       ),
     ],
-    [
-      Markup.button.callback(
-        `🚀 Rapide${recommendedLevel === 'fast' ? ' ✅' : ''}`,
-        'fee_fast',
-      ),
-    ],
+    [Markup.button.callback(`🚀 Rapide${recommendedLevel === 'fast' ? ' ✅' : ''}`, 'fee_fast')],
     [Markup.button.callback('🤖 Auto (Meilleur rapport)', 'fee_auto')],
     [Markup.button.callback('❌ Annuler', 'cancel')],
   ]);
@@ -34,18 +29,18 @@ export function confirmationKeyboard() {
 
 export function tokenSelectionKeyboard(chain) {
   const buttons = [];
-  
+
   if (chain === 'eth' || chain === 'arb' || chain === 'op' || chain === 'base') {
     buttons.push([Markup.button.callback('🔷 ETH (native)', `token_${chain}_native`)]);
   } else if (chain === 'matic') {
     buttons.push([Markup.button.callback('🟣 MATIC (native)', `token_${chain}_native`)]);
   }
-  
+
   if (['arb', 'matic', 'op', 'base'].includes(chain)) {
     buttons.push([Markup.button.callback('💵 USDC', `token_${chain}_USDC`)]);
     buttons.push([Markup.button.callback('💵 USDT', `token_${chain}_USDT`)]);
   }
-  
+
   buttons.push([Markup.button.callback('↩️ Retour', 'back_to_menu')]);
   return Markup.inlineKeyboard(buttons);
 }
@@ -73,12 +68,7 @@ export function quickAmountKeyboard() {
 
 export function addressAnalyzedKeyboard(chain) {
   return Markup.inlineKeyboard([
-    [
-      Markup.button.callback(
-        '📤 Envoyer a cette adresse',
-        `send_to_analyzed_${chain}`,
-      ),
-    ],
+    [Markup.button.callback('📤 Envoyer a cette adresse', `send_to_analyzed_${chain}`)],
     [Markup.button.callback('🔍 Analyser une autre adresse', 'analyze_address')],
     [Markup.button.callback('↩️ Retour au menu', 'back_to_menu')],
   ]);

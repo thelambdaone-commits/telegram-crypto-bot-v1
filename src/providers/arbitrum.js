@@ -59,7 +59,7 @@ export class ArbitrumChain extends BaseProvider {
       const balance = await tokenContract.balanceOf(address);
       const decimals = await tokenContract.decimals();
       const symbol = await tokenContract.symbol();
-      
+
       return {
         balance: (balance / BigInt(10 ** decimals)).toString(),
         balanceWei: balance.toString(),
@@ -82,13 +82,13 @@ export class ArbitrumChain extends BaseProvider {
   async getAllTokens(address) {
     const results = [];
     const provider = this.getProvider();
-    
+
     for (const [symbol, tokenAddress] of Object.entries(this.tokenAddresses)) {
       try {
         const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
         const balance = await contract.balanceOf(address);
         const decimals = await contract.decimals();
-        
+
         if (balance > 0n) {
           results.push({
             symbol,
@@ -103,13 +103,13 @@ export class ArbitrumChain extends BaseProvider {
         continue;
       }
     }
-    
+
     return results;
   }
 
   async estimateFees(fromAddress, toAddress, amount, tokenSymbol = null) {
     const feeData = await this.provider.getFeeData();
-    
+
     const isToken = tokenSymbol && this.tokenAddresses[tokenSymbol];
     const gasLimit = isToken ? 65000n : 21000n;
 
@@ -184,7 +184,7 @@ export class ArbitrumChain extends BaseProvider {
   async sendToken(wallet, toAddress, amount, feeLevel, tokenSymbol) {
     const tokenAddress = this.tokenAddresses[tokenSymbol];
     const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
-    
+
     const decimals = await tokenContract.decimals();
     const amountWei = ethers.parseUnits(amount.toString(), decimals);
 
@@ -218,7 +218,9 @@ export class ArbitrumChain extends BaseProvider {
     return {
       gasPrice: feeData.gasPrice ? Number(feeData.gasPrice) / 1e9 : 0,
       maxFeePerGas: feeData.maxFeePerGas ? Number(feeData.maxFeePerGas) / 1e9 : 0,
-      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ? Number(feeData.maxPriorityFeePerGas) / 1e9 : 0,
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas
+        ? Number(feeData.maxPriorityFeePerGas) / 1e9
+        : 0,
     };
   }
 

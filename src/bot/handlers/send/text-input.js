@@ -1,8 +1,8 @@
-import { 
-  mainMenuKeyboard, 
-  amountTypeKeyboard, 
-  quickAmountKeyboard, 
-  feeSelectionKeyboard 
+import {
+  mainMenuKeyboard,
+  amountTypeKeyboard,
+  quickAmountKeyboard,
+  feeSelectionKeyboard,
 } from '../../keyboards/index.js';
 import { detectChain } from '../../../shared/address-detector.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
@@ -22,7 +22,7 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
       // Pour les tokens SPL personnalisés sur Solana, utiliser "sol" pour la validation
       // Ne jamais utiliser le nom/symbole du token comme chaîne
       let validationChain = data.selectedChain;
-      
+
       // Si selectedChain n'est pas une blockchain connue (ex: "DECIMALS"), forcer "sol"
       const validChains = ['eth', 'btc', 'ltc', 'bch', 'sol', 'arb', 'matic', 'op', 'base'];
       if (!validChains.includes(validationChain)) {
@@ -64,25 +64,35 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
           amount = inputAmount / conversion.rate;
         }
 
-        const balanceData = await walletService.getBalance(chatId, data.selectedWalletId, tokenSymbol);
+        const balanceData = await walletService.getBalance(
+          chatId,
+          data.selectedWalletId,
+          tokenSymbol
+        );
         if (amount > Number.parseFloat(balanceData.balance)) {
           return ctx.reply(`💸 Solde insuffisant (${balanceData.balance} ${balanceData.symbol})`);
         }
 
         sessions.setData(chatId, { ...data, amount });
-        
-        const fees = await walletService.estimateFees(chatId, data.selectedWalletId, data.toAddress, amount, tokenSymbol);
+
+        const fees = await walletService.estimateFees(
+          chatId,
+          data.selectedWalletId,
+          data.toAddress,
+          amount,
+          tokenSymbol
+        );
         sessions.setData(chatId, { ...sessions.getData(chatId), fees });
 
-        const amountEUR = tokenSymbol 
+        const amountEUR = tokenSymbol
           ? await convertToEUR('usd', amount)
           : await convertToEUR(data.selectedChain, amount);
 
         ctx.reply(
           '✅ *Montant validé*\n\n' +
-          `💰 Montant : *${amount.toFixed(8)} ${displaySymbol}*\n` +
-          `💶 Valeur : ${formatEUR(amountEUR.valueEUR)}\n\n` +
-          'Choisis la vitesse de transaction :',
+            `💰 Montant : *${amount.toFixed(8)} ${displaySymbol}*\n` +
+            `💶 Valeur : ${formatEUR(amountEUR.valueEUR)}\n\n` +
+            'Choisis la vitesse de transaction :',
           {
             parse_mode: 'Markdown',
             ...feeSelectionKeyboard('slow'),
@@ -97,7 +107,21 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
 
     if (state === 'ENTER_ADDRESS_ANALYZE') {
       // Ignore commands and menu buttons
-      if (text.startsWith('/') || ['💰 Mes Wallets', '💸 Envoyer', '🔍 Analyser', '🔐 Mes Clés', '📊 Cours EUR', '🆘 Help', '👑 Admin', 'Stop', 'Annuler', 'Retour'].includes(text)) {
+      if (
+        text.startsWith('/') ||
+        [
+          '💰 Mes Wallets',
+          '💸 Envoyer',
+          '🔍 Analyser',
+          '🔐 Mes Clés',
+          '📊 Cours EUR',
+          '🆘 Help',
+          '👑 Admin',
+          'Stop',
+          'Annuler',
+          'Retour',
+        ].includes(text)
+      ) {
         sessions.setState(chatId, 'IDLE');
         return next();
       }
@@ -106,37 +130,43 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
       const chain = detectChain(text);
       if (!chain) {
         logger.warn('Invalid address provided for analysis', { address: text, chatId });
-        return ctx.reply('⚠️ Adresse non reconnue (ETH, BTC, LTC, BCH, SOL, Arbitrum, Polygon, Optimism, Base acceptés).');
+        return ctx.reply(
+          '⚠️ Adresse non reconnue (ETH, BTC, LTC, BCH, SOL, Arbitrum, Polygon, Optimism, Base acceptés).'
+        );
       }
 
       try {
         logger.info('Analyzing external address', { chain, address: text, chatId });
-        
+
         const balanceData = await walletService.getPublicAddressBalance(chain, text);
         const conversion = await convertToEUR(chain, Number.parseFloat(balanceData.balance));
 
         sessions.setData(chatId, { analyzedAddress: text, analyzedChain: chain });
 
-        let message = '🔍 *Analyse d\'adresse*\n\n' +
+        let message =
+          "🔍 *Analyse d'adresse*\n\n" +
           `⛓ Réseau : *${chain.toUpperCase()}*\n` +
           `📬 Adresse : \`${text}\`\n\n` +
           `💰 *Solde natif:* *${balanceData.balance} ${chain.toUpperCase()}*\n` +
           `💶 Valeur : ${formatEUR(conversion.valueEUR)}\n`;
 
         const tokens = await walletService.getPublicAddressTokens(chain, text);
-        
+
         if (tokens && tokens.length > 0) {
-          const knownTokens = tokens.filter(t => t.isKnown);
-          const unknownTokens = tokens.filter(t => !t.isKnown);
-          
+          const knownTokens = tokens.filter((t) => t.isKnown);
+          const unknownTokens = tokens.filter((t) => !t.isKnown);
+
           if (knownTokens.length > 0) {
             message += '\n📦 *Tokens:*\n';
             for (const token of knownTokens) {
-              const tokenConv = await convertToEUR(token.symbol.toLowerCase().includes('usd') ? 'usd' : 'sol', token.amount);
+              const tokenConv = await convertToEUR(
+                token.symbol.toLowerCase().includes('usd') ? 'usd' : 'sol',
+                token.amount
+              );
               message += `${token.icon} *${token.symbol}:* ${token.amount.toFixed(token.decimals <= 6 ? 2 : 6)} (${formatEUR(tokenConv.valueEUR)})\n`;
             }
           }
-          
+
           if (unknownTokens.length > 0) {
             message += '\n📦 *Fallback Tokens:*\n';
             for (const token of unknownTokens) {
@@ -152,13 +182,19 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
           ...addressAnalyzedKeyboard(chain),
         });
         sessions.setState(chatId, 'IDLE');
-        logger.info('Address analysis completed', { chain, address: text, balance: balanceData.balance, tokensCount: tokens?.length || 0, chatId });
+        logger.info('Address analysis completed', {
+          chain,
+          address: text,
+          balance: balanceData.balance,
+          tokensCount: tokens?.length || 0,
+          chatId,
+        });
       } catch (error) {
-        logger.logError(error, { 
-          context: 'Address analysis', 
-          chain, 
-          address: text, 
-          chatId 
+        logger.logError(error, {
+          context: 'Address analysis',
+          chain,
+          address: text,
+          chatId,
         });
         ctx.reply(`❌ Erreur d'analyse : ${error.message}`);
       }

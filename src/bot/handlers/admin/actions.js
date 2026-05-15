@@ -1,5 +1,9 @@
-import { adminExtendedKeyboard, adminUserKeyboard, adminCancelKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery } from '../../utils.js';
+import {
+  adminExtendedKeyboard,
+  adminUserKeyboard,
+  adminCancelKeyboard,
+} from '../../keyboards/index.js';
+import { safeAnswerCbQuery, escapeMarkdown } from '../../utils.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import {
   getRateLimitStats,
@@ -8,11 +12,7 @@ import {
 } from '../../middlewares/security.middleware.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 
-// Helper to escape Markdown special characters
-function escapeMarkdown(text) {
-  if (!text) return 'N/A';
-  return String(text).replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
-}
+
 
 const TELEGRAM_MESSAGE_LIMIT = 4096;
 
@@ -45,7 +45,7 @@ async function sendBroadcast(ctx, storage, text) {
   const chunks = splitTelegramMessage(text);
 
   // Filter out groups/channels (negative IDs) and admin's own chat ID.
-  const validUsers = users.filter(u => u.chatId > 0 && u.chatId !== chatId);
+  const validUsers = users.filter((u) => u.chatId > 0 && u.chatId !== chatId);
 
   let sent = 0;
   let failed = 0;
@@ -84,7 +84,8 @@ function promptBroadcast(ctx, sessions, edit = false) {
   const chatId = ctx.chat.id;
   sessions.setState(chatId, 'ADMIN_ENTER_BROADCAST');
 
-  const message = '📣 *Broadcast Global*\n\nEnvoie-moi le message à diffuser à tous les utilisateurs.\n\n_Le Markdown est supporté._';
+  const message =
+    '📣 *Broadcast Global*\n\nEnvoie-moi le message à diffuser à tous les utilisateurs.\n\n_Le Markdown est supporté._';
   const options = {
     parse_mode: 'Markdown',
     ...adminCancelKeyboard(),
@@ -141,7 +142,7 @@ export function setupAdminActions(bot, storage, sessions) {
       });
     }
 
-    let text = '📝 *Logs d\'Audit Récents*\n\n';
+    let text = "📝 *Logs d'Audit Récents*\n\n";
     for (const log of logs) {
       const time = new Date(log.timestamp).toLocaleTimeString('fr-FR', {
         hour: '2-digit',
@@ -185,10 +186,9 @@ export function setupAdminActions(bot, storage, sessions) {
     if (!isAdmin(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_BAN_ID');
-    ctx.editMessageText(
-      '🚫 *Bannir un utilisateur*\n\nEntre le Chat ID à bannir :',
-      { parse_mode: 'Markdown' }
-    );
+    ctx.editMessageText('🚫 *Bannir un utilisateur*\n\nEntre le Chat ID à bannir :', {
+      parse_mode: 'Markdown',
+    });
   });
 
   bot.action('admin_unban', async (ctx) => {
@@ -197,10 +197,9 @@ export function setupAdminActions(bot, storage, sessions) {
     if (!isAdmin(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_UNBAN_ID');
-    ctx.editMessageText(
-      '✅ *Débannir un utilisateur*\n\nEntre le Chat ID à débannir :',
-      { parse_mode: 'Markdown' }
-    );
+    ctx.editMessageText('✅ *Débannir un utilisateur*\n\nEntre le Chat ID à débannir :', {
+      parse_mode: 'Markdown',
+    });
   });
 
   // View user - prompt for ID
@@ -210,10 +209,10 @@ export function setupAdminActions(bot, storage, sessions) {
     if (!isAdmin(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_USER_ID');
-    ctx.editMessageText(
-      '🔍 *Voir un utilisateur*\n\nEntre le Chat ID de l\'utilisateur :',
-      { parse_mode: 'Markdown', ...adminCancelKeyboard() }
-    );
+    ctx.editMessageText("🔍 *Voir un utilisateur*\n\nEntre le Chat ID de l'utilisateur :", {
+      parse_mode: 'Markdown',
+      ...adminCancelKeyboard(),
+    });
   });
 
   // View user keys (admin)
@@ -228,28 +227,17 @@ export function setupAdminActions(bot, storage, sessions) {
       const wallets = userData.wallets || [];
 
       if (wallets.length === 0) {
-        return ctx.reply(
-          'ℹ️ Aucun wallet pour cet utilisateur.',
-          adminExtendedKeyboard()
-        );
+        return ctx.reply('ℹ️ Aucun wallet pour cet utilisateur.', adminExtendedKeyboard());
       }
 
-      auditLogger.log(
-        AUDIT_ACTIONS.ADMIN_VIEW_USER_KEYS,
-        chatId,
-        { targetUserId },
-        true
-      );
+      auditLogger.log(AUDIT_ACTIONS.ADMIN_VIEW_USER_KEYS, chatId, { targetUserId }, true);
 
       let message = `🔐 *Clés de l'utilisateur ${targetUserId}*\n\n`;
       message += '⚠️ Ces informations sont extrêmement sensibles\n\n';
 
       for (const wallet of wallets) {
         try {
-          const fullWallet = await storage.getWalletWithKey(
-            targetUserId,
-            wallet.id
-          );
+          const fullWallet = await storage.getWalletWithKey(targetUserId, wallet.id);
 
           if (fullWallet && !fullWallet.isCorrupted) {
             message += `*${wallet.label}*\n`;
@@ -290,12 +278,7 @@ export function setupAdminActions(bot, storage, sessions) {
 
     try {
       await storage.deleteWallet(targetUserId, walletId);
-      auditLogger.log(
-        AUDIT_ACTIONS.ADMIN_DELETE_WALLET,
-        chatId,
-        { targetUserId, walletId },
-        true
-      );
+      auditLogger.log(AUDIT_ACTIONS.ADMIN_DELETE_WALLET, chatId, { targetUserId, walletId }, true);
 
       ctx.reply(
         `🗑️ *Wallet supprimé*\n\nUtilisateur : \`${targetUserId}\`\nID Wallet : \`${walletId}\``,
@@ -332,12 +315,7 @@ export function setupAdminMisc(bot, storage, sessions) {
       if (isNaN(banId)) return ctx.reply('❌ ID invalide.');
 
       blacklistUser(banId);
-      auditLogger.log(
-        AUDIT_ACTIONS.ADMIN_BAN,
-        chatId,
-        { targetUserId: banId },
-        true
-      );
+      auditLogger.log(AUDIT_ACTIONS.ADMIN_BAN, chatId, { targetUserId: banId }, true);
       return ctx.reply(`🚫 Utilisateur \`${banId}\` banni.`, {
         parse_mode: 'Markdown',
         ...adminExtendedKeyboard(),
@@ -350,12 +328,7 @@ export function setupAdminMisc(bot, storage, sessions) {
       if (isNaN(unbanId)) return ctx.reply('❌ ID invalide.');
 
       unblacklistUser(unbanId);
-      auditLogger.log(
-        AUDIT_ACTIONS.ADMIN_UNBAN,
-        chatId,
-        { targetUserId: unbanId },
-        true
-      );
+      auditLogger.log(AUDIT_ACTIONS.ADMIN_UNBAN, chatId, { targetUserId: unbanId }, true);
       return ctx.reply(`✅ Utilisateur \`${unbanId}\` débanni.`, {
         parse_mode: 'Markdown',
         ...adminExtendedKeyboard(),
@@ -371,17 +344,10 @@ export function setupAdminMisc(bot, storage, sessions) {
         const userData = await storage.loadUserData(targetUserId);
         const wallets = userData.wallets || [];
 
-        auditLogger.log(
-          AUDIT_ACTIONS.ADMIN_VIEW_USER,
-          chatId,
-          { targetUserId },
-          true
-        );
+        auditLogger.log(AUDIT_ACTIONS.ADMIN_VIEW_USER, chatId, { targetUserId }, true);
 
         const displayName = escapeMarkdown(userData.firstName);
-        const usernameText = userData.username
-          ? `@${escapeMarkdown(userData.username)}`
-          : 'N/A';
+        const usernameText = userData.username ? `@${escapeMarkdown(userData.username)}` : 'N/A';
 
         let message = `👤 *Utilisateur ${targetUserId}*\n\n`;
         message += `🔹 Nom : ${displayName}\n`;
@@ -398,10 +364,7 @@ export function setupAdminMisc(bot, storage, sessions) {
           ...adminUserKeyboard(targetUserId),
         });
       } catch (error) {
-        await ctx.reply(
-          `❌ Erreur : ${error.message}`,
-          adminExtendedKeyboard()
-        );
+        await ctx.reply(`❌ Erreur : ${error.message}`, adminExtendedKeyboard());
       }
     }
 

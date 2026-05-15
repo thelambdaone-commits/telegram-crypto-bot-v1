@@ -1,4 +1,9 @@
-import { mainMenuKeyboard, walletListKeyboard, walletActionsKeyboard, corruptedWalletKeyboard } from '../../keyboards/index.js';
+import {
+  mainMenuKeyboard,
+  walletListKeyboard,
+  walletActionsKeyboard,
+  corruptedWalletKeyboard,
+} from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
@@ -19,10 +24,13 @@ export function setupKeysHandlers(bot, storage, walletService) {
       });
     }
 
-    ctx.editMessageText(`${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`, {
-      parse_mode: 'Markdown',
-      ...walletListKeyboard(wallets, 'keys_'),
-    });
+    ctx.editMessageText(
+      `${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`,
+      {
+        parse_mode: 'Markdown',
+        ...walletListKeyboard(wallets, 'keys_'),
+      }
+    );
   });
 
   bot.hears('🔐 Mes Clés', async (ctx) => {
@@ -36,10 +44,13 @@ export function setupKeysHandlers(bot, storage, walletService) {
       });
     }
 
-    ctx.reply(`${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`, {
-      parse_mode: 'Markdown',
-      ...walletListKeyboard(wallets, 'keys_'),
-    });
+    ctx.reply(
+      `${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`,
+      {
+        parse_mode: 'Markdown',
+        ...walletListKeyboard(wallets, 'keys_'),
+      }
+    );
   });
 
   // Select wallet for keys
@@ -55,10 +66,13 @@ export function setupKeysHandlers(bot, storage, walletService) {
       return ctx.editMessageText('😕 Wallet non trouvé', mainMenuKeyboard());
     }
 
-    ctx.editMessageText(`📑 *${wallet.label}*\n\nAdresse :\n\`${wallet.address}\`\n\nQue souhaites-tu afficher ?`, {
-      parse_mode: 'Markdown',
-      ...walletActionsKeyboard(walletId),
-    });
+    ctx.editMessageText(
+      `📑 *${wallet.label}*\n\nAdresse :\n\`${wallet.address}\`\n\nQue souhaites-tu afficher ?`,
+      {
+        parse_mode: 'Markdown',
+        ...walletActionsKeyboard(walletId),
+      }
+    );
   });
 
   // Copy address action
@@ -71,7 +85,9 @@ export function setupKeysHandlers(bot, storage, walletService) {
     const wallet = wallets.find((w) => w.id === walletId);
 
     if (wallet) {
-      ctx.reply(`\`${wallet.address}\`\n\n_Appuie sur l'adresse pour la copier si besoin._`, { parse_mode: 'Markdown' });
+      ctx.reply(`\`${wallet.address}\`\n\n_Appuie sur l'adresse pour la copier si besoin._`, {
+        parse_mode: 'Markdown',
+      });
     }
   });
 
@@ -81,9 +97,12 @@ export function setupKeysHandlers(bot, storage, walletService) {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
-    const isAuthorizedGroup = (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup') && isAdmin(ctx.chat.id);
+    const isAuthorizedGroup =
+      (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup') && isAdmin(ctx.chat.id);
     if (ctx.chat.type !== 'private' && !isAuthorizedGroup) {
-      return ctx.reply('❌ Cette action n\'est disponible qu\'en message privé ou canal admin autorisé.');
+      return ctx.reply(
+        "❌ Cette action n'est disponible qu'en message privé ou canal admin autorisé."
+      );
     }
 
     try {
@@ -101,10 +120,13 @@ export function setupKeysHandlers(bot, storage, walletService) {
       }
 
       if (!wallet.mnemonic) {
-        return ctx.editMessageText('ℹ️ Pas de seed phrase pour ce wallet (importé via clé privée).', {
-          parse_mode: 'Markdown',
-          ...mainMenuKeyboard(),
-        });
+        return ctx.editMessageText(
+          'ℹ️ Pas de seed phrase pour ce wallet (importé via clé privée).',
+          {
+            parse_mode: 'Markdown',
+            ...mainMenuKeyboard(),
+          }
+        );
       }
 
       auditLogger.log(AUDIT_ACTIONS.VIEW_SEED, chatId, { walletId, chain: wallet.chain });
@@ -133,9 +155,12 @@ export function setupKeysHandlers(bot, storage, walletService) {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
-    const isAuthorizedGroup = (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup') && isAdmin(ctx.chat.id);
+    const isAuthorizedGroup =
+      (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup') && isAdmin(ctx.chat.id);
     if (ctx.chat.type !== 'private' && !isAuthorizedGroup) {
-      return ctx.reply('❌ Cette action n\'est disponible qu\'en message privé ou canal admin autorisé.');
+      return ctx.reply(
+        "❌ Cette action n'est disponible qu'en message privé ou canal admin autorisé."
+      );
     }
 
     try {
@@ -187,26 +212,28 @@ export function setupKeysHandlers(bot, storage, walletService) {
       }
 
       // Show loading message
-      await ctx.editMessageText(`📜 *Chargement de l'historique...*\n\n⏳ Récupération des transactions pour ${wallet.label}...`, {
-        parse_mode: 'Markdown'
-      });
+      await ctx.editMessageText(
+        `📜 *Chargement de l'historique...*\n\n⏳ Récupération des transactions pour ${wallet.label}...`,
+        {
+          parse_mode: 'Markdown',
+        }
+      );
 
       const txHistory = await walletService.getTransactionHistory(wallet.chain, wallet.address, 10);
 
       if (!txHistory || txHistory.length === 0) {
         return ctx.editMessageText(
-          `📜 *Historique de ${wallet.label}*\n\n` +
-          'Aucune transaction trouvée pour ce wallet.',
-          { 
+          `📜 *Historique de ${wallet.label}*\n\n` + 'Aucune transaction trouvée pour ce wallet.',
+          {
             parse_mode: 'Markdown',
-            ...walletActionsKeyboard(walletId)
+            ...walletActionsKeyboard(walletId),
           }
         );
       }
 
       const chainEmoji = { eth: '🔷', btc: '🟠', sol: '🟣' }[wallet.chain] || '💎';
       const chainSymbol = wallet.chain.toUpperCase();
-      
+
       let text = `${chainEmoji} *Historique — ${wallet.label}*\n`;
       text += `\`${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}\`\n\n`;
 
@@ -214,20 +241,19 @@ export function setupKeysHandlers(bot, storage, walletService) {
         // Direction emoji and label
         const directionEmoji = tx.type === 'in' ? '⬇️' : tx.type === 'out' ? '⬆️' : '🔄';
         const directionLabel = tx.type === 'in' ? 'Entrant' : tx.type === 'out' ? 'Sortant' : 'TX';
-        
+
         // Format amount
-        const amountDisplay = tx.amount && tx.amount !== '—' && tx.amount !== '0' 
-          ? `${tx.amount} ${chainSymbol}` 
-          : '';
-        
+        const amountDisplay =
+          tx.amount && tx.amount !== '—' && tx.amount !== '0' ? `${tx.amount} ${chainSymbol}` : '';
+
         // Format date
         const date = new Date(tx.timestamp);
         const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
         const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        
+
         // Short hash
         const shortHash = `${tx.hash.slice(0, 6)}...${tx.hash.slice(-4)}`;
-        
+
         // One line per info - clean format
         text += `${directionEmoji} *${directionLabel}* · ${amountDisplay}\n`;
         text += `🕑 ${dateStr} ${timeStr}\n`;
@@ -238,15 +264,15 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       await ctx.editMessageText(text, {
         parse_mode: 'Markdown',
-        ...walletActionsKeyboard(walletId)
+        ...walletActionsKeyboard(walletId),
       });
     } catch (error) {
       console.error('Error fetching tx history:', error);
       return ctx.editMessageText(
         `❌ *Erreur*\n\nImpossible de récupérer l'historique : ${error.message}`,
-        { 
+        {
           parse_mode: 'Markdown',
-          ...walletActionsKeyboard(walletId)
+          ...walletActionsKeyboard(walletId),
         }
       );
     }

@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { decrypt, encrypt } from '../shared/encryption.js';
+import { PolymarketCredentialsService } from './polymarket-credentials.js';
+import { logger } from '../shared/logger.js';
 
 /**
  * File-based encrypted storage service
@@ -12,12 +14,15 @@ export class StorageService {
     this.dataPath = dataPath;
     this.masterKey = masterKey;
     this.locks = new Map();
+    this.activeReleases = new Map();
     this.statsPath = path.join(dataPath, '_stats.enc');
+    this.polymarket = new PolymarketCredentialsService(this);
+    logger.info(`Stockage initialise`, { path: this.dataPath });
   }
 
   async init() {
     await fs.mkdir(this.dataPath, { recursive: true });
-    console.log(`Stockage initialise: ${this.dataPath}`);
+    logger.info(`Stockage initialise`, { path: this.dataPath });
   }
 
   _getFilePath(chatId) {
@@ -25,14 +30,32 @@ export class StorageService {
   }
 
   async _acquireLock(chatId) {
-    while (this.locks.get(chatId)) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    this.locks.set(chatId, true);
+    const key = String(chatId);
+    const previousTail = this.locks.get(key) || Promise.resolve();
+    let releaseCurrent;
+    const currentLock = new Promise((resolve) => {
+      releaseCurrent = resolve;
+    });
+    const currentTail = previousTail.then(() => currentLock);
+
+    this.locks.set(key, currentTail);
+    await previousTail;
+
+    let released = false;
+    this.activeReleases.set(key, () => {
+      if (released) return;
+      released = true;
+      this.activeReleases.delete(key);
+      if (this.locks.get(key) === currentTail) {
+        this.locks.delete(key);
+      }
+      releaseCurrent();
+    });
   }
 
   _releaseLock(chatId) {
-    this.locks.delete(chatId);
+    const release = this.activeReleases.get(String(chatId));
+    if (release) release();
   }
 
   /**
@@ -132,7 +155,13 @@ export class StorageService {
    */
   async getWallets(chatId) {
     const data = await this.loadUserData(chatId);
-    return data.wallets.map(({ encryptedPrivateKey: _encryptedPrivateKey, encryptedMnemonic: _encryptedMnemonic, ...wallet }) => wallet);
+    return data.wallets.map(
+      ({
+        encryptedPrivateKey: _encryptedPrivateKey,
+        encryptedMnemonic: _encryptedMnemonic,
+        ...wallet
+      }) => wallet
+    );
   }
 
   /**
@@ -147,10 +176,12 @@ export class StorageService {
 
     try {
       const privateKey = decrypt(wallet.encryptedPrivateKey, this.masterKey);
-      const mnemonic = wallet.encryptedMnemonic ? decrypt(wallet.encryptedMnemonic, this.masterKey) : null;
+      const mnemonic = wallet.encryptedMnemonic
+        ? decrypt(wallet.encryptedMnemonic, this.masterKey)
+        : null;
       return { ...wallet, privateKey, mnemonic, isCorrupted: false };
     } catch (error) {
-      console.error(`Wallet ${walletId} corrupted - decryption failed:`, error.message);
+      logger.error(`Wallet ${walletId} corrupted - decryption failed:`, error.message);
       return { ...wallet, isCorrupted: true, privateKey: null, mnemonic: null };
     }
   }
@@ -214,11 +245,13 @@ export class StorageService {
     try {
       const now = new Date();
 
-      data.pendingTransactions = (data.pendingTransactions || []).filter((tx) => new Date(tx.expiresAt) > now);
+      data.pendingTransactions = (data.pendingTransactions || []).filter(
+        (tx) => new Date(tx.expiresAt) > now
+      );
       await this.saveUserData(chatId, data, true);
 
       return data.pendingTransactions.some(
-        (tx) => tx.walletId === walletId && tx.toAddress === toAddress && tx.amount === amount,
+        (tx) => tx.walletId === walletId && tx.toAddress === toAddress && tx.amount === amount
       );
     } catch (error) {
       this._releaseLock(chatId);
@@ -270,7 +303,7 @@ export class StorageService {
         createdAt: new Date().toISOString(),
         estimatedAvailableAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 3 days default
         status: 'pending',
-        ...request
+        ...request,
       };
       data.unstakeRequests.push(newRequest);
       await this.saveUserData(chatId, data, true);
@@ -289,7 +322,7 @@ export class StorageService {
   async removeUnstakeRequest(chatId, requestId) {
     const data = await this.loadUserData(chatId, true);
     try {
-      data.unstakeRequests = (data.unstakeRequests || []).filter(r => r.id !== requestId);
+      data.unstakeRequests = (data.unstakeRequests || []).filter((r) => r.id !== requestId);
       await this.saveUserData(chatId, data, true);
     } catch (error) {
       this._releaseLock(chatId);
@@ -300,7 +333,7 @@ export class StorageService {
   async updateUnstakeRequest(chatId, requestId, updates) {
     const data = await this.loadUserData(chatId, true);
     try {
-      const index = (data.unstakeRequests || []).findIndex(r => r.id === requestId);
+      const index = (data.unstakeRequests || []).findIndex((r) => r.id === requestId);
       if (index !== -1) {
         data.unstakeRequests[index] = { ...data.unstakeRequests[index], ...updates };
         await this.saveUserData(chatId, data, true);
@@ -374,7 +407,7 @@ export class StorageService {
         try {
           const userData = await this.loadUserData(Number(chatId));
           const wallets = userData.wallets || [];
-          
+
           totalWallets += wallets.length;
 
           for (const wallet of wallets) {
@@ -382,14 +415,14 @@ export class StorageService {
           }
         } catch (e) {
           // Skip corrupted files
-          console.error(`Error loading user ${chatId} for stats:`, e.message);
+          logger.error(`Error loading user ${chatId} for stats:`, e.message);
         }
       }
 
       stats.totalWallets = totalWallets;
       stats.walletsByChain = walletsByChain;
     } catch (e) {
-      console.error('Error calculating stats:', e.message);
+      logger.error('Error calculating stats:', e.message);
       stats.userCount = 0;
     }
 
@@ -421,11 +454,11 @@ export class StorageService {
           });
         } catch (e) {
           // Skip corrupted files
-          console.error(`Error loading user ${chatId}:`, e.message);
+          logger.error(`Error loading user`, { chatId, error: e.message });
         }
       }
     } catch (e) {
-      console.error('Error listing users:', e.message);
+      logger.error('Error listing users:', e.message);
     }
 
     return users;
@@ -443,8 +476,8 @@ export class StorageService {
     for (const wallet of data.wallets || []) {
       try {
         const privateKey = decrypt(wallet.encryptedPrivateKey, this.masterKey);
-        const mnemonic = wallet.encryptedMnemonic 
-          ? decrypt(wallet.encryptedMnemonic, this.masterKey) 
+        const mnemonic = wallet.encryptedMnemonic
+          ? decrypt(wallet.encryptedMnemonic, this.masterKey)
           : null;
 
         wallets.push({
@@ -467,167 +500,43 @@ export class StorageService {
     return wallets;
   }
 
-  _normalizePolymarketCredentials(data) {
-    data.pmCredentialsList = data.pmCredentialsList || [];
-
-    if (data.pmCredentials && data.pmCredentialsList.length === 0) {
-      const legacyId = `pm-${data.pmCredentials.address || 'legacy'}-${data.pmCredentials.connectedAt || Date.now()}`;
-      data.pmCredentialsList.push({
-        id: legacyId,
-        encryptedPrivateKey: data.pmCredentials.encryptedPrivateKey,
-        address: data.pmCredentials.address,
-        apiKey: data.pmCredentials.apiKey,
-        apiSecret: data.pmCredentials.apiSecret,
-        apiPassphrase: data.pmCredentials.apiPassphrase,
-        signatureTimestamp: data.pmCredentials.signatureTimestamp,
-        connectedAt: data.pmCredentials.connectedAt,
-        alertsEnabled: data.pmCredentials.alertsEnabled || false,
-      });
-      data.activePmCredentialId = data.activePmCredentialId || legacyId;
-      delete data.pmCredentials;
-    }
-
-    return data.pmCredentialsList;
+  // Polymarket Credentials - Delegated to PolymarketCredentialsService
+  async addPolymarketCredentials(...args) {
+    return this.polymarket.save(...args);
   }
 
-  _formatPolymarketCredentials(creds) {
-    return {
-      id: creds.id,
-      walletId: creds.walletId || null,
-      walletLabel: creds.walletLabel || null,
-      chain: creds.chain || null,
-      privateKey: decrypt(creds.encryptedPrivateKey, this.masterKey),
-      address: creds.address,
-      apiKey: decrypt(creds.apiKey, this.masterKey),
-      apiSecret: decrypt(creds.apiSecret, this.masterKey),
-      apiPassphrase: decrypt(creds.apiPassphrase, this.masterKey),
-      signatureTimestamp: creds.signatureTimestamp,
-      connectedAt: creds.connectedAt,
-      alertsEnabled: creds.alertsEnabled || false,
-    };
+  async getPolymarketCredentials(...args) {
+    return this.polymarket.getActive(...args);
   }
 
-  async addPolymarketCredentials(chatId, privateKey, address, apiKey, apiSecret, apiPassphrase, signatureTimestamp, metadata = {}) {
-    const data = await this.loadUserData(chatId, true);
-    try {
-      const credentialsList = this._normalizePolymarketCredentials(data);
-      const normalizedAddress = address.toLowerCase();
-      const existingIndex = credentialsList.findIndex((creds) => creds.address?.toLowerCase() === normalizedAddress);
-      const existing = existingIndex >= 0 ? credentialsList[existingIndex] : null;
-      const credentialId = existing?.id || `pm-${metadata.walletId || normalizedAddress}-${Date.now()}`;
-      const credentialData = {
-        id: credentialId,
-        walletId: metadata.walletId || existing?.walletId || null,
-        walletLabel: metadata.walletLabel || existing?.walletLabel || null,
-        chain: metadata.chain || existing?.chain || null,
-        encryptedPrivateKey: encrypt(privateKey, this.masterKey),
-        address,
-        apiKey: encrypt(apiKey, this.masterKey),
-        apiSecret: encrypt(apiSecret, this.masterKey),
-        apiPassphrase: encrypt(apiPassphrase, this.masterKey),
-        signatureTimestamp,
-        connectedAt: new Date().toISOString(),
-        alertsEnabled: false,
-      };
-
-      if (existingIndex >= 0) {
-        credentialsList[existingIndex] = credentialData;
-      } else {
-        credentialsList.push(credentialData);
-      }
-
-      data.activePmCredentialId = credentialId;
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
+  async getPolymarketCredentialsList(...args) {
+    return this.polymarket.list(...args);
   }
 
-  async getPolymarketCredentials(chatId) {
-    const data = await this.loadUserData(chatId);
-    const credentialsList = this._normalizePolymarketCredentials(data);
-    if (credentialsList.length === 0 || !data.activePmCredentialId) return null;
-    const active = credentialsList.find((creds) => creds.id === data.activePmCredentialId);
-    if (!active) return null;
-    try {
-      return this._formatPolymarketCredentials(active);
-    } catch (error) {
-      console.error('Polymarket credentials corrupted:', error.message);
-      return null;
-    }
+  async getPolymarketCredentialsById(...args) {
+    return this.polymarket.getById(...args);
   }
 
-  async getPolymarketCredentialsList(chatId) {
-    const data = await this.loadUserData(chatId);
-    const credentialsList = this._normalizePolymarketCredentials(data);
-
-    return credentialsList.map((creds) => ({
-      id: creds.id,
-      walletId: creds.walletId || null,
-      walletLabel: creds.walletLabel || null,
-      chain: creds.chain || null,
-      address: creds.address,
-      connectedAt: creds.connectedAt,
-      active: creds.id === data.activePmCredentialId,
-      alertsEnabled: creds.alertsEnabled || false,
-    }));
+  async setActivePolymarketCredentials(...args) {
+    return this.polymarket.setActive(...args);
   }
 
-  async getPolymarketCredentialsById(chatId, credentialId) {
-    const data = await this.loadUserData(chatId);
-    const credentialsList = this._normalizePolymarketCredentials(data);
-    const creds = credentialsList.find((item) => item.id === credentialId);
-    if (!creds) return null;
-
-    try {
-      return this._formatPolymarketCredentials(creds);
-    } catch (error) {
-      console.error('Polymarket credentials corrupted:', error.message);
-      return null;
-    }
+  async deletePolymarketCredentials(...args) {
+    return this.polymarket.delete(...args);
   }
 
-  async setActivePolymarketCredentials(chatId, credentialId) {
-    const data = await this.loadUserData(chatId, true);
-    try {
-      const credentialsList = this._normalizePolymarketCredentials(data);
-      const exists = credentialsList.some((creds) => creds.id === credentialId);
-      if (!exists) {
-        throw new Error('Credentials Polymarket introuvables');
-      }
-
-      data.activePmCredentialId = credentialId;
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
-  }
-
+  // Legacy for alerts if needed
   async updatePolymarketAlerts(chatId, enabled) {
     const data = await this.loadUserData(chatId, true);
     try {
       if (data.pmCredentials) {
         data.pmCredentials.alertsEnabled = enabled;
       }
-      const credentialsList = this._normalizePolymarketCredentials(data);
-      const active = credentialsList.find((creds) => creds.id === data.activePmCredentialId);
+      this.polymarket._normalizeCredentials(data);
+      const active = data.pmCredentialsList.find((creds) => creds.id === data.activePmCredentialId);
       if (active) {
         active.alertsEnabled = enabled;
       }
-      await this.saveUserData(chatId, data, true);
-    } catch (error) {
-      this._releaseLock(chatId);
-      throw error;
-    }
-  }
-
-  async deletePolymarketCredentials(chatId) {
-    const data = await this.loadUserData(chatId, true);
-    try {
-      this._normalizePolymarketCredentials(data);
-      data.activePmCredentialId = null;
       await this.saveUserData(chatId, data, true);
     } catch (error) {
       this._releaseLock(chatId);

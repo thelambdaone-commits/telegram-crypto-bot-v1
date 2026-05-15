@@ -19,9 +19,7 @@ test('imported wallet labels use the next available chain number', async () => {
 test('legacy unnumbered imported wallet label counts as number 1', async () => {
   const service = Object.create(WalletService.prototype);
   service.storage = {
-    getWallets: async () => [
-      { chain: 'eth', label: 'Wallet ETH' },
-    ],
+    getWallets: async () => [{ chain: 'eth', label: 'Wallet ETH' }],
   };
 
   assert.equal(await service.getNextWalletLabel(123, 'eth'), 'Wallet ETH 2');

@@ -32,7 +32,7 @@ export const polymarketTexts = {
     'Pour utiliser Polymarket, vous devez:\n\n' +
     '1. avoir une private key Ethereum/Polygon\n' +
     '2. connecter vos identifiants API\n\n' +
-    'Contactez l\'admin pour obtenir vos identifiants.',
+    "Contactez l'admin pour obtenir vos identifiants.",
 
   connectSuccess: (address) =>
     '✅ *Connecté à Polymarket*\n\n' +
@@ -45,8 +45,7 @@ export const polymarketTexts = {
     'Vos credentials restent sauvegardés pour pouvoir switcher plus tard.',
 
   noCredentials: () =>
-    '❌ *Non connecté*\n\n' +
-    'Utilisez `/polyconnect` pour connecter votre compte Polymarket.',
+    '❌ *Non connecté*\n\n' + 'Utilisez `/polyconnect` pour connecter votre compte Polymarket.',
 
   positions: (positions) => {
     if (!positions || positions.length === 0) {
@@ -166,8 +165,7 @@ export const polymarketTexts = {
       text += `${totalIcon} Total estimé: *${totalSign}$${summary.totalPnl.toFixed(2)}*\n`;
     }
 
-    text += '\n' +
-      '━━━━━━━━━━━━\n';
+    text += '\n' + '━━━━━━━━━━━━\n';
 
     for (const trade of pageTrades) {
       const when = trade.timestamp

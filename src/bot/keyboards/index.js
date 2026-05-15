@@ -13,7 +13,7 @@ export function mainReplyKeyboard() {
     ['💵 Soldes', '🔍 Analyser'],
     ['🆕 Nouveau Wallet', '🔐 Mes Clés'],
     ['📊 Cours EUR', '🆘 Help'],
-    ['➕ Plus d\'actions', '❌ Fermer'],
+    ["➕ Plus d'actions", '❌ Fermer'],
   ]).resize();
 }
 
@@ -36,7 +36,7 @@ export function mainMenuKeyboard() {
       Markup.button.callback('🆘 Help', 'help_menu'),
     ],
     [
-      Markup.button.callback('➕ Plus d\'actions', 'plus_actions'),
+      Markup.button.callback("➕ Plus d'actions", 'plus_actions'),
       Markup.button.callback('❌ Fermer', 'close_menu'),
     ],
   ]);
@@ -65,7 +65,5 @@ export function advancedActionsKeyboard() {
 }
 
 export function cancelKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('❌ Annuler', 'cancel')],
-  ]);
+  return Markup.inlineKeyboard([[Markup.button.callback('❌ Annuler', 'cancel')]]);
 }

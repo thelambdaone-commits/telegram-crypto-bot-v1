@@ -13,8 +13,9 @@ export function detectChain(address) {
     return 'eth';
   }
 
-  // Bitcoin Cash: CashAddr format (bitcoincash:q or bitcoincash:p)
-  if (/^bitcoincash:[qp][a-z0-9]{41}$/i.test(address)) {
+  // Bitcoin Cash: CashAddr format, with or without the bitcoincash: prefix.
+  // Prefixless q.../p... addresses overlap Solana's base58 shape, so BCH must be checked first.
+  if (/^(bitcoincash:)?[qp][ac-hj-np-z02-9]{41}$/i.test(address)) {
     return 'bch';
   }
 
@@ -36,7 +37,7 @@ export function detectChain(address) {
 
   // Bitcoin Cash legacy: 1 and 3 (can overlap with BTC)
   // We check BCH after BTC to prioritize BTC for ambiguous cases
-  
+
   // Solana: Base58, 32-44 chars
   if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) {
     return 'sol';

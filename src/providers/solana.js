@@ -1,4 +1,3 @@
-
 import {
   Connection,
   Keypair,
@@ -21,12 +20,12 @@ export class SolanaChain extends BaseProvider {
     super('Solana', 'SOL');
     this.primaryRpcUrl = rpcUrl;
     this.connection = new Connection(rpcUrl, 'confirmed');
-    
+
     // Fallback RPC endpoints
     this.fallbackRpcs = [
       'https://api.mainnet-beta.solana.com',
       'https://solana-mainnet.g.alchemy.com/v2/demo',
-      'https://rpc.ankr.com/solana'
+      'https://rpc.ankr.com/solana',
     ];
   }
 
@@ -118,7 +117,9 @@ export class SolanaChain extends BaseProvider {
     }
 
     if (!secretKey) {
-      throw new Error(`Format non reconnu. Formats acceptes: Base58 (87-88 car.), Hex (64 car.), ou JSON array []. Length recu: ${cleanKey.length}`);
+      throw new Error(
+        `Format non reconnu. Formats acceptes: Base58 (87-88 car.), Hex (64 car.), ou JSON array []. Length recu: ${cleanKey.length}`
+      );
     }
 
     let keypair;
@@ -147,15 +148,15 @@ export class SolanaChain extends BaseProvider {
       }
     }
     const publicKey = new PublicKey(address);
-    
+
     // Try primary connection first
     const rpcsToTry = [this.primaryRpcUrl, ...this.fallbackRpcs];
-    
+
     for (const rpcUrl of rpcsToTry) {
       try {
-        const conn = new Connection(rpcUrl, { 
+        const conn = new Connection(rpcUrl, {
           commitment: 'confirmed',
-          confirmTransactionInitialTimeout: 10000
+          confirmTransactionInitialTimeout: 10000,
         });
         const balance = await conn.getBalance(publicKey);
 
@@ -169,21 +170,21 @@ export class SolanaChain extends BaseProvider {
         continue;
       }
     }
-    
+
     // All RPCs failed
     console.warn(`[SOL] All RPCs failed for address ${address.slice(0, 12)}...`);
     return {
       balance: '0',
       balanceLamports: '0',
       symbol: this.symbol,
-      error: 'Unable to fetch balance - network issue'
+      error: 'Unable to fetch balance - network issue',
     };
   }
 
-  async estimateFees(fromAddress, toAddress, amount) {
+  async estimateFees(_fromAddress, _toAddress, _amount) {
     // Solana has stable base fees (5000 lamports per signature)
     // Recent blockhash is no longer used for fee calculation in modern web3 versions
-    const baseFee = 5000; 
+    const baseFee = 5000;
 
     // Solana doesn't have fee levels like ETH, but we can add priority fees
     const fees = {
@@ -214,17 +215,17 @@ export class SolanaChain extends BaseProvider {
 
     const lamports = Math.round(Number.parseFloat(amount) * LAMPORTS_PER_SOL);
     const transaction = new Transaction();
-    
+
     // Add priority fees if specified
     if (feeLevel !== 'slow') {
       const fees = await this.estimateFees('', '', 0);
       const priorityFee = fees[feeLevel]?.priorityFee || 0;
-      
+
       if (priorityFee > 0) {
         const { ComputeBudgetProgram } = await import('@solana/web3.js');
         transaction.add(
           ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: Math.floor((priorityFee * 1000) / 200000) // Rough conversion to microLamports for priority
+            microLamports: Math.floor((priorityFee * 1000) / 200000), // Rough conversion to microLamports for priority
           })
         );
       }
@@ -235,7 +236,7 @@ export class SolanaChain extends BaseProvider {
         fromPubkey: fromKeypair.publicKey,
         toPubkey: toPublicKey,
         lamports,
-      }),
+      })
     );
 
     const signature = await sendAndConfirmTransaction(this.connection, transaction, [fromKeypair]);
@@ -252,7 +253,7 @@ export class SolanaChain extends BaseProvider {
   async getTransactionHistory(address, limit = 5) {
     // Solana - Get signatures first, then fetch details for each
     const rpcUrl = this.primaryRpcUrl || 'https://api.mainnet-beta.solana.com';
-    
+
     try {
       // Step 1: Get recent signatures
       const sigResponse = await fetch(rpcUrl, {
@@ -266,12 +267,12 @@ export class SolanaChain extends BaseProvider {
         }),
       });
       const sigData = await sigResponse.json();
-      
+
       if (!sigData.result?.length) return [];
-      
+
       // Step 2: Get transaction details for each signature
       const transactions = [];
-      
+
       for (const sig of sigData.result.slice(0, limit)) {
         try {
           const txResponse = await fetch(rpcUrl, {
@@ -281,18 +282,21 @@ export class SolanaChain extends BaseProvider {
               jsonrpc: '2.0',
               id: 1,
               method: 'getTransaction',
-              params: [sig.signature, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }],
+              params: [
+                sig.signature,
+                { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 },
+              ],
             }),
           });
           const txData = await txResponse.json();
-          
+
           let amount = 0;
           let type = 'tx';
-          
+
           if (txData.result?.meta) {
             const meta = txData.result.meta;
             const accountKeys = txData.result.transaction?.message?.accountKeys || [];
-            
+
             // Find the address index
             let addressIndex = -1;
             for (let i = 0; i < accountKeys.length; i++) {
@@ -302,12 +306,12 @@ export class SolanaChain extends BaseProvider {
                 break;
               }
             }
-            
+
             if (addressIndex >= 0 && meta.preBalances && meta.postBalances) {
               const preBalance = meta.preBalances[addressIndex] || 0;
               const postBalance = meta.postBalances[addressIndex] || 0;
               const diff = postBalance - preBalance;
-              
+
               if (diff > 0) {
                 type = 'in';
                 amount = diff / 1e9;
@@ -317,7 +321,7 @@ export class SolanaChain extends BaseProvider {
               }
             }
           }
-          
+
           transactions.push({
             hash: sig.signature,
             type: type,
@@ -334,10 +338,10 @@ export class SolanaChain extends BaseProvider {
           });
         }
       }
-      
+
       return transactions;
     } catch (error) {
-       return [];
+      return [];
     }
   }
 
@@ -353,24 +357,24 @@ export class SolanaChain extends BaseProvider {
   async getTokens(address) {
     const publicKey = new PublicKey(address);
     const rpcsToTry = [this.primaryRpcUrl, ...this.fallbackRpcs];
-    
+
     for (const rpcUrl of rpcsToTry) {
       try {
         const conn = new Connection(rpcUrl, {
           commitment: 'confirmed',
-          confirmTransactionInitialTimeout: 10000
+          confirmTransactionInitialTimeout: 10000,
         });
-        
+
         const tokenAccounts = await conn.getParsedTokenAccountsByOwner(publicKey, {
           programId: TOKEN_PROGRAM_ID,
         });
-        
+
         const tokens = tokenAccounts.value
           .map((account) => {
             const info = account.account.data.parsed.info;
             const mint = info.mint;
             const amount = info.tokenAmount;
-            
+
             return {
               mint,
               address: account.pubkey.toString(),
@@ -383,25 +387,25 @@ export class SolanaChain extends BaseProvider {
             };
           })
           .filter((t) => t.isNonZero);
-        
+
         return tokens;
       } catch (error) {
         continue;
       }
     }
-    
+
     return [];
   }
 
   async getAllTokensWithSymbols(address) {
     const allTokens = await this.getTokens(address);
     const knownTokens = TOKEN_CONFIGS.sol.tokens;
-    
-    return allTokens.map(token => {
+
+    return allTokens.map((token) => {
       const knownToken = Object.entries(knownTokens).find(
         ([, config]) => config.mint.toLowerCase() === token.mint.toLowerCase()
       );
-      
+
       return {
         ...token,
         symbol: knownToken ? knownToken[0] : `SOL-${token.mint.slice(0, 4)}`,
@@ -420,9 +424,10 @@ export class SolanaChain extends BaseProvider {
 
     try {
       const accountInfo = await getAccount(conn, ata);
+      const decimals = accountInfo.decimals ?? 9;
       return {
-        balance: Number(accountInfo.amount) / 1e9,
-        decimals: accountInfo.decimals,
+        balance: Number(accountInfo.amount) / 10 ** decimals,
+        decimals,
         ata: ata.toString(),
         exists: true,
       };
@@ -449,7 +454,14 @@ export class SolanaChain extends BaseProvider {
     } catch {
       const { createAssociatedTokenAccountInstruction } = await import('@solana/spl-token');
       const transaction = new Transaction();
-      transaction.add(createAssociatedTokenAccountInstruction(keypair.publicKey, ata, keypair.publicKey, mintPubkey));
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          keypair.publicKey,
+          ata,
+          keypair.publicKey,
+          mintPubkey
+        )
+      );
 
       const signature = await sendAndConfirmTransaction(conn, transaction, [keypair]);
       return { ata: ata.toString(), created: true, signature };

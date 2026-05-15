@@ -4,7 +4,11 @@
  */
 
 export const POLYMARKET_TRADE_THEMES = [
-  { id: 'politics', label: '🗳️ Politique', keywords: ['politic', 'election', 'president', 'trump', 'biden'] },
+  {
+    id: 'politics',
+    label: '🗳️ Politique',
+    keywords: ['politic', 'election', 'president', 'trump', 'biden'],
+  },
   { id: 'sports', label: '⚽ Sport', keywords: ['sport', 'football', 'nba', 'nfl', 'ufc'] },
   { id: 'crypto', label: '💰 Crypto', keywords: ['crypto', 'bitcoin', 'eth', 'sol', 'binance'] },
   { id: 'world', label: '🌍 Monde', keywords: ['world', 'war', 'ukraine', 'china', 'nato'] },
@@ -26,7 +30,9 @@ export function calculateRealizedPnl(trades) {
   let realizedTradeCount = 0;
   let unmatchedSellCount = 0;
 
-  const sortedTrades = [...(trades || [])].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+  const sortedTrades = [...(trades || [])].sort(
+    (a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0)
+  );
 
   for (const trade of sortedTrades) {
     const size = Math.abs(firstNumber(trade, ['size', 'amount']) || 0);
@@ -71,10 +77,13 @@ export function calculateRealizedPnl(trades) {
 }
 
 export function calculatePortfolioPnl(positions) {
-  const items = (positions || []).map(pos => {
+  const items = (positions || []).map((pos) => {
     const size = Math.abs(firstNumber(pos, ['size', 'balance']) || 0);
-    const currentValue = firstNumber(pos, ['currentValue', 'value']) ?? (size * (firstNumber(pos, ['price']) || 0));
-    const costBasis = firstNumber(pos, ['costBasis', 'initialValue']) ?? (size * (firstNumber(pos, ['avgPrice']) || 0));
+    const currentValue =
+      firstNumber(pos, ['currentValue', 'value']) ?? size * (firstNumber(pos, ['price']) || 0);
+    const costBasis =
+      firstNumber(pos, ['costBasis', 'initialValue']) ??
+      size * (firstNumber(pos, ['avgPrice']) || 0);
     const pnl = currentValue - costBasis;
     return { title: pos.title || 'Position', size, currentValue, costBasis, pnl };
   });
@@ -107,19 +116,35 @@ export function calculatePolymarketTradeVolume(trades) {
 export function calculateOfficialPortfolioPnl(openPositions = [], closedPositions = []) {
   const openItems = openPositions.map((position) => {
     const size = Math.abs(firstNumber(position, ['size', 'balance']) || 0);
-    const currentValue = firstNumber(position, ['currentValue', 'value']) ?? (size * (firstNumber(position, ['price']) || 0));
-    const costBasis = firstNumber(position, ['costBasis', 'initialValue']) ?? (size * (firstNumber(position, ['avgPrice']) || 0));
+    const currentValue =
+      firstNumber(position, ['currentValue', 'value']) ??
+      size * (firstNumber(position, ['price']) || 0);
+    const costBasis =
+      firstNumber(position, ['costBasis', 'initialValue']) ??
+      size * (firstNumber(position, ['avgPrice']) || 0);
     const cashPnl = firstNumber(position, ['cashPnl', 'unrealizedPnl']);
-    const pnl = cashPnl ?? (currentValue - costBasis);
-    return { title: position.title || position.market || 'Position', size, currentValue, costBasis, pnl };
+    const pnl = cashPnl ?? currentValue - costBasis;
+    return {
+      title: position.title || position.market || 'Position',
+      size,
+      currentValue,
+      costBasis,
+      pnl,
+    };
   });
 
   const currentValue = openItems.reduce((sum, item) => sum + item.currentValue, 0);
   const costBasis = openItems.reduce((sum, item) => sum + item.costBasis, 0);
   const unrealizedPnl = openItems.reduce((sum, item) => sum + item.pnl, 0);
   const realizedPnl =
-    openPositions.reduce((sum, position) => sum + (firstNumber(position, ['realizedPnl']) || 0), 0) +
-    closedPositions.reduce((sum, position) => sum + (firstNumber(position, ['realizedPnl', 'cashPnl']) || 0), 0);
+    openPositions.reduce(
+      (sum, position) => sum + (firstNumber(position, ['realizedPnl']) || 0),
+      0
+    ) +
+    closedPositions.reduce(
+      (sum, position) => sum + (firstNumber(position, ['realizedPnl', 'cashPnl']) || 0),
+      0
+    );
   const totalPnl = unrealizedPnl + realizedPnl;
   const pnlPercent = costBasis > 0 ? (totalPnl / costBasis) * 100 : 0;
 
@@ -149,14 +174,7 @@ export function filterPolymarketTradesByTheme(trades, themeId) {
     const tags = Array.isArray(trade.tags)
       ? trade.tags.map((tag) => [tag.label, tag.name, tag.slug].filter(Boolean).join(' ')).join(' ')
       : '';
-    const haystack = [
-      trade.title,
-      trade.market,
-      trade.question,
-      trade.category,
-      trade.event,
-      tags,
-    ]
+    const haystack = [trade.title, trade.market, trade.question, trade.category, trade.event, tags]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();

@@ -47,15 +47,28 @@ export function jitoStandardExitKeyboard() {
 export function jitoUnstakeStatusKeyboard(requestId, canClaim = false, hasAddress = true) {
   const buttons = [];
   if (canClaim) {
-    buttons.push([Markup.button.callback('✅ Réclamer mes SOL', `jito_claim_unstake_${requestId}`)]);
+    buttons.push([
+      Markup.button.callback('✅ Réclamer mes SOL', `jito_claim_unstake_${requestId}`),
+    ]);
   } else {
-    buttons.push([Markup.button.callback('⏳ Désactivation en cours...', 'jito_unstake_pending_info')]);
+    buttons.push([
+      Markup.button.callback('⏳ Désactivation en cours...', 'jito_unstake_pending_info'),
+    ]);
   }
-  
+
   if (!hasAddress) {
-    buttons.push([Markup.button.callback('🔍 Recherche automatique', `jito_unstake_auto_repair_${requestId}`)]);
-    buttons.push([Markup.button.callback('✏️ Saisir l\'adresse manuellement', `jito_unstake_manual_sync_${requestId}`)]);
-    buttons.push([Markup.button.callback('🗑 Supprimer cette demande', `jito_unstake_delete_${requestId}`)]);
+    buttons.push([
+      Markup.button.callback('🔍 Recherche automatique', `jito_unstake_auto_repair_${requestId}`),
+    ]);
+    buttons.push([
+      Markup.button.callback(
+        "✏️ Saisir l'adresse manuellement",
+        `jito_unstake_manual_sync_${requestId}`
+      ),
+    ]);
+    buttons.push([
+      Markup.button.callback('🗑 Supprimer cette demande', `jito_unstake_delete_${requestId}`),
+    ]);
   }
 
   buttons.push([Markup.button.callback('↩️ Retour au Menu Jito', 'jito_staking')]);

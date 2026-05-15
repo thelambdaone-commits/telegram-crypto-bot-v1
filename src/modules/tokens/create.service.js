@@ -1,15 +1,11 @@
 /**
  * Token Create Service - V1
  * Create SPL tokens on Solana using @solana/spl-token
- * 
+ *
  * Low cost V1: wallet, decimals, supply, optional revoke mint authority
  */
 
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-} from '@solana/web3.js';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
@@ -31,7 +27,7 @@ export const TokenService = {
   async createMint(payerPrivateKey, decimals) {
     try {
       console.log('[TOKEN_SERVICE] createMint - key length:', payerPrivateKey?.length);
-      
+
       let keypair;
       // Try hex first (most common), then base64
       if (payerPrivateKey.length === 64) {
@@ -84,16 +80,11 @@ export const TokenService = {
         const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
-      
+
       const mint = new PublicKey(mintAddress);
       const owner = new PublicKey(ownerAddress);
 
-      const ata = await getOrCreateAssociatedTokenAccount(
-        connection,
-        keypair,
-        mint,
-        owner
-      );
+      const ata = await getOrCreateAssociatedTokenAccount(connection, keypair, mint, owner);
 
       return {
         success: true,
@@ -127,7 +118,7 @@ export const TokenService = {
         const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
-      
+
       const mint = new PublicKey(mintAddress);
       const destination = new PublicKey(destinationAddress);
 
@@ -171,7 +162,7 @@ export const TokenService = {
         const secretKey = Buffer.from(payerPrivateKey, 'base64');
         keypair = Keypair.fromSecretKey(secretKey);
       }
-      
+
       const mint = new PublicKey(mintAddress);
 
       const txHash = await setAuthority(

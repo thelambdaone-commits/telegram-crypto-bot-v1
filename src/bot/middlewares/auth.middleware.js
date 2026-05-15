@@ -30,10 +30,11 @@ export function requireAdmin(ctx, next) {
  * Middleware to require private chat
  */
 export function requirePrivate(ctx, next) {
-  const isAuthorizedGroup = (ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup') && isAdmin(ctx);
+  const isAuthorizedGroup =
+    (ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup') && isAdmin(ctx);
 
   if (ctx.chat?.type !== 'private' && !isAuthorizedGroup) {
-    ctx.reply('Cette action n\'est disponible qu\'en message prive ou dans le canal admin autorise.');
+    ctx.reply("Cette action n'est disponible qu'en message prive ou dans le canal admin autorise.");
     return;
   }
 

@@ -32,7 +32,10 @@ function setEnvValue(content, key, value) {
   return `${content}${separator}${line}\n`;
 }
 
-export async function exportPolymarketCredentialsToPolyfillEnv(creds, envPath = config.polymarket.polyfillEnvPath) {
+export async function exportPolymarketCredentialsToPolyfillEnv(
+  creds,
+  envPath = config.polymarket.polyfillEnvPath
+) {
   if (!creds?.privateKey || !creds?.apiKey || !creds?.apiSecret || !creds?.apiPassphrase) {
     throw new Error('Session Polymarket incomplete');
   }

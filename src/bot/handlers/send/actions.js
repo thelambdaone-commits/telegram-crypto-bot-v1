@@ -1,10 +1,10 @@
-import { 
-  walletListKeyboard, 
-  feeSelectionKeyboard, 
-  confirmationKeyboard, 
+import {
+  walletListKeyboard,
+  feeSelectionKeyboard,
+  confirmationKeyboard,
   mainMenuKeyboard,
   quickAmountKeyboard,
-  tokenSelectionKeyboard
+  tokenSelectionKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
@@ -27,10 +27,13 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       });
     }
 
-    ctx.editMessageText(`${EMOJIS.send} *Envoyer des fonds*\n\nDepuis quel wallet veux-tu envoyer ?`, {
-      parse_mode: 'Markdown',
-      ...walletListKeyboard(wallets, 'send_from_'),
-    });
+    ctx.editMessageText(
+      `${EMOJIS.send} *Envoyer des fonds*\n\nDepuis quel wallet veux-tu envoyer ?`,
+      {
+        parse_mode: 'Markdown',
+        ...walletListKeyboard(wallets, 'send_from_'),
+      }
+    );
   });
 
   // Select source wallet - Step 2: Check if token selection is needed
@@ -59,12 +62,15 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       sessions.setState(chatId, 'ENTER_ADDRESS');
       const { Markup } = await import('telegraf');
       const cancelKeyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('❌ Annuler', 'cancel')]
+        [Markup.button.callback('❌ Annuler', 'cancel')],
       ]);
-      ctx.editMessageText(`🚀 *Envoi depuis ${wallet.label}*\n\nColle l'adresse du destinataire :`, { 
-        parse_mode: 'Markdown',
-        ...cancelKeyboard
-      });
+      ctx.editMessageText(
+        `🚀 *Envoi depuis ${wallet.label}*\n\nColle l'adresse du destinataire :`,
+        {
+          parse_mode: 'Markdown',
+          ...cancelKeyboard,
+        }
+      );
     }
   });
 
@@ -76,10 +82,10 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     await safeAnswerCbQuery(ctx);
 
     const data = sessions.getData(chatId);
-    sessions.setData(chatId, { 
-      ...data, 
+    sessions.setData(chatId, {
+      ...data,
       selectedChain: chain,
-      selectedToken: token === 'native' ? null : token 
+      selectedToken: token === 'native' ? null : token,
     });
     sessions.setState(chatId, 'ENTER_ADDRESS');
 
@@ -87,13 +93,16 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     const tokenLabel = token === 'native' ? chainSymbol : token;
     const { Markup } = await import('telegraf');
     const cancelKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('❌ Annuler', 'cancel')]
+      [Markup.button.callback('❌ Annuler', 'cancel')],
     ]);
 
-    ctx.editMessageText(`🚀 *Envoi ${tokenLabel} depuis ${chainSymbol}*\n\nColle l'adresse du destinataire :`, {
-      parse_mode: 'Markdown',
-      ...cancelKeyboard
-    });
+    ctx.editMessageText(
+      `🚀 *Envoi ${tokenLabel} depuis ${chainSymbol}*\n\nColle l'adresse du destinataire :`,
+      {
+        parse_mode: 'Markdown',
+        ...cancelKeyboard,
+      }
+    );
   });
 
   // Action for "Send to analyzed address" - address is stored in session
@@ -106,7 +115,10 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     const address = sessionData?.analyzedAddress;
 
     if (!address) {
-      return ctx.editMessageText('⚠️ Adresse non trouvée. Réanalyse une adresse.', mainMenuKeyboard());
+      return ctx.editMessageText(
+        '⚠️ Adresse non trouvée. Réanalyse une adresse.',
+        mainMenuKeyboard()
+      );
     }
 
     const wallets = await storage.getWallets(chatId);
@@ -116,17 +128,20 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       return ctx.editMessageText(
         `⚠️ *Aucun wallet ${chain.toUpperCase()}*\n\n` +
           `Tu n'as pas encore de wallet ${chain.toUpperCase()} pour envoyer à cette adresse.\n\n` +
-          'Crées-en un d\'abord !',
+          "Crées-en un d'abord !",
         { parse_mode: 'Markdown', ...mainMenuKeyboard() }
       );
     }
 
     sessions.setData(chatId, { ...sessionData, toAddress: address, selectedChain: chain });
 
-    ctx.editMessageText(`📬 *Envoyer à :*\n\`${address}\`\n\nDepuis quel wallet ${chain.toUpperCase()} ?`, {
-      parse_mode: 'Markdown',
-      ...walletListKeyboard(matchingWallets, 'send_analyzed_from_'),
-    });
+    ctx.editMessageText(
+      `📬 *Envoyer à :*\n\`${address}\`\n\nDepuis quel wallet ${chain.toUpperCase()} ?`,
+      {
+        parse_mode: 'Markdown',
+        ...walletListKeyboard(matchingWallets, 'send_analyzed_from_'),
+      }
+    );
   });
 
   // Select quick amount (All or 50%)
@@ -137,15 +152,21 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
     const data = sessions.getData(chatId);
     const tokenSymbol = data.selectedToken;
-    
+
     try {
       // Estimate fees first to calculate max sendable
-      const fees = await walletService.estimateFees(chatId, data.selectedWalletId, data.toAddress, 0.001, tokenSymbol);
+      const fees = await walletService.estimateFees(
+        chatId,
+        data.selectedWalletId,
+        data.toAddress,
+        0.001,
+        tokenSymbol
+      );
       const estimatedFee = fees.slow.estimatedFee || fees.slow.feeSOL || 0;
-      
+
       const balance = data.currentBalance;
       let amount;
-      
+
       if (type === 'all') {
         if (data.selectedChain === 'sol' && data.currentBalanceLamports) {
           const feeLamports = fees.slow.fee || 5000;
@@ -159,15 +180,18 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       } else if (type === '50') {
         if (data.selectedChain === 'sol' && data.currentBalanceLamports) {
           const feeLamports = fees.slow.fee || 5000;
-          const amountLamports = Math.max(0, Math.floor(Number(data.currentBalanceLamports) * 0.5) - Math.floor(feeLamports * 0.5));
+          const amountLamports = Math.max(
+            0,
+            Math.floor(Number(data.currentBalanceLamports) * 0.5) - Math.floor(feeLamports * 0.5)
+          );
           amount = amountLamports / 1e9;
         } else if (tokenSymbol) {
           amount = balance * 0.5;
         } else {
-          amount = Math.max(0, (balance * 0.5) - (Number.parseFloat(estimatedFee) * 0.5));
+          amount = Math.max(0, balance * 0.5 - Number.parseFloat(estimatedFee) * 0.5);
         }
       }
-      
+
       if (amount <= 0) {
         const symbol = tokenSymbol || data.selectedChain.toUpperCase();
         return ctx.editMessageText(
@@ -175,15 +199,23 @@ export function setupSendActions(bot, storage, walletService, sessions) {
           { parse_mode: 'Markdown', ...mainMenuKeyboard() }
         );
       }
-      
+
       sessions.setData(chatId, { ...data, amount });
-      
-      const actualFees = await walletService.estimateFees(chatId, data.selectedWalletId, data.toAddress, amount, tokenSymbol);
+
+      const actualFees = await walletService.estimateFees(
+        chatId,
+        data.selectedWalletId,
+        data.toAddress,
+        amount,
+        tokenSymbol
+      );
       sessions.setData(chatId, { ...sessions.getData(chatId), fees: actualFees });
-      
+
       const displaySymbol = tokenSymbol || data.selectedChain.toUpperCase();
-      const amountEUR = tokenSymbol ? await convertToEUR('usd', amount) : await convertToEUR(data.selectedChain, amount);
-      
+      const amountEUR = tokenSymbol
+        ? await convertToEUR('usd', amount)
+        : await convertToEUR(data.selectedChain, amount);
+
       ctx.editMessageText(
         '✨ *Montant sélectionné*\n\n' +
           `${type === 'all' ? '💯 Tout envoyer' : '50% du solde'}\n` +
@@ -208,15 +240,14 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
     const data = sessions.getData(chatId);
     const label = data.amountType === 'native' ? data.selectedChain.toUpperCase() : 'Euros';
-    
+
     const { Markup } = await import('telegraf');
     const cancelKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('❌ Annuler', 'cancel')]
+      [Markup.button.callback('❌ Annuler', 'cancel')],
     ]);
-    
+
     ctx.editMessageText(
-      '⌨️ *Saisie du montant*\n\n' +
-        `Combien souhaites-tu envoyer (${label}) ?`,
+      '⌨️ *Saisie du montant*\n\n' + `Combien souhaites-tu envoyer (${label}) ?`,
       { parse_mode: 'Markdown', ...cancelKeyboard }
     );
     sessions.setState(chatId, 'ENTER_AMOUNT');
@@ -259,7 +290,9 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         token: tokenSymbol,
       });
 
-      await ctx.editMessageText(`${EMOJIS.loading} *Transaction en cours...*`, { parse_mode: 'Markdown' });
+      await ctx.editMessageText(`${EMOJIS.loading} *Transaction en cours...*`, {
+        parse_mode: 'Markdown',
+      });
 
       const result = await walletService.sendTransaction(
         chatId,
@@ -283,7 +316,13 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       // Use chain from session to determine explorer URL
       let hashUrl;
       const chain = data.selectedChain;
-      if (chain === 'eth' || chain === 'arb' || chain === 'op' || chain === 'base' || chain === 'matic') {
+      if (
+        chain === 'eth' ||
+        chain === 'arb' ||
+        chain === 'op' ||
+        chain === 'base' ||
+        chain === 'matic'
+      ) {
         const explorers = {
           eth: 'etherscan.io',
           arb: 'arbiscan.io',
@@ -305,8 +344,8 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       const symbol = result.symbol || data.selectedChain.toUpperCase();
       await ctx.editMessageText(
         `${EMOJIS.success} *Bravo ! Transaction envoyée*\n\n` +
-        `💰 Montant: ${data.amount} ${symbol}\n` +
-        `🔗 [Voir sur l'explorateur](${hashUrl})`,
+          `💰 Montant: ${data.amount} ${symbol}\n` +
+          `🔗 [Voir sur l'explorateur](${hashUrl})`,
         { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
       );
 

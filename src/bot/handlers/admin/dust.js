@@ -4,10 +4,9 @@ import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { config } from '../../../core/config.js';
 import { Markup } from 'telegraf';
+import { escapeMarkdown } from '../../../shared/utils/telegram.js';
 
-function escapeMarkdown(text) {
-  return text.replace(/[_*[\]()~`>#+=|{}.!\\-]/g, '\\$&');
-}
+
 
 async function getEthGasPrice() {
   try {
@@ -93,9 +92,7 @@ async function handleAdminDust(ctx, storage, walletService) {
           );
           const avgFeeRate = feeEstimates.average.satPerVbyte;
 
-          const dustUtxos = utxos.filter(
-            (utxo) => utxo.value <= avgFeeRate * 140
-          );
+          const dustUtxos = utxos.filter((utxo) => utxo.value <= avgFeeRate * 140);
 
           if (dustUtxos.length > 0) {
             const totalDustSats = dustUtxos.reduce((s, u) => s + u.value, 0);

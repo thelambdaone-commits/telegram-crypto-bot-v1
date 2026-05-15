@@ -23,7 +23,7 @@ export function globalRateLimit(ctx, next) {
 
   if (!check.allowed) {
     if (check.reason === 'blacklist' || check.reason === 'blacklist_auto') {
-      return ctx.reply('Acces bloque. Contactez l\'administrateur.');
+      return ctx.reply("Acces bloque. Contactez l'administrateur.");
     }
     return ctx.reply('Trop de requetes. Reessayez dans quelques instants.');
   }

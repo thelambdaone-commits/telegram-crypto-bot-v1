@@ -15,8 +15,8 @@ export function setupSendHandlers(bot, storage, walletService, sessions) {
 
     sessions.setState(chatId, 'ENTER_ADDRESS_ANALYZE');
     ctx.editMessageText(
-      '🔍 *Analyse d\'adresse*\n\n' + 
-      'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE) pour voir son solde et tous ses tokens.',
+      "🔍 *Analyse d'adresse*\n\n" +
+        'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE) pour voir son solde et tous ses tokens.',
       { parse_mode: 'Markdown' }
     );
   });
@@ -32,17 +32,18 @@ export function setupSendHandlers(bot, storage, walletService, sessions) {
 
     try {
       const balanceData = await walletService.getBalance(chatId, data.selectedWalletId);
-      
+
       // Store current balance for quick calculations
       const balanceNum = Number.parseFloat(balanceData.balance);
-      sessions.setData(chatId, { 
-        ...sessions.getData(chatId), 
+      sessions.setData(chatId, {
+        ...sessions.getData(chatId),
         currentBalance: balanceNum,
-        currentBalanceLamports: balanceData.balanceLamports 
+        currentBalanceLamports: balanceData.balanceLamports,
       });
-      
+
       const label = type === 'native' ? data.selectedChain.toUpperCase() : 'Euros';
-      const prompt = '💰 *Saisie du montant*\n\n' +
+      const prompt =
+        '💰 *Saisie du montant*\n\n' +
         `Ton solde : *${balanceData.balance} ${data.selectedChain.toUpperCase()}*\n\n` +
         `Entre le montant en *${label}* ou utilise les raccourcis :`;
 

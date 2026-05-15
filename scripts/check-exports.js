@@ -13,10 +13,13 @@ async function checkExports() {
 
   try {
     const files = await fs.readdir(exportsDir);
-    const jsonFiles = files.filter((f) => f.endsWith('.json')).sort().reverse();
+    const jsonFiles = files
+      .filter((f) => f.endsWith('.json'))
+      .sort()
+      .reverse();
 
     if (jsonFiles.length === 0) {
-      console.log('❌ Aucun fichier d\'export trouve.');
+      console.log("❌ Aucun fichier d'export trouve.");
       return;
     }
 
@@ -30,7 +33,9 @@ async function checkExports() {
       console.log(`   - Exporte: ${data.exportedAt}`);
 
       for (const cred of data.credentials || []) {
-        console.log(`   • ${cred.address?.slice(0, 6)}...${cred.address?.slice(-4)} (${cred.chain}) - ${cred.walletLabel || 'N/A'}`);
+        console.log(
+          `   • ${cred.address?.slice(0, 6)}...${cred.address?.slice(-4)} (${cred.chain}) - ${cred.walletLabel || 'N/A'}`
+        );
       }
       console.log();
     }

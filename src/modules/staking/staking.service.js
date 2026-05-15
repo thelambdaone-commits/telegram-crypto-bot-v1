@@ -38,7 +38,7 @@ const PROTOCOL_INFO = {
     protocolFee: 0,
     url: 'https://app.aave.com',
   },
-  'kamino': {
+  kamino: {
     name: 'Kamino',
     chain: 'Solana',
     networkFeeDeposit: 0.01,
@@ -47,7 +47,7 @@ const PROTOCOL_INFO = {
     protocolFee: 0,
     url: 'https://app.kamino.finance/lend',
   },
-  'jupiter': {
+  jupiter: {
     name: 'Jupiter Lend',
     chain: 'Solana',
     networkFeeDeposit: 0.01,
@@ -82,9 +82,7 @@ export class StakingService {
       const data = await response.json();
 
       const arbPools = data.filter(
-        (p) =>
-          p.chain === 'Arbitrum' &&
-          (p.symbol === 'USDC' || p.symbol === 'USDT')
+        (p) => p.chain === 'Arbitrum' && (p.symbol === 'USDC' || p.symbol === 'USDT')
       );
 
       const result = {};
@@ -126,9 +124,7 @@ export class StakingService {
 
       const data = await response.json();
 
-      const usdcReserve = data.find(
-        (r) => r.mint === JUPITER_TOKENS.USDC
-      );
+      const usdcReserve = data.find((r) => r.mint === JUPITER_TOKENS.USDC);
 
       if (usdcReserve && usdcReserve.supplyApy) {
         const result = {
@@ -282,10 +278,9 @@ export class StakingService {
 
       const userPubkey = new PublicKey(address);
 
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        userPubkey,
-        { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
-      );
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(userPubkey, {
+        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+      });
 
       const kTokens = [];
       for (const account of tokenAccounts.value) {
@@ -314,10 +309,9 @@ export class StakingService {
       const connection = new Connection(SOL_RPC, { commitment: 'confirmed' });
       const userPubkey = new PublicKey(address);
 
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        userPubkey,
-        { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
-      );
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(userPubkey, {
+        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+      });
 
       const jTokens = [];
       for (const account of tokenAccounts.value) {

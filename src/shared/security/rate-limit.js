@@ -35,7 +35,11 @@ export class RateLimiter {
         return { allowed: false, reason: 'blacklist_auto' };
       }
 
-      return { allowed: false, reason: 'rate_limit', remaining: this.windowMs - (now - validRequests[0]) };
+      return {
+        allowed: false,
+        reason: 'rate_limit',
+        remaining: this.windowMs - (now - validRequests[0]),
+      };
     }
 
     // Add current request

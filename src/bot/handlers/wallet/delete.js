@@ -21,7 +21,7 @@ export function setupWalletDelete(bot, storage) {
       '🗑️ *Supprimer ce wallet ?*\n\n' +
         `*${wallet.label}*\n` +
         `\`${wallet.address}\`\n\n` +
-        '⚠️ _Assure-toi d\'avoir sauvegardé tes clés avant de confirmer._',
+        "⚠️ _Assure-toi d'avoir sauvegardé tes clés avant de confirmer._",
       {
         parse_mode: 'Markdown',
         ...deleteConfirmKeyboard(walletId),

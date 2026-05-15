@@ -4,6 +4,7 @@ import { setupHandlers } from './bot/handlers/index.js';
 import { StorageService } from './core/storage.js';
 import { logger } from './shared/logger.js';
 import { cleanupAllFeeds } from './clob/feed.js';
+import { auditLogger } from './shared/security/audit-logger.js';
 
 const bot = new Telegraf(config.botToken);
 const storage = new StorageService(config.dataPath, config.masterKey);
@@ -25,22 +26,24 @@ bot.catch((err, ctx) => {
   ctx.reply('Une erreur est survenue. Reessayez.').catch(() => {});
 });
 
-// Graceful shutdown
+async function shutdown(signal) {
+  logger.info(`Bot shutting down (${signal})`);
+  cleanupAllFeeds();
+  await auditLogger.flush();
+  bot.stop(signal);
+}
+
 process.once('SIGINT', () => {
-  logger.info('Bot shutting down (SIGINT)');
-  bot.stop('SIGINT');
+  shutdown('SIGINT').catch((error) => logger.logError(error, { context: 'shutdown' }));
 });
 process.once('SIGTERM', () => {
-  logger.info('Bot shutting down (SIGTERM)');
-  bot.stop('SIGTERM');
+  shutdown('SIGTERM').catch((error) => logger.logError(error, { context: 'shutdown' }));
 });
-
-// Cleanup Polymarket feeds on shutdown
-process.once('SIGINT', () => cleanupAllFeeds());
-process.once('SIGTERM', () => cleanupAllFeeds());
 
 // Start
 bot.launch();
 logger.info('Bot started successfully', { adminsCount: config.adminChatId.length });
-console.log('Bot Telegram Crypto Wallet demarre');
-console.log(`Admin ID: ${config.adminChatId.length > 0 ? `${config.adminChatId.length} configuré(s)` : 'Non configure'}`);
+logger.info('Bot Telegram Crypto Wallet demarre');
+logger.info(
+  `Admin ID: ${config.adminChatId.length > 0 ? `${config.adminChatId.length} configuré(s)` : 'Non configure'}`
+);

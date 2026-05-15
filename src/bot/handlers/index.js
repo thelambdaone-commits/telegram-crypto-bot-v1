@@ -21,6 +21,7 @@ import { DepositMonitor } from '../../core/monitor.js';
 import { globalRateLimit, cleanupLimiters } from '../middlewares/security.middleware.js';
 import { isAdmin } from '../middlewares/auth.middleware.js';
 import { adminExtendedKeyboard } from '../keyboards/index.js';
+import { logger } from '../../shared/logger.js';
 
 /**
  * Setup all handlers
@@ -50,7 +51,7 @@ export async function setupHandlers(bot, storage) {
           ctx.from.username || null
         );
       } catch (e) {
-        console.log(`[PROFILE] Failed to update user profile ${chatId}: ${e.message}`);
+        logger.warn(`[PROFILE] Failed to update user profile`, { chatId, error: e.message });
       }
     }
 
@@ -62,7 +63,7 @@ export async function setupHandlers(bot, storage) {
         await ctx.reply('Ce bot est destine a un usage personnel uniquement.');
         await ctx.leaveChat();
       } catch (e) {
-        console.log(`[SECURITY] Failed to leave unauthorized chat ${chatId}: ${e.message}`);
+        logger.warn(`[SECURITY] Failed to leave unauthorized chat`, { chatId, error: e.message });
       }
       return;
     }
@@ -83,9 +84,9 @@ export async function setupHandlers(bot, storage) {
   const safeSetup = (name, setupFn) => {
     try {
       setupFn(bot, storage, walletService, sessions);
-      console.log(`✅ ${name} handlers loaded`);
+      logger.info(`✅ ${name} handlers loaded`);
     } catch (error) {
-      console.error(`❌ Error loading ${name} handlers:`, error.message);
+      logger.error(`❌ Error loading ${name} handlers`, { error: error.message });
     }
   };
 
