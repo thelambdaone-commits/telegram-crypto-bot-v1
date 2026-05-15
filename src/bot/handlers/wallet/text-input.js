@@ -25,7 +25,7 @@ export function setupWalletTextInput(bot, storage, walletService, sessions) {
 
       const wallet = await walletService.importWallet(chatId, chain, type, text);
 
-      auditLogger.log(AUDIT_ACTIONS.IMPORT_WALLET || 'IMPORT_WALLET', chatId, {
+      auditLogger.log(AUDIT_ACTIONS.IMPORT_WALLET, chatId, {
         chain,
         type,
         walletId: wallet.id,

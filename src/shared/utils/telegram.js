@@ -4,12 +4,13 @@
 import { logger } from '../logger.js';
 
 /**
- * Escapes characters for MarkdownV2 or legacy Markdown
+ * Escapes characters for Telegram legacy Markdown mode
+ * Only escapes: _ * ` [
  * @param {string|number} value
  * @returns {string}
  */
 export function escapeMarkdown(value) {
-  return String(value ?? '').replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+  return String(value ?? '').replace(/([_*`[\]])/g, '\\$1');
 }
 
 /**

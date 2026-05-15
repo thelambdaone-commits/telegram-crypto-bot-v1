@@ -8,7 +8,7 @@ export function setupAdminSecrets(bot, storage, sessions) {
   // View Secrets List
   bot.action('admin_secrets', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     const secrets = storage.secrets.list();
     let text = '🔐 *Gestion des Secrets Chiffrés*\n\n';

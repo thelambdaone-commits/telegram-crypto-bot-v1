@@ -1,5 +1,6 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
+import crypto from 'node:crypto';
 import { Telegraf } from 'telegraf';
 import { config } from './core/config.js';
 import { setupHandlers } from './bot/handlers/index.js';

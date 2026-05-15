@@ -42,50 +42,28 @@ test('escapeHtml converts numbers to strings', () => {
   assert.equal(escapeHtml(42), '42');
 });
 
-test('buildExportMessage produces HTML with correct structure', () => {
+test('buildExportMessage uses Markdown format', () => {
   const msg = buildExportMessage(creds);
-  assert.match(msg, /<b>Export Polymarket<\/b>/);
-  assert.match(msg, /<code>0xAb755F8B5522eBD7609A4eAE27AF061d8B0f8D28<\/code>/);
+  assert.match(msg, /\*Export Polymarket\*/);
+  assert.match(msg, /`0xAb755F8B5522eBD7609A4eAE27AF061d8B0f8D28`/);
   assert.match(msg, /ETH/);
-  assert.match(msg, /⚠️ <i>Ce message sera supprimé dans 30 secondes.<\/i>/);
+  assert.match(msg, /⚠️ _Ce message sera supprimé dans 30 secondes\._/);
 });
 
-test('buildExportMessage wraps private key in tg-spoiler', () => {
+test('buildExportMessage puts credentials in code blocks', () => {
   const msg = buildExportMessage(creds);
-  assert.match(msg, /<tg-spoiler>0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef<\/tg-spoiler>/);
+  assert.match(msg, /`0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`/);
+  assert.match(msg, /`super-secret-value`/);
+  assert.match(msg, /`my-passphrase`/);
 });
 
-test('buildExportMessage wraps apiSecret in tg-spoiler', () => {
-  const msg = buildExportMessage(creds);
-  assert.match(msg, /<tg-spoiler>super-secret-value<\/tg-spoiler>/);
-});
-
-test('buildExportMessage wraps apiPassphrase in tg-spoiler', () => {
-  const msg = buildExportMessage(creds);
-  assert.match(msg, /<tg-spoiler>my-passphrase<\/tg-spoiler>/);
-});
-
-test('buildExportMessage does not expose plaintext secrets outside tg-spoiler', () => {
-  const msg = buildExportMessage(creds);
-  const spoilerRegex = /<tg-spoiler>([^<]+)<\/tg-spoiler>/g;
-  const spoilerContents = [];
-  let match;
-  while ((match = spoilerRegex.exec(msg)) !== null) {
-    spoilerContents.push(match[1]);
-  }
-  assert.ok(spoilerContents.includes(creds.privateKey));
-  assert.ok(spoilerContents.includes(creds.apiSecret));
-  assert.ok(spoilerContents.includes(creds.apiPassphrase));
-});
-
-test('buildExportMessage escapes HTML in values', () => {
+test('buildExportMessage escapes Markdown special chars in values', () => {
   const malicious = {
     ...creds,
-    apiKey: '<img src=x onerror=alert(1)>',
+    apiKey: 'key_with_underscores',
   };
   const msg = buildExportMessage(malicious);
-  assert.ok(msg.includes('&lt;'));
-  assert.ok(!msg.includes('<img'));
+  assert.ok(msg.includes('key\\_with\\_underscores'));
 });
 
 test('buildExportMessage handles missing optional fields', () => {
@@ -140,7 +118,7 @@ test('handler passes protect_content and disable_web_page_preview', async () => 
 
   assert.equal(replyOptions.protect_content, true);
   assert.equal(replyOptions.disable_web_page_preview, true);
-  assert.equal(replyOptions.parse_mode, 'HTML');
+  assert.equal(replyOptions.parse_mode, 'Markdown');
 });
 
 test('handler deletes trigger message on export', async () => {

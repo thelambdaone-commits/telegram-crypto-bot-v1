@@ -1,6 +1,6 @@
 import { removeClobClient } from '../../../clob/client.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
-import { escapeMarkdown, escapeHtml, safeEditMessage } from '../../../shared/utils/telegram.js';
+import { escapeMarkdown, safeEditMessage } from '../../../shared/utils/telegram.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { confirmTexts, polymarketTexts } from './texts.js';
 import {
@@ -43,7 +43,7 @@ export async function handleConnectStart(ctx, storage, walletService, sessions) 
   const chatId = ctx.chat.id;
 
   const wallets = await storage.getWallets(chatId);
-  const ethWallets = wallets.filter((w) => ['eth', 'matic', 'pol'].includes(w.chain));
+  const ethWallets = wallets.filter((w) => ['eth', 'matic'].includes(w.chain));
   const activeCredentials =
     typeof storage.getPolymarketCredentials === 'function'
       ? await storage.getPolymarketCredentials(chatId)
@@ -100,20 +100,20 @@ function clearableTimeout(key, callback, delay) {
 }
 
 export function buildExportMessage(creds) {
-  const address = creds.address ? escapeHtml(creds.address) : 'N/A';
+  const address = creds.address ? escapeMarkdown(creds.address) : 'N/A';
   const chain = creds.chain ? creds.chain.toUpperCase() : 'EVM';
 
   return (
-    '🔐 <b>Export Polymarket</b>\n' +
+    '🔐 *Export Polymarket*\n' +
     '━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    `<b>Wallet :</b> <code>${address}</code>\n` +
-    `<b>Chaîne :</b> ${chain}\n\n` +
-    `<b>Private Key :</b>\n<code><tg-spoiler>${escapeHtml(creds.privateKey)}</tg-spoiler></code>\n\n` +
-    `<b>API Key :</b>\n<code>${escapeHtml(creds.apiKey)}</code>\n\n` +
-    `<b>API Secret :</b>\n<code><tg-spoiler>${escapeHtml(creds.apiSecret)}</tg-spoiler></code>\n\n` +
-    `<b>API Passphrase :</b>\n<code><tg-spoiler>${escapeHtml(creds.apiPassphrase)}</tg-spoiler></code>\n\n` +
+    `*Wallet :* \`${address}\`\n` +
+    `*Chaîne :* ${chain}\n\n` +
+    `*Private Key :*\n\`${escapeMarkdown(creds.privateKey)}\`\n\n` +
+    `*API Key :*\n\`${escapeMarkdown(creds.apiKey)}\`\n\n` +
+    `*API Secret :*\n\`${escapeMarkdown(creds.apiSecret)}\`\n\n` +
+    `*API Passphrase :*\n\`${escapeMarkdown(creds.apiPassphrase)}\`\n\n` +
     '━━━━━━━━━━━━━━━━━━━━━\n' +
-    '⚠️ <i>Ce message sera supprimé dans 30 secondes.</i>'
+    '⚠️ _Ce message sera supprimé dans 30 secondes._'
   );
 }
 
@@ -149,7 +149,7 @@ export async function handleExportPolyfillCommand(ctx, storage) {
     const message = buildExportMessage(creds);
 
     const sentMsg = await ctx.reply(message, {
-      parse_mode: 'HTML',
+      parse_mode: 'Markdown',
       protect_content: true,
       disable_web_page_preview: true,
       ...polymarketMenuKeyboard(true),
@@ -165,8 +165,8 @@ export async function handleExportPolyfillCommand(ctx, storage) {
       ctx.telegram.deleteMessage(chatId, sentMsg.message_id).catch(() => {});
     }, 30000);
   } catch (err) {
-    return ctx.reply(polymarketTexts.error(escapeHtml(err.message)), {
-      parse_mode: 'HTML',
+    return ctx.reply(polymarketTexts.error(escapeMarkdown(err.message)), {
+      parse_mode: 'Markdown',
       ...polymarketMenuKeyboard(true),
     });
   }
