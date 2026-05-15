@@ -1,7 +1,7 @@
 import { removeClobClient } from '../../../clob/client.js';
-import { exportPolymarketCredentialsToPolyfillEnv } from '../../../clob/polyfill-env.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
-import { escapeMarkdown, escapeMarkdownCode, safeEditMessage } from '../../../shared/utils/telegram.js';
+import { escapeMarkdown, escapeHtml, safeEditMessage } from '../../../shared/utils/telegram.js';
+import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { confirmTexts, polymarketTexts } from './texts.js';
 import {
   confirmDisconnectKeyboard,
@@ -84,8 +84,52 @@ export async function handleConnectStart(ctx, storage, walletService, sessions) 
   );
 }
 
+const exportLocks = new Map();
+const pendingTimeouts = new Map();
+
+function clearableTimeout(key, callback, delay) {
+  const existing = pendingTimeouts.get(key);
+  if (existing) clearTimeout(existing);
+
+  const timeoutId = setTimeout(() => {
+    pendingTimeouts.delete(key);
+    callback();
+  }, delay);
+
+  pendingTimeouts.set(key, timeoutId);
+}
+
+export function buildExportMessage(creds) {
+  const address = creds.address ? escapeHtml(creds.address) : 'N/A';
+  const chain = creds.chain ? creds.chain.toUpperCase() : 'EVM';
+
+  return (
+    '🔐 <b>Export Polymarket</b>\n' +
+    '━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    `<b>Wallet :</b> <code>${address}</code>\n` +
+    `<b>Chaîne :</b> ${chain}\n\n` +
+    `<b>Private Key :</b>\n<code><tg-spoiler>${escapeHtml(creds.privateKey)}</tg-spoiler></code>\n\n` +
+    `<b>API Key :</b>\n<code>${escapeHtml(creds.apiKey)}</code>\n\n` +
+    `<b>API Secret :</b>\n<code><tg-spoiler>${escapeHtml(creds.apiSecret)}</tg-spoiler></code>\n\n` +
+    `<b>API Passphrase :</b>\n<code><tg-spoiler>${escapeHtml(creds.apiPassphrase)}</tg-spoiler></code>\n\n` +
+    '━━━━━━━━━━━━━━━━━━━━━\n' +
+    '⚠️ <i>Ce message sera supprimé dans 30 secondes.</i>'
+  );
+}
+
 export async function handleExportPolyfillCommand(ctx, storage) {
-  const chatId = ctx.chat.id;
+  const chatId = ctx.chat?.id || ctx.callbackQuery?.message?.chat?.id;
+  if (!chatId) return;
+
+  const now = Date.now();
+  const lastExport = exportLocks.get(chatId);
+  if (lastExport && now - lastExport < 5000) {
+    return;
+  }
+  exportLocks.set(chatId, now);
+  setTimeout(() => {
+    if (exportLocks.get(chatId) === now) exportLocks.delete(chatId);
+  }, 5000);
 
   try {
     const creds = await storage.getPolymarketCredentials(chatId);
@@ -96,20 +140,33 @@ export async function handleExportPolyfillCommand(ctx, storage) {
       });
     }
 
-    const result = await exportPolymarketCredentialsToPolyfillEnv(creds);
-    const address = creds.address
-      ? `\nWallet: \`${creds.address.slice(0, 8)}...${creds.address.slice(-6)}\``
-      : '';
+    const triggerMsgId =
+      ctx.callbackQuery?.message?.message_id || ctx.message?.message_id;
+    if (triggerMsgId) {
+      ctx.telegram.deleteMessage(chatId, triggerMsgId).catch(() => {});
+    }
 
-    return ctx.reply(
-      '✅ *Session exportée vers polymarket-copy-trade*\n\n' +
-        `Fichier mis à jour: \`${escapeMarkdownCode(result.envPath)}\`\n` +
-        `Variables écrites: *${result.keys.length}*${address}`,
-      { parse_mode: 'Markdown', ...polymarketMenuKeyboard(true) }
-    );
+    const message = buildExportMessage(creds);
+
+    const sentMsg = await ctx.reply(message, {
+      parse_mode: 'HTML',
+      protect_content: true,
+      disable_web_page_preview: true,
+      ...polymarketMenuKeyboard(true),
+    });
+
+    auditLogger.log(AUDIT_ACTIONS.EXPORT_CREDENTIALS, chatId, {
+      address: creds.address
+        ? `${creds.address.slice(0, 8)}...${creds.address.slice(-6)}`
+        : 'N/A',
+    });
+
+    clearableTimeout(`export_${chatId}`, () => {
+      ctx.telegram.deleteMessage(chatId, sentMsg.message_id).catch(() => {});
+    }, 30000);
   } catch (err) {
-    return ctx.reply(polymarketTexts.error(escapeMarkdown(err.message)), {
-      parse_mode: 'Markdown',
+    return ctx.reply(polymarketTexts.error(escapeHtml(err.message)), {
+      parse_mode: 'HTML',
       ...polymarketMenuKeyboard(true),
     });
   }

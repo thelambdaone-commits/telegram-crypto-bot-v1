@@ -13,6 +13,22 @@ export function escapeMarkdown(value) {
 }
 
 /**
+ * Escapes HTML entities for Telegram HTML parse_mode
+ * Handles & < > " '
+ * @param {string|number} value
+ * @returns {string}
+ */
+export function escapeHtml(value) {
+  const str = String(value ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Escapes characters for Markdown code blocks
  * @param {string|number} value
  * @returns {string}

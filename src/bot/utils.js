@@ -8,5 +8,6 @@ export {
   safeEditMessage, 
   sendLoadingMessage, 
   deleteLoadingMessage,
-  escapeMarkdown
+  escapeMarkdown,
+  escapeHtml
 } from '../shared/utils/telegram.js';
