@@ -15,23 +15,25 @@ function formatSOL(amount) {
 
 export function setupTokenTextInput(bot, storage, walletService, sessions) {
   // Handle text input for supply
-  bot.on('text', async (ctx) => {
+  bot.on('text', async (ctx, next) => {
     const chatId = ctx.chat.id;
     const text = ctx.message.text?.trim();
     const state = sessions.getState(chatId);
 
-    if (!state) return;
+    if (!state) return next();
 
     if (text?.startsWith('/')) {
       sessions.clearState(chatId);
       sessions.clearData(chatId);
-      return;
+      return next();
     }
 
     if (state === 'TOKEN_SUPPLY') {
       await handleTokenSupply(ctx, text, storage, sessions);
       return;
     }
+
+    return next();
   });
 
   // Confirm button

@@ -10,6 +10,20 @@ import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { logger } from '../../../shared/logger.js';
 
+const pendingTimeouts = new Map();
+
+function clearableTimeout(key, callback, delay) {
+  const existing = pendingTimeouts.get(key);
+  if (existing) clearTimeout(existing);
+
+  const timeoutId = setTimeout(() => {
+    pendingTimeouts.delete(key);
+    callback();
+  }, delay);
+
+  pendingTimeouts.set(key, timeoutId);
+}
+
 export function setupKeysHandlers(bot, storage, walletService) {
   // View keys menu
   bot.action('view_keys', async (ctx) => {
@@ -140,7 +154,7 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       const sentMsg = await ctx.reply(message, { parse_mode: 'Markdown', ...mainMenuKeyboard() });
 
-      setTimeout(async () => {
+      clearableTimeout(`seed_${chatId}`, async () => {
         try {
           await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
         } catch (e) {}
@@ -189,7 +203,7 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       const sentMsg = await ctx.reply(message, { parse_mode: 'Markdown', ...mainMenuKeyboard() });
 
-      setTimeout(async () => {
+      clearableTimeout(`privkey_${chatId}`, async () => {
         try {
           await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
         } catch (e) {}

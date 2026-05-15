@@ -6,6 +6,20 @@ import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { logger } from '../../../shared/logger.js';
 import { escapeMarkdown } from '../../../shared/utils/telegram.js';
 
+const pendingTimeouts = new Map();
+
+function clearableTimeout(chatId, callback, delay) {
+  const existing = pendingTimeouts.get(chatId);
+  if (existing) clearTimeout(existing);
+
+  const timeoutId = setTimeout(() => {
+    pendingTimeouts.delete(chatId);
+    callback();
+  }, delay);
+
+  pendingTimeouts.set(chatId, timeoutId);
+}
+
 /**
  * Notify admin group about new user
  */
@@ -113,7 +127,7 @@ export function setupStartHandler(bot, storage, walletService) {
           });
 
           // Auto-delete after 60s
-          setTimeout(async () => {
+          clearableTimeout(chatId, async () => {
             try {
               await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
               ctx.reply('💡 _Message de sécurité supprimé._', { parse_mode: 'Markdown' });

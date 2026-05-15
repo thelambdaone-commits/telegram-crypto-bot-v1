@@ -4,32 +4,14 @@ import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';
 import { handleStakeCommand, handleYieldCommand, stakingKeyboard } from './display.js';
 import { handleCalcCommand } from './calculator.js';
+import { setupJitoHandlers } from './jito.js';
+import { setupMarinadeHandlers } from './marinade.js';
+import { setupStakingTextInput } from './text-input.js';
 
 export function setupStakingHandlers(bot, storage, walletService, sessions) {
-  import('./jito.js')
-    .then(({ setupJitoHandlers }) => {
-      setupJitoHandlers(bot, storage, walletService, sessions);
-      logger.info('Jito handlers loaded', { service: 'staking' });
-    })
-    .catch((err) => logger.error('Failed to load Jito handlers', { service: 'staking', error: err }));
-
-  import('./marinade.js')
-    .then(({ setupMarinadeHandlers }) => {
-      setupMarinadeHandlers(bot, storage, walletService, sessions);
-      logger.info('Marinade handlers loaded', { service: 'staking' });
-    })
-    .catch((err) =>
-      logger.error('Failed to load Marinade handlers', { service: 'staking', error: err })
-    );
-
-  import('./text-input.js')
-    .then(({ setupStakingTextInput }) => {
-      setupStakingTextInput(bot, storage, walletService, sessions);
-      logger.info('Text input handlers loaded', { service: 'staking' });
-    })
-    .catch((err) =>
-      logger.error('Failed to load text input handlers', { service: 'staking', error: err })
-    );
+  setupJitoHandlers(bot, storage, walletService, sessions);
+  setupMarinadeHandlers(bot, storage, walletService, sessions);
+  setupStakingTextInput(bot, storage, walletService, sessions);
 
   bot.command('stake', async (ctx) => {
     await handleStakeCommand(ctx, storage);
