@@ -3,13 +3,8 @@ import { JitoService } from '../../../../modules/staking/jito.js';
 import { mainMenuKeyboard, jitoUnstakeStatusKeyboard } from '../../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../../utils.js';
 import { syncJitoUnstakes } from './sync.js';
-
-function formatAmount(amount) {
-  return amount.toLocaleString('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
-  });
-}
+import { formatAmount } from '../../../../shared/formatters.js';
+import { logger } from '../../../../shared/logger.js';
 
 export function setupJitoUnstakeHandlers(bot, storage, walletService, sessions) {
   bot.action('jito_unstake_list', async (ctx) => {
@@ -207,7 +202,7 @@ export function setupJitoUnstakeHandlers(bot, storage, walletService, sessions) 
         }
       );
     } catch (error) {
-      console.error('Status sync error:', error);
+      logger.logError(error, { context: 'jito.unstake.sync' });
       ctx.editMessageText(`❌ Erreur de synchronisation: ${error.message}`, mainMenuKeyboard());
     }
   });
@@ -256,7 +251,7 @@ export function setupJitoUnstakeHandlers(bot, storage, walletService, sessions) 
         throw new Error(result.error || 'Échec du retrait');
       }
     } catch (error) {
-      console.error('Claim error:', error);
+      logger.logError(error, { context: 'jito.unstake.claim' });
       ctx.reply(
         `❌ Erreur lors du retrait : ${error.message}\n\nAssurez-vous que l'epoch est bien terminée.`
       );

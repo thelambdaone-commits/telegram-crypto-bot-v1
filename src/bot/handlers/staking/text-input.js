@@ -13,13 +13,7 @@ import {
 import { safeAnswerCbQuery } from '../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
-
-function formatAmount(amount) {
-  return amount.toLocaleString('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
-  });
-}
+import { formatAmount } from '../../../shared/formatters.js';
 
 export function setupStakingTextInput(bot, storage, walletService, sessions) {
   bot.on('text', async (ctx, next) => {
@@ -532,6 +526,10 @@ async function handleJitoExitStandardConfirm(ctx, storage, walletService, sessio
       walletAddress: wallet.address,
       stakeAccountAddress: stakeAddress,
       txHash: result.txHash,
+      rateSol: data.rateSol || 1.07,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      estimatedAvailableAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
     await ctx.editMessageText(
@@ -546,7 +544,9 @@ async function handleJitoExitStandardConfirm(ctx, storage, walletService, sessio
       {
         parse_mode: 'Markdown',
         disable_web_page_preview: true,
-        ...mainMenuKeyboard(),
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('⏳ Suivre mon Unstake', `jito_unstake_status_${request.id}`)],
+        ]),
       }
     );
 

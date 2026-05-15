@@ -5,13 +5,7 @@ import { safeAnswerCbQuery } from '../../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../../shared/price.js';
 import { logger } from '../../../../shared/logger.js';
 import { syncJitoUnstakes } from './sync.js';
-
-function formatAmount(amount) {
-  return amount.toLocaleString('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
-  });
-}
+import { formatAmount } from '../../../../shared/formatters.js';
 
 export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
   bot.action('jito_staking', async (ctx) => {

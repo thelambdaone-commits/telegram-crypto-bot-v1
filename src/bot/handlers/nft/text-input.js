@@ -7,43 +7,16 @@ import { Markup } from 'telegraf';
 import { NFTService } from '../../../modules/nfts/create.service.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
-
-function formatSOL(amount) {
-  return amount.toFixed(6);
-}
+import { formatSOL } from '../../../shared/formatters.js';
+import { logger } from '../../../shared/logger.js';
 
 export function setupNFTTextInput(bot, storage, walletService, sessions) {
-  console.log('[NFT_TEXT_INPUT] Setting up handlers...');
-
-  // Handle text input for NFT steps - add next parameter
   bot.on('text', async (ctx, next) => {
     const chatId = ctx.chat.id;
     const text = ctx.message.text?.trim();
     const state = sessions.getState(chatId);
 
-    console.log(
-      '[NFT_TEXT_INPUT] ANY text received! state:',
-      state,
-      'text:',
-      text?.substring(0, 30)
-    );
-
-    // If not NFT state, pass to next handler
     if (!state) {
-      console.log('[NFT_TEXT_INPUT] No state, passing to next');
-      return next();
-    }
-
-    const stateStr = String(state);
-    console.log(
-      '[NFT_TEXT_INPUT] State is:',
-      stateStr,
-      'startsWith NFT_:',
-      stateStr.startsWith('NFT_')
-    );
-
-    if (!stateStr.startsWith('NFT_')) {
-      console.log('[NFT_TEXT_INPUT] Not NFT state, calling next()');
       return next();
     }
 
@@ -53,62 +26,37 @@ export function setupNFTTextInput(bot, storage, walletService, sessions) {
       return next();
     }
 
-    if (stateStr === 'NFT_NAME') {
-      console.log('[NFT_TEXT_INPUT] Handling NFT_NAME');
-      await handleNFTName(ctx, text, sessions);
+    if (!state.startsWith('NFT_')) {
+      return next();
+    }
+
+    if (state === 'NFT_NAME') {
+      await handleNFTName(ctx, text, storage, walletService, sessions);
       return;
     }
 
-    if (stateStr === 'NFT_DESCRIPTION') {
-      await handleNFTDescription(ctx, text, sessions);
+    if (state === 'NFT_DESCRIPTION') {
+      await handleNFTDescription(ctx, text, storage, walletService, sessions);
       return;
     }
 
-    if (stateStr === 'NFT_IMAGE_URL') {
+    if (state === 'NFT_IMAGE_URL') {
       await handleNFTImageUrl(ctx, text, sessions);
       return;
     }
 
-    // If nothing matched, continue to next handler
+    if (state === 'NFT_CONFIRM') {
+      await handleNFTConfirm(ctx, storage, walletService, sessions);
+      return;
+    }
+
     return next();
   });
-
-  // Confirm button
-  bot.action('confirm_create_nft', async (ctx) => {
-    await handleNFTConfirm(ctx, storage, sessions);
-  });
-
-  // Handle "pass description" button
-  bot.action('nft_skip_desc', async (ctx) => {
-    await safeAnswerCbQuery(ctx);
-    const chatId = ctx.chat.id;
-    const data = sessions.getData(chatId);
-
-    sessions.setData(chatId, {
-      ...data,
-      nftDescription: '',
-    });
-
-    sessions.setState(chatId, 'NFT_IMAGE_URL');
-
-    await ctx.editMessageText(
-      '🖼 *Description:* aucune\n\n' +
-        "Entrez l'URL de l'image :\n\n" +
-        '_Formats acceptes: PNG, JPG\n' +
-        'Doit etre une URL HTTPS directe_',
-      {
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([[Markup.button.callback('❌ Annuler', 'cancel')]]),
-      }
-    );
-  });
-
-  console.log('[NFT_TEXT_INPUT] Loaded');
 }
 
 async function handleNFTName(ctx, text, sessions) {
   const chatId = ctx.chat.id;
-  console.log('[NFT_TEXT_INPUT] handleNFTName called with:', text);
+  logger.debug('handleNFTName called', { text: text?.substring(0, 20) });
 
   if (!text || text.length < 1 || text.length > 50) {
     return ctx.reply('❌ Nom invalide.\n\nEntrez un nom (1-50 caracteres).', {
@@ -218,19 +166,13 @@ async function handleNFTConfirm(ctx, storage, sessions) {
 
   const data = sessions.getData(chatId);
 
-  console.log('[NFT_CONFIRM] Starting...', {
-    hasPrivateKey: !!data.walletPrivateKey,
-    name: data.nftName,
-    description: data.nftDescription,
-    imageUrl: data.nftImageUrl,
-  });
+  logger.debug('NFT confirm starting', { hasPrivateKey: !!data.walletPrivateKey, name: data.nftName });
 
   if (!data.walletPrivateKey || !data.nftName || !data.nftImageUrl) {
-    console.error('[NFT_CONFIRM] Missing data:', {
-      walletPrivateKey: !!data.walletPrivateKey,
-      nftName: data.nftName,
-      nftImageUrl: data.nftImageUrl,
-    });
+    logger.warn('[NFT_CONFIRM] Missing data', {
+        state: sessions.getState(chatId),
+        chatId,
+      });
     return ctx.editMessageText('❌ Donnees incompletes. Veuillez recommencer le processus /nft.', {
       parse_mode: 'Markdown',
       ...mainMenuKeyboard(),
@@ -240,17 +182,13 @@ async function handleNFTConfirm(ctx, storage, sessions) {
   await ctx.editMessageText('🖼 *Creation en cours...*', { parse_mode: 'Markdown' });
 
   try {
-    console.log('[NFT_CONFIRM] Creating NFT:', data.nftName);
-
-    // Create NFT
+    logger.info('Creating NFT', { service: 'nft', name: data.nftName });
     const nftResult = await NFTService.createNFT(
       data.walletPrivateKey,
       data.nftName,
       data.nftDescription,
       data.nftImageUrl
     );
-
-    console.log('[NFT_CONFIRM] NFT result:', nftResult.success ? 'success' : 'failed');
 
     if (!nftResult.success) {
       throw new Error(nftResult.error);
@@ -285,7 +223,7 @@ async function handleNFTConfirm(ctx, storage, sessions) {
     sessions.clearData(chatId);
     sessions.clearState(chatId);
   } catch (error) {
-    console.error('[NFT_CREATE] Error:', error);
+    logger.logError(error, { context: 'nft.create', chatId });
 
     let errorMessage = error.message || 'Erreur inconnue';
 

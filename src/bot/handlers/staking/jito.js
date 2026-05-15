@@ -3,6 +3,7 @@ import { setupJitoEnterHandlers } from './jito/enter.js';
 import { setupJitoWithdrawHandlers } from './jito/withdraw.js';
 import { setupJitoUnstakeHandlers } from './jito/unstake.js';
 import { syncJitoUnstakes } from './jito/sync.js';
+import { logger } from '../../../shared/logger.js';
 
 export { setupJitoMenuHandlers, setupJitoEnterHandlers, setupJitoWithdrawHandlers, setupJitoUnstakeHandlers, syncJitoUnstakes };
 
@@ -12,5 +13,5 @@ export function setupJitoHandlers(bot, storage, walletService, sessions) {
   setupJitoWithdrawHandlers(bot, storage, walletService, sessions);
   setupJitoUnstakeHandlers(bot, storage, walletService, sessions);
 
-  console.log('[JITO_HANDLERS] Loaded');
+  logger.info('Jito handlers loaded');
 }

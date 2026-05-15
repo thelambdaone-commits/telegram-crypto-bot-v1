@@ -197,8 +197,8 @@ export const TokenService = {
       const mintRent = await connection.getMinimumBalanceForRentExemption(40);
       const ataRent = await connection.getMinimumBalanceForRentExemption(165);
 
-      const recentFees = await connection.getRecentBlockhash();
-      const feePerTx = recentFees.value.lamportsPerSignature * 5000;
+      const { blockhash } = await connection.getLatestBlockhash();
+      const feePerTx = 5000;
       const networkFeeEstimate = feePerTx * 3;
 
       const totalEstimate = mintRent + ataRent + networkFeeEstimate;

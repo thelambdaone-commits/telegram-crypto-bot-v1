@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 import { mainMenuKeyboard, walletListKeyboard } from '../keyboards/index.js';
 import { getPricesEUR, formatCryptoPricesEUR, clearPriceCache } from '../../shared/price.js';
 import { buildBalancesText } from '../ui/wallet-display.js';
+import { logger } from '../../shared/logger.js';
 
 export function setupBalanceHandlers(bot, storage, walletService) {
   bot.action('view_balances', async (ctx) => {
@@ -93,7 +94,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
       if (error.message && error.message.includes('message is not modified')) {
         return;
       }
-      console.error('refresh_prices error:', error);
+      logger.logError(error, { context: 'balance.refreshPrices' });
       ctx.answerCbQuery('Erreur: ' + error.message, true);
     }
   });

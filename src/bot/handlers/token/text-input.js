@@ -8,10 +8,7 @@ import { TokenService } from '../../../modules/tokens/create.service.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';
-
-function formatSOL(amount) {
-  return amount.toFixed(6);
-}
+import { formatSOL } from '../../../shared/formatters.js';
 
 export function setupTokenTextInput(bot, storage, walletService, sessions) {
   // Handle text input for supply

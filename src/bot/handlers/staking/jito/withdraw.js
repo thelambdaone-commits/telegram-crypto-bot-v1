@@ -4,13 +4,7 @@ import { mainMenuKeyboard, stakingExitKeyboard, jitoWithdrawalKeyboard, jitoStan
 import { safeAnswerCbQuery } from '../../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../../shared/price.js';
 import { logger } from '../../../../shared/logger.js';
-
-function formatAmount(amount) {
-  return amount.toLocaleString('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
-  });
-}
+import { formatAmount } from '../../../../shared/formatters.js';
 
 export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions) {
   bot.action(/^jito_exit_fast_(.+)$/, async (ctx) => {
@@ -276,71 +270,6 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
         ]),
       }
     );
-  });
-
-  bot.action('confirm_jito_exit_standard', async (ctx) => {
-    await safeAnswerCbQuery(ctx);
-    const chatId = ctx.chat.id;
-    const data = sessions.getData(chatId);
-
-    if (!data || !data.amount) {
-      return ctx.reply('❌ Session expirée.', mainMenuKeyboard());
-    }
-
-    try {
-      const wallet = await storage.getWalletWithKey(chatId, data.walletId);
-      if (!wallet) throw new Error('Wallet non trouvé');
-
-      await ctx.editMessageText("⛓ *Initialisation de l'Unstake sur la blockchain Solana...*", {
-        parse_mode: 'Markdown',
-      });
-
-      const result = await JitoService.exitStandard(wallet.privateKey, data.amount);
-
-      if (!result.success) {
-        return ctx.editMessageText(`❌ Erreur lors de l'unstake : ${result.error}`, {
-          parse_mode: 'Markdown',
-          ...Markup.inlineKeyboard([[Markup.button.callback('↩️ Retour', 'jito_withdraw')]]),
-        });
-      }
-
-      const request = await storage.addUnstakeRequest(chatId, {
-        amount: data.amount,
-        walletId: data.walletId,
-        walletAddress: wallet.address,
-        rateSol: data.rateSol || 1.07,
-        stakeAccountAddress: result.stakeAccountAddress,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        estimatedAvailableAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      });
-
-      await ctx.editMessageText(
-        '✅ *Unstake Standard Réussi*\n\n' +
-          "L'opération a été transmise au réseau Solana.\n\n" +
-          `📥 Montant : *${formatAmount(data.amount)} JitoSOL*\n` +
-          `⛓ Stake Acc : \`${result.stakeAccountAddress}\`\n` +
-          `🔗 [Voir Transaction](https://solscan.io/tx/${result.txHash})\n\n` +
-          "📅 *Disponibilité* : Vos SOL seront prêts dans environ 2-3 jours (fin de l'epoch actuelle).\n\n" +
-          "Vous pouvez suivre l'avancement dans le menu JitoSOL.",
-        {
-          parse_mode: 'Markdown',
-          disable_web_page_preview: true,
-          ...Markup.inlineKeyboard([
-            [Markup.button.callback('⏳ Suivre mon Unstake', `jito_unstake_status_${request.id}`)],
-          ]),
-        }
-      );
-
-      sessions.clearState(chatId);
-      sessions.clearData(chatId);
-    } catch (error) {
-      logger.logError(error, { context: 'confirm_jito_exit_standard', chatId });
-      ctx.editMessageText(
-        `❌ Erreur lors de l'initialisation: ${error.message}`,
-        mainMenuKeyboard()
-      );
-    }
   });
 
   bot.action('jito_exit_std_manual', async (ctx) => {

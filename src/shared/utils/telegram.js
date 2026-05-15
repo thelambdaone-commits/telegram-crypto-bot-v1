@@ -1,6 +1,7 @@
 /**
  * Telegram Utility Functions
  */
+import { logger } from '../logger.js';
 
 /**
  * Escapes characters for MarkdownV2 or legacy Markdown
@@ -30,7 +31,7 @@ export async function safeAnswerCbQuery(ctx, text) {
     // Ignore "query is too old" errors - they're harmless
     if (!e.message?.includes('query is too old')) {
       // Use console for now, will be replaced by logger in Phase 4
-      console.error('Error answering callback query:', e.message);
+      logger.warn('Error answering callback query', { error: e.message });
     }
   }
 }
@@ -56,7 +57,7 @@ export async function sendLoadingMessage(ctx, text = '⌛ Chargement...') {
   try {
     return await ctx.reply(text);
   } catch (e) {
-    console.error('Error sending loading message:', e.message);
+    logger.warn('Error sending loading message', { error: e.message });
     return null;
   }
 }

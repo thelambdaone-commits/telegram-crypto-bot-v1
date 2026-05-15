@@ -78,31 +78,35 @@ export class EvmBaseProvider extends BaseProvider {
   }
 
   async getAllTokens(address) {
-    const results = [];
     const provider = this.getProvider();
 
-    for (const [symbol, token] of Object.entries(this.tokenAddresses)) {
-      try {
-        const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
-        const balance = await withTimeout(contract.balanceOf(address), 10000);
-        const decimals = await withTimeout(contract.decimals(), 10000);
+    const results = await Promise.all(
+      Object.entries(this.tokenAddresses).map(async ([symbol, token]) => {
+        try {
+          const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
+          const [balance, decimals] = await Promise.all([
+            withTimeout(contract.balanceOf(address), 10000),
+            withTimeout(contract.decimals(), 10000),
+          ]);
 
-        if (balance > 0n) {
-          results.push({
-            symbol,
-            address: token.address,
-            amount: Number(balance) / Math.pow(10, decimals),
-            decimals,
-            icon: token.icon || '💵',
-            isKnown: true,
-          });
+          if (balance > 0n) {
+            return {
+              symbol,
+              address: token.address,
+              amount: Number(balance) / Math.pow(10, decimals),
+              decimals,
+              icon: token.icon || '💵',
+              isKnown: true,
+            };
+          }
+        } catch {
+          // skip tokens that fail
         }
-      } catch (error) {
-        continue;
-      }
-    }
+        return null;
+      })
+    );
 
-    return results;
+    return results.filter(Boolean);
   }
 
   async estimateFees(fromAddress, toAddress, amount, tokenSymbol = null) {
