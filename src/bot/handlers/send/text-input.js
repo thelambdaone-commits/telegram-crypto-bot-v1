@@ -111,11 +111,16 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
         text.startsWith('/') ||
         [
           '💰 Mes Wallets',
+          '📡 Envoyer',
           '💸 Envoyer',
+          '💵 Soldes',
           '🔍 Analyser',
+          '🔎 Analyser',
           '🔐 Mes Clés',
           '📊 Cours EUR',
           '🆘 Help',
+          "➕ Plus d'actions",
+          '❌ Fermer',
           '👑 Admin',
           'Stop',
           'Annuler',

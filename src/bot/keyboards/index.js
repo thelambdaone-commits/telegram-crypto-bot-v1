@@ -10,8 +10,8 @@ export * from './send.keyboards.js';
 // Core/Infrastructure Keyboards
 export function mainReplyKeyboard() {
   return Markup.keyboard([
-    ['💰 Mes Wallets', '💸 Envoyer'],
-    ['💵 Soldes', '🔍 Analyser'],
+    ['💰 Mes Wallets', '📡 Envoyer'],
+    ['💵 Soldes', '🔎 Analyser'],
     ['🆕 Nouveau Wallet', '🔐 Mes Clés'],
     ['📊 Cours EUR', '🆘 Help'],
     ["➕ Plus d'actions", '❌ Fermer'],
@@ -22,11 +22,11 @@ export function mainMenuKeyboard() {
   return Markup.inlineKeyboard([
     [
       Markup.button.callback('💰 Mes Wallets', CALLBACKS.LIST_WALLETS),
-      Markup.button.callback('💸 Envoyer', CALLBACKS.SEND_FUNDS),
+      Markup.button.callback('📡 Envoyer', CALLBACKS.SEND_FUNDS),
     ],
     [
       Markup.button.callback('💵 Soldes', CALLBACKS.VIEW_BALANCES),
-      Markup.button.callback('🔍 Analyser', CALLBACKS.ANALYZE_ADDRESS),
+      Markup.button.callback('🔎 Analyser', CALLBACKS.ANALYZE_ADDRESS),
     ],
     [
       Markup.button.callback('🆕 Nouveau Wallet', CALLBACKS.CREATE_WALLET),

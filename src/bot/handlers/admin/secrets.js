@@ -99,10 +99,9 @@ export function setupAdminSecrets(bot, storage, sessions) {
   // Text Handler for Secret Input
   bot.on('text', async (ctx, next) => {
     const chatId = ctx.chat.id;
-    if (!adminGuard(ctx)) return;
-
     const state = sessions.getState(chatId);
-    if (!state) return next();
+    if (!state?.startsWith('AWAITING_SECRET_')) return next();
+    if (!adminGuard(ctx)) return;
 
     const text = ctx.message.text.trim();
 

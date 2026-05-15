@@ -69,21 +69,21 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     });
   });
 
-  // Hears: 💸 Envoyer
-  bot.hears('💸 Envoyer', async (ctx) => {
+  // Hears: Envoyer
+  bot.hears(['📡 Envoyer', '💸 Envoyer'], async (ctx) => {
     const wallets = await storage.getWallets(ctx.chat.id);
     if (wallets.length === 0) return ctx.reply("❌ Tu n'as pas encore de wallet.");
-    ctx.reply('💸 *Envoyer des fonds*\n\nDepuis quel wallet ?', {
+    ctx.reply('📡 *Envoyer des fonds*\n\nDepuis quel wallet ?', {
       parse_mode: 'Markdown',
       ...walletListKeyboard(wallets, 'send_from_'),
     });
   });
 
-  // Hears: 🔍 Analyser
-  bot.hears('🔍 Analyser', async (ctx) => {
+  // Hears: Analyser
+  bot.hears(['🔎 Analyser', '🔍 Analyser'], async (ctx) => {
     sessions.setState(ctx.chat.id, 'ENTER_ADDRESS_ANALYZE');
     ctx.reply(
-      "🔍 *Analyse d'adresse*\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE) pour voir son solde et tous ses tokens.",
+      "🔎 *Analyse d'adresse*\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE) pour voir son solde et tous ses tokens.",
       {
         parse_mode: 'Markdown',
         ...cancelKeyboard(),
@@ -105,5 +105,11 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
       parse_mode: 'Markdown',
       ...mainMenuKeyboard(),
     });
+  });
+
+  // Hears: ❌ Fermer
+  bot.hears('❌ Fermer', async (ctx) => {
+    sessions.clearState(ctx.chat.id);
+    await ctx.reply('❌ Menu fermé.', { reply_markup: { remove_keyboard: true } });
   });
 }
