@@ -39,7 +39,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
         const balance = await walletService.getBalance(chatId, wallet.id);
         text += `${chainEmoji} *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;
         text += `📬 \`${wallet.address}\`\n`;
-        text += `💰 Solde: *${formatCryptoAmount(balance.balance, wallet.chain)}*\n\n`;
+        text += `💰 Solde: *${formatCryptoAmount(balance.balance, balance.symbol || wallet.chain)}*\n\n`;
       } catch (e) {
         text += `${chainEmoji} *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;
         text += `📬 \`${wallet.address}\`\n`;
@@ -177,7 +177,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       await ctx.reply(
         `${chainEmoji} *Solde ${network.toUpperCase()}*\n\n` +
           `📬 Adresse : \`${address.slice(0, 8)}...${address.slice(-6)}\`\n` +
-          `💰 Solde : *${formatCryptoAmount(balanceData.balance, network)}*\n` +
+          `💰 Solde : *${formatCryptoAmount(balanceData.balance, balanceData.symbol || network)}*\n` +
           `💶 Valeur : *${formatEUR(conversion.valueEUR)}*`,
         { parse_mode: 'Markdown' }
       );
@@ -258,7 +258,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
           `📥 Vers : \`${toAddress.slice(0, 8)}...${toAddress.slice(-6)}\`\n` +
           `💰 Montant : *${formatCryptoAmount(amount, network)}*\n` +
           `💶 Valeur : ${formatEUR(conversion.valueEUR)}\n` +
-          `📊 Solde dispo : ${balanceData.balance} ${network.toUpperCase()}\n\n` +
+          `📊 Solde dispo : ${balanceData.balance} ${balanceData.symbol || network.toUpperCase()}\n\n` +
           'Choisis la vitesse de transaction :',
         { parse_mode: 'Markdown', ...feeSelectionKeyboard('slow') }
       );

@@ -19,6 +19,49 @@ export class SessionManager {
     }
     
     this.isDirty = false;
+    this._cleanupInterval = null;
+    this._flushInterval = null;
+    this._started = false;
+  }
+
+  /**
+   * Start periodic cleanup and flush intervals (idempotent)
+   */
+  start() {
+    if (this._started) return;
+    this._started = true;
+
+    this._cleanupInterval = setInterval(async () => {
+      await this.cleanup();
+      await this.flush();
+    }, 5 * 60 * 1000);
+    this._cleanupInterval.unref();
+
+    this._flushInterval = setInterval(() => {
+      if (this.fileStore && this.isDirty) {
+        this.flush();
+      }
+    }, 60 * 1000);
+    this._flushInterval.unref();
+
+    logger.debug('SessionManager started');
+  }
+
+  /**
+   * Stop periodic intervals and perform final flush if dirty
+   */
+  async stop() {
+    if (this._cleanupInterval) {
+      clearInterval(this._cleanupInterval);
+      this._cleanupInterval = null;
+    }
+    if (this._flushInterval) {
+      clearInterval(this._flushInterval);
+      this._flushInterval = null;
+    }
+    this._started = false;
+    await this.flush();
+    logger.debug('SessionManager stopped');
   }
 
   async init() {

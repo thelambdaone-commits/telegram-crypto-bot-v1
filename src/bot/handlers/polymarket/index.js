@@ -6,7 +6,7 @@ import { getPolymarketTradeThemes } from '../../../modules/polymarket/analytics.
 import {
   handlePolyCommand,
   handleConnectStart,
-  handleExportPolyfillCommand,
+  handleShowCredentialsCommand,
   handleDisconnectCommand,
   handleConfirmDisconnect,
 } from './commands.js';
@@ -120,7 +120,7 @@ export function setupPolymarketHandlers(bot, storage, walletService, sessions) {
   });
 
   bot.command('polyexport', async (ctx) => {
-    await handleExportPolyfillCommand(ctx, storage);
+    await handleShowCredentialsCommand(ctx, storage);
   });
 
   bot.command('polydisconnect', async (ctx) => {
@@ -188,9 +188,9 @@ export function setupPolymarketHandlers(bot, storage, walletService, sessions) {
     await handlePolyCommand(ctx, storage, walletService);
   });
 
-  bot.action('pm_export_polyfill', async (ctx) => {
+  bot.action('pm_show_credentials', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    await handleExportPolyfillCommand(ctx, storage);
+    await handleShowCredentialsCommand(ctx, storage);
   });
 
   bot.action('pm_connect', async (ctx) => {

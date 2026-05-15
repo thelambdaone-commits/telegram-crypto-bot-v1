@@ -84,7 +84,7 @@ export async function handleConnectStart(ctx, storage, walletService, sessions) 
   );
 }
 
-const exportLocks = new Map();
+const displayLocks = new Map();
 const pendingTimeouts = new Map();
 
 function clearableTimeout(key, callback, delay) {
@@ -99,36 +99,39 @@ function clearableTimeout(key, callback, delay) {
   pendingTimeouts.set(key, timeoutId);
 }
 
-export function buildExportMessage(creds) {
+export function buildCredentialsDisplayMessage(creds) {
   const address = creds.address ? escapeMarkdown(creds.address) : 'N/A';
   const chain = creds.chain ? creds.chain.toUpperCase() : 'EVM';
 
   return (
-    '🔐 *Export Polymarket*\n' +
+    '🔐 *Credentials Polymarket*\n' +
     '━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    `*Wallet :* \`${address}\`\n` +
-    `*Chaîne :* ${chain}\n\n` +
-    `*Private Key :*\n\`${escapeMarkdown(creds.privateKey)}\`\n\n` +
-    `*API Key :*\n\`${escapeMarkdown(creds.apiKey)}\`\n\n` +
-    `*API Secret :*\n\`${escapeMarkdown(creds.apiSecret)}\`\n\n` +
-    `*API Passphrase :*\n\`${escapeMarkdown(creds.apiPassphrase)}\`\n\n` +
+    `*Wallet* : \`${address}\`\n` +
+    `*Chaine* : ${chain}\n\n` +
+    `*Private Key* :\n\`${escapeMarkdown(creds.privateKey)}\`\n\n` +
+    `*API Key* :\n\`${escapeMarkdown(creds.apiKey)}\`\n\n` +
+    `*API Secret* :\n\`${escapeMarkdown(creds.apiSecret)}\`\n\n` +
+    `*API Passphrase* :\n\`${escapeMarkdown(creds.apiPassphrase)}\`\n\n` +
     '━━━━━━━━━━━━━━━━━━━━━\n' +
+    '📦 _Source : stockage chiffré .enc_\n' +
     '⚠️ _Ce message sera supprimé dans 30 secondes._'
   );
 }
 
-export async function handleExportPolyfillCommand(ctx, storage) {
+export const buildExportMessage = buildCredentialsDisplayMessage;
+
+export async function handleShowCredentialsCommand(ctx, storage) {
   const chatId = ctx.chat?.id || ctx.callbackQuery?.message?.chat?.id;
   if (!chatId) return;
 
   const now = Date.now();
-  const lastExport = exportLocks.get(chatId);
-  if (lastExport && now - lastExport < 5000) {
+  const lastDisplay = displayLocks.get(chatId);
+  if (lastDisplay && now - lastDisplay < 5000) {
     return;
   }
-  exportLocks.set(chatId, now);
+  displayLocks.set(chatId, now);
   setTimeout(() => {
-    if (exportLocks.get(chatId) === now) exportLocks.delete(chatId);
+    if (displayLocks.get(chatId) === now) displayLocks.delete(chatId);
   }, 5000);
 
   try {
@@ -146,7 +149,7 @@ export async function handleExportPolyfillCommand(ctx, storage) {
       ctx.telegram.deleteMessage(chatId, triggerMsgId).catch(() => {});
     }
 
-    const message = buildExportMessage(creds);
+    const message = buildCredentialsDisplayMessage(creds);
 
     const sentMsg = await ctx.reply(message, {
       parse_mode: 'Markdown',
@@ -161,7 +164,7 @@ export async function handleExportPolyfillCommand(ctx, storage) {
         : 'N/A',
     });
 
-    clearableTimeout(`export_${chatId}`, () => {
+    clearableTimeout(`pm_credentials_${chatId}`, () => {
       ctx.telegram.deleteMessage(chatId, sentMsg.message_id).catch(() => {});
     }, 30000);
   } catch (err) {

@@ -12,7 +12,7 @@ if (!existsSync(LOG_DIR)) {
 }
 
 /**
- * Log levels
+ * Log levels with numeric values for filtering
  */
 export const LogLevel = {
   ERROR: 'ERROR',
@@ -20,6 +20,16 @@ export const LogLevel = {
   INFO: 'INFO',
   DEBUG: 'DEBUG',
 };
+
+const LEVEL_VALUES = {
+  ERROR: 40,
+  WARN: 30,
+  INFO: 20,
+  DEBUG: 10,
+};
+
+const DEFAULT_LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
+let currentLogLevel = DEFAULT_LOG_LEVEL;
 
 /**
  * Structured logger for AI-assisted debugging
@@ -76,7 +86,25 @@ class Logger {
   }
 
   /**
+   * Set the minimum log level for console output
+   */
+  setLevel(level) {
+    if (LEVEL_VALUES[level] !== undefined) {
+      currentLogLevel = level;
+    }
+  }
+
+  /**
+   * Check if a level should be shown in console output
+   */
+  _shouldLog(level) {
+    return (LEVEL_VALUES[level] || 0) >= (LEVEL_VALUES[currentLogLevel] || 0);
+  }
+
+  /**
    * Write log entry
+   * File output is always written (unfiltered for debugging).
+   * Console output is filtered by LOG_LEVEL.
    */
   write(level, message, context = {}) {
     this.rotateIfNeeded(this.logPath);
@@ -90,14 +118,16 @@ class Logger {
       appendFileSync(this.errorLogPath, entry + '\n');
     }
 
-    // Console output for development
-    const consoleMsg = `[${level}] ${message}`;
-    if (level === LogLevel.ERROR) {
-      console.error(consoleMsg, context);
-    } else if (level === LogLevel.WARN) {
-      console.warn(consoleMsg, context);
-    } else {
-      console.log(consoleMsg);
+    // Console output filtered by LOG_LEVEL
+    if (this._shouldLog(level)) {
+      const consoleMsg = `[${level}] ${message}`;
+      if (level === LogLevel.ERROR) {
+        console.error(consoleMsg, context);
+      } else if (level === LogLevel.WARN) {
+        console.warn(consoleMsg, context);
+      } else {
+        console.log(consoleMsg);
+      }
     }
   }
 

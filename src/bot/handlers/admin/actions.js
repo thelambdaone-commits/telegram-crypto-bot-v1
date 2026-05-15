@@ -4,7 +4,7 @@ import {
   adminCancelKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, escapeMarkdown } from '../../../shared/utils/telegram.js';
-import { adminGuard, isAdmin } from '../../middlewares/auth.middleware.js';
+import { adminGuard } from '../../middlewares/auth.middleware.js';
 import {
   getRateLimitStats,
   blacklistUser,
@@ -299,7 +299,7 @@ export function setupAdminMisc(bot, storage, sessions) {
     const text = ctx.message.text;
     const state = sessions.getState(chatId);
 
-    if (!state?.startsWith('ADMIN_') || !isAdmin(ctx)) {
+    if (!state?.startsWith('ADMIN_') || !adminGuard(ctx)) {
       return next();
     }
 

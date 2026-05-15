@@ -35,7 +35,7 @@ export async function buildBalancesText(walletService, storage, chatId) {
     if (!error) {
       totalEUR += valueEUR;
       text += `🔸 *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;
-      text += `Solde: ${balance.balance} ${wallet.chain.toUpperCase()}`;
+      text += `Solde: ${balance.balance} ${balance.symbol || wallet.chain.toUpperCase()}`;
       if (valueEUR > 0) text += ` ≈ ${formatEUR(valueEUR)}`;
     } else {
       text += `🔸 *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;

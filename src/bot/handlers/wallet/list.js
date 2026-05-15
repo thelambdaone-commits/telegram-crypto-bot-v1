@@ -74,7 +74,7 @@ export function setupWalletList(bot, storage, walletService) {
     let balanceEUR = '';
     try {
       const balance = await walletService.getBalance(chatId, walletId);
-      balanceText = `*${balance.balance} ${wallet.chain.toUpperCase()}*`;
+      balanceText = `*${balance.balance} ${balance.symbol || wallet.chain.toUpperCase()}*`;
 
       // Get EUR value
       const conversion = await convertToEUR(wallet.chain, Number.parseFloat(balance.balance));

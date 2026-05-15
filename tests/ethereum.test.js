@@ -27,3 +27,16 @@ test('EthereumChain imports from seed correctly', async () => {
   assert.equal(wallet.address, '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
   assert.equal(wallet.mnemonic, mnemonic);
 });
+
+test('EthereumChain preserves fractional native balances', async () => {
+  const provider = new EthereumChain('https://eth.llamarpc.com');
+  provider.getProvider = () => ({
+    getBalance: async () => 123456789012345678n,
+  });
+
+  const balance = await provider.getBalance('0x742d35Cc6634C0532925a3b844Bc454e4438f44e');
+
+  assert.equal(balance.balance, '0.123456789012345678');
+  assert.equal(balance.balanceWei, '123456789012345678');
+  assert.equal(balance.symbol, 'ETH');
+});

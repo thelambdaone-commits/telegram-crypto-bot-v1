@@ -60,7 +60,7 @@ export class EvmBaseProvider extends BaseProvider {
       const symbol = await withTimeout(tokenContract.symbol(), 10000);
 
       return {
-        balance: (balance / BigInt(10 ** decimals)).toString(),
+        balance: ethers.formatUnits(balance, Number(decimals)),
         balanceWei: balance.toString(),
         symbol,
         isToken: true,
@@ -70,9 +70,9 @@ export class EvmBaseProvider extends BaseProvider {
 
     const balance = await withTimeout(provider.getBalance(address), 15000);
     return {
-      balance: (balance / BigInt(10n ** 18n)).toString(),
+      balance: ethers.formatEther(balance),
       balanceWei: balance.toString(),
-      symbol: this.symbol,
+      symbol: this.nativeSymbol,
       isToken: false,
     };
   }

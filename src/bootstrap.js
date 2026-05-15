@@ -1,6 +1,6 @@
+import crypto from 'node:crypto';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import crypto from 'node:crypto';
 import { Telegraf } from 'telegraf';
 import { config } from './core/config.js';
 import { setupHandlers } from './bot/handlers/index.js';
@@ -78,7 +78,7 @@ export class App {
       logger.info(`Bot shutting down (${signal})`);
       cleanupAllFeeds();
       if (this.sessions) {
-        await this.sessions.flush();
+        await this.sessions.stop();
       }
       await auditLogger.flush();
       this.bot.stop(signal);

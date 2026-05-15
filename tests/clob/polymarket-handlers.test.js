@@ -173,7 +173,7 @@ test('confirm disconnect removes credentials and edits message', async () => {
   assert.equal(edited, true);
 });
 
-test('connected Polymarket menu includes polymarket-copy-trade export button', async () => {
+test('connected Polymarket menu includes credentials display action', async () => {
   const actions = new Map();
   const bot = {
     on: () => {},
@@ -190,7 +190,7 @@ test('connected Polymarket menu includes polymarket-copy-trade export button', a
 
   setupPolymarketHandlers(bot, storage, {}, sessions);
 
-  assert.equal(typeof actions.get('pm_export_polyfill'), 'function');
+  assert.equal(typeof actions.get('pm_show_credentials'), 'function');
 });
 
 test('connected Polymarket menu includes portfolio PnL button', async () => {

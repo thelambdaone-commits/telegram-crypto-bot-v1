@@ -21,6 +21,7 @@ import { DepositMonitor } from '../../core/monitor.js';
 import { globalRateLimit, cleanupLimiters } from '../middlewares/security.middleware.js';
 import { adminGuard } from '../middlewares/auth.middleware.js';
 import { adminExtendedKeyboard } from '../keyboards/index.js';
+import { initPatterns } from '../patterns/index.js';
 import { logger } from '../../shared/logger.js';
 
 /**
@@ -35,12 +36,8 @@ export async function setupHandlers(bot, storage) {
   });
 
   await sessions.init();
-
-  // Cleanup & Flush interval
-  setInterval(async () => {
-    await sessions.cleanup();
-    await sessions.flush();
-  }, 5 * 60 * 1000);
+  sessions.start();
+  initPatterns(bot, sessions);
 
   setInterval(() => cleanupLimiters(), 60 * 1000);
 

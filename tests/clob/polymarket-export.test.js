@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { escapeHtml } from '../../src/shared/utils/telegram.js';
 import { AUDIT_ACTIONS } from '../../src/shared/security/audit-logger.js';
-import { buildExportMessage } from '../../src/bot/handlers/polymarket/commands.js';
+import { buildCredentialsDisplayMessage } from '../../src/bot/handlers/polymarket/commands.js';
 
 const creds = {
   privateKey: '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -42,38 +42,39 @@ test('escapeHtml converts numbers to strings', () => {
   assert.equal(escapeHtml(42), '42');
 });
 
-test('buildExportMessage uses Markdown format', () => {
-  const msg = buildExportMessage(creds);
-  assert.match(msg, /\*Export Polymarket\*/);
+test('buildCredentialsDisplayMessage uses Markdown format', () => {
+  const msg = buildCredentialsDisplayMessage(creds);
+  assert.match(msg, /\*Credentials Polymarket\*/);
   assert.match(msg, /`0xAb755F8B5522eBD7609A4eAE27AF061d8B0f8D28`/);
   assert.match(msg, /ETH/);
+  assert.match(msg, /stockage chiffré \.enc/);
   assert.match(msg, /⚠️ _Ce message sera supprimé dans 30 secondes\._/);
 });
 
-test('buildExportMessage puts credentials in code blocks', () => {
-  const msg = buildExportMessage(creds);
+test('buildCredentialsDisplayMessage puts credentials in code blocks', () => {
+  const msg = buildCredentialsDisplayMessage(creds);
   assert.match(msg, /`0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`/);
   assert.match(msg, /`super-secret-value`/);
   assert.match(msg, /`my-passphrase`/);
 });
 
-test('buildExportMessage escapes Markdown special chars in values', () => {
+test('buildCredentialsDisplayMessage escapes Markdown special chars in values', () => {
   const malicious = {
     ...creds,
     apiKey: 'key_with_underscores',
   };
-  const msg = buildExportMessage(malicious);
+  const msg = buildCredentialsDisplayMessage(malicious);
   assert.ok(msg.includes('key\\_with\\_underscores'));
 });
 
-test('buildExportMessage handles missing optional fields', () => {
+test('buildCredentialsDisplayMessage handles missing optional fields', () => {
   const minimal = {
     privateKey: '0xdead',
     apiKey: 'key',
     apiSecret: 'secret',
     apiPassphrase: 'phrase',
   };
-  const msg = buildExportMessage(minimal);
+  const msg = buildCredentialsDisplayMessage(minimal);
   assert.match(msg, /N\/A/);
   assert.match(msg, /EVM/);
 });
@@ -114,14 +115,14 @@ test('handler passes protect_content and disable_web_page_preview', async () => 
     '../../src/bot/handlers/polymarket/index.js'
   );
   setupPolymarketHandlers(bot, storage, {}, sessions);
-  await actions.get('pm_export_polyfill')(ctx);
+  await actions.get('pm_show_credentials')(ctx);
 
   assert.equal(replyOptions.protect_content, true);
   assert.equal(replyOptions.disable_web_page_preview, true);
   assert.equal(replyOptions.parse_mode, 'Markdown');
 });
 
-test('handler deletes trigger message on export', async () => {
+test('handler deletes trigger message before displaying credentials', async () => {
   const actions = new Map();
   const bot = {
     on: () => {},
@@ -154,7 +155,7 @@ test('handler deletes trigger message on export', async () => {
     '../../src/bot/handlers/polymarket/index.js'
   );
   setupPolymarketHandlers(bot, storage, {}, sessions);
-  await actions.get('pm_export_polyfill')(ctx);
+  await actions.get('pm_show_credentials')(ctx);
 
   assert.equal(deletedMessageId, 100);
 });
@@ -189,7 +190,7 @@ test('handler shows error without credentials', async () => {
     '../../src/bot/handlers/polymarket/index.js'
   );
   setupPolymarketHandlers(bot, storage, {}, sessions);
-  await actions.get('pm_export_polyfill')(ctx);
+  await actions.get('pm_show_credentials')(ctx);
 
   assert.match(replyText, /Non connecté/);
 });
@@ -226,5 +227,5 @@ test('handler silences deleteMessage errors', async () => {
     '../../src/bot/handlers/polymarket/index.js'
   );
   setupPolymarketHandlers(bot, storage, {}, sessions);
-  await actions.get('pm_export_polyfill')(ctx);
+  await actions.get('pm_show_credentials')(ctx);
 });

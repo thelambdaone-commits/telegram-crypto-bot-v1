@@ -21,7 +21,7 @@ export function polymarketMenuKeyboard(connected) {
     ],
     [
       Markup.button.callback('🔄 Rafraîchir', CALLBACKS.PM_MENU_REFRESH),
-      Markup.button.callback('📤 Exporter', CALLBACKS.PM_EXPORT_POLYFILL),
+      Markup.button.callback('🔑 Voir clé privée', CALLBACKS.PM_SHOW_CREDENTIALS),
     ],
     [
       Markup.button.callback('🔁 Changer wallet', CALLBACKS.PM_CONNECT),
