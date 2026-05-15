@@ -1,6 +1,6 @@
 import { adminExtendedKeyboard, adminUserKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, escapeMarkdown } from '../../../shared/utils/telegram.js';
-import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { adminGuard, isAdmin } from '../../middlewares/auth.middleware.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 
 export function setupAdminUsers(bot, storage) {

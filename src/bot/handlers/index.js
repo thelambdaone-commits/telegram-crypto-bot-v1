@@ -19,7 +19,7 @@ import { WalletService } from '../../modules/wallet/wallet.service.js';
 import { config } from '../../core/config.js';
 import { DepositMonitor } from '../../core/monitor.js';
 import { globalRateLimit, cleanupLimiters } from '../middlewares/security.middleware.js';
-import { isAdmin } from '../middlewares/auth.middleware.js';
+import { adminGuard } from '../middlewares/auth.middleware.js';
 import { adminExtendedKeyboard } from '../keyboards/index.js';
 import { logger } from '../../shared/logger.js';
 
@@ -115,7 +115,7 @@ export async function setupHandlers(bot, storage) {
   });
 
   bot.hears('👑 Admin', async (ctx) => {
-    if (!isAdmin(ctx)) return ctx.reply('❌ Accès réservé aux admins.');
+    if (!adminGuard(ctx)) return;
     ctx.reply('👑 *Panel Admin*', adminExtendedKeyboard());
   });
 

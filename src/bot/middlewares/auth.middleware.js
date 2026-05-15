@@ -1,4 +1,5 @@
 import { config } from '../../core/config.js';
+import { logger } from '../../shared/logger.js';
 
 /**
  * Authentication middleware - Checks if command is from an admin chat or user.
@@ -11,6 +12,30 @@ export function isAdmin(ctxOrId) {
   }
 
   return config.adminChatId.includes(ctxOrId) || config.adminUserId.includes(ctxOrId);
+}
+
+/**
+ * Unified admin guard — replies and returns false if not authorized.
+ * Works for both commands and callback queries.
+ */
+export function adminGuard(ctx) {
+  if (isAdmin(ctx)) return true;
+
+  logger.logWithContext('WARN', 'Admin access denied', {
+    chatId: ctx.chat?.id,
+    userId: ctx.from?.id,
+    username: ctx.from?.username,
+    module: 'auth',
+    action: 'adminGuard',
+  });
+
+  if (ctx.callbackQuery) {
+    ctx.answerCbQuery('Acces refuse — Admin uniquement').catch(() => {});
+  } else {
+    ctx.reply('❌ Acces refuse — Admin uniquement.').catch(() => {});
+  }
+
+  return false;
 }
 
 /**

@@ -154,6 +154,23 @@ class Logger {
       ...details,
     });
   }
+
+  /**
+   * Log with standardized context fields
+   * Ensures chatId, userId, username, module, action are always present
+   */
+  logWithContext(level, message, ctx = {}) {
+    const { chatId, userId, username, module, action, requestId, ...rest } = ctx;
+    this.write(level, message, {
+      chatId,
+      userId,
+      username,
+      module: module || 'unknown',
+      action: action || 'unknown',
+      ...(requestId ? { requestId } : {}),
+      ...rest,
+    });
+  }
 }
 
 // Export singleton instance

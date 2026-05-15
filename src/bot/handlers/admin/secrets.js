@@ -1,5 +1,5 @@
 import { Markup } from 'telegraf';
-import { isAdmin } from '../../middlewares/auth.middleware.js';
+import { adminGuard } from '../../middlewares/auth.middleware.js';
 import { adminCancelKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, safeEditMessage } from '../../../shared/utils/telegram.js';
 import { logger } from '../../../shared/logger.js';
@@ -40,7 +40,7 @@ export function setupAdminSecrets(bot, storage, sessions) {
   // Start Set Secret Flow
   bot.action('admin_secret_set', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     sessions.setState(ctx.chat.id, 'AWAITING_SECRET_KEY');
     await safeEditMessage(ctx, 'Entrez le *NOM* du secret à définir (ex: `stakingRpc`) :', {
@@ -52,7 +52,7 @@ export function setupAdminSecrets(bot, storage, sessions) {
   // Start Delete Secret Flow
   bot.action('admin_secret_delete', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     const secrets = storage.secrets.list();
     const buttons = secrets.map(({ key }) => [
@@ -69,7 +69,7 @@ export function setupAdminSecrets(bot, storage, sessions) {
   // Handle Delete Confirmation
   bot.action(/^admin_secret_del_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    if (!isAdmin(ctx)) return;
+    if (!adminGuard(ctx)) return;
 
     const key = ctx.match[1];
     const deleted = await storage.secrets.delete(key);
@@ -99,7 +99,7 @@ export function setupAdminSecrets(bot, storage, sessions) {
   // Text Handler for Secret Input
   bot.on('text', async (ctx, next) => {
     const chatId = ctx.chat.id;
-    if (!isAdmin(ctx)) return next();
+    if (!adminGuard(ctx)) return;
 
     const state = sessions.getState(chatId);
     if (!state) return next();
