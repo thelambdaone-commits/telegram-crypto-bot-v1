@@ -1,9 +1,7 @@
-import { Markup } from 'telegraf';
 import { StakingService } from '../../../modules/staking/staking.service.js';
 import { JitoService } from '../../../modules/staking/jito.js';
 import { ethLstProvider } from '../../../modules/staking/providers/registry.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
-import { CALLBACKS } from '../../constants/callbacks.js';
 import { stakingHubKeyboard } from '../../keyboards/staking.keyboards.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
@@ -154,27 +152,6 @@ function formatYieldRows(rows) {
       );
     })
     .join('\n\n');
-}
-
-function stakingKeyboard(apyData) {
-  const buttons = [];
-
-  if (apyData?.aave?.chains) {
-    buttons.push([Markup.button.callback('🔷 Aave V3 USDC/USDT', CALLBACKS.AAVE_MENU)]);
-  }
-
-  if (apyData?.kamino?.tokens?.USDC) {
-    buttons.push([Markup.button.callback('Kamino USDC', 'stake_kamino')]);
-  }
-
-  if (apyData?.jupiter?.tokens?.USDC || apyData?.jupiter?.tokens?.USDT) {
-    buttons.push([Markup.button.callback('Jupiter Lend', 'stake_jupiter')]);
-  }
-
-  buttons.push([Markup.button.callback('📊 Mes Positions', 'staking_yield')]);
-  buttons.push([Markup.button.callback('🔙 Menu', 'back_to_menu')]);
-
-  return Markup.inlineKeyboard(buttons);
 }
 
 async function handleStakeCommand(ctx, _storage) {
@@ -397,4 +374,4 @@ async function handleYieldCommand(ctx, storage, _walletService) {
   }
 }
 
-export { handleStakeCommand, handleYieldCommand, formatAmount, formatCurrency, stakingKeyboard };
+export { handleStakeCommand, handleYieldCommand, formatAmount, formatCurrency };
