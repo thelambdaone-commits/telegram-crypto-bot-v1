@@ -10,7 +10,7 @@ import { safeAnswerCbQuery } from '../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
 
-export function setupMarinadeHandlers(bot, storage, walletService) {
+export function setupMarinadeHandlers(bot, storage, _walletService) {
   // Show Marinade staking menu
   bot.action('marinade_staking', async (ctx) => {
     await safeAnswerCbQuery(ctx);

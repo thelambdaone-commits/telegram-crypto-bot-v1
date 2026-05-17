@@ -6,10 +6,8 @@ import { confirmTexts, polymarketTexts } from './texts.js';
 import {
   confirmDisconnectKeyboard,
   polymarketMenuKeyboard,
-  polymarketThemeSelectKeyboard,
   polymarketWalletSelectKeyboard,
 } from './keyboards.js';
-import { getPolymarketTradeThemes } from '../../../modules/polymarket/analytics.js';
 import { loadPolymarketMenuBalances } from './ui.js';
 import { autoConnectPolymarket, generatePolymarketWalletSession } from './trading.js';
 

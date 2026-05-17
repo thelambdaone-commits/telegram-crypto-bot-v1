@@ -7,13 +7,11 @@
  */
 
 import { Markup } from 'telegraf';
-import { TokenService } from '../../../modules/tokens/create.service.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { logger } from '../../../shared/logger.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { setupTokenTextInput } from './text-input.js';
-import { formatSOL } from '../../../shared/formatters.js';
 
 /**
  * Start the mint wizard - reusable function

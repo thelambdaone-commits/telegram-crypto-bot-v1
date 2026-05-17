@@ -1,6 +1,6 @@
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { EMOJIS } from '../../messages/index.js';
 
 export function setupWalletTextInput(bot, storage, walletService, sessions) {
   bot.on('text', async (ctx, next) => {

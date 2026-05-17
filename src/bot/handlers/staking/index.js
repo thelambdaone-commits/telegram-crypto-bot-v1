@@ -1,8 +1,6 @@
-import { Markup } from 'telegraf';
 import { mainMenuKeyboard, liquidStakingKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
-import { logger } from '../../../shared/logger.js';
-import { handleStakeCommand, handleYieldCommand, stakingKeyboard } from './display.js';
+import { handleStakeCommand, handleYieldCommand } from './display.js';
 import { handleCalcCommand } from './calculator.js';
 import { setupJitoHandlers } from './jito.js';
 import { setupMarinadeHandlers } from './marinade.js';

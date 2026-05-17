@@ -4,7 +4,6 @@ import {
   feeSelectionKeyboard,
   confirmationKeyboard,
   mainMenuKeyboard,
-  quickAmountKeyboard,
   tokenSelectionKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';

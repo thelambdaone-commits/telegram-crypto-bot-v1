@@ -1,4 +1,3 @@
-import { Markup } from 'telegraf';
 import { StakingService } from '../../../modules/staking/staking.service.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { logger } from '../../../shared/logger.js';

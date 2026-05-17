@@ -34,7 +34,7 @@ export function setupJitoEnterHandlers(bot, storage, walletService, sessions) {
         );
       }
 
-      const buttons = solWallets.map((w, i) => [
+      const buttons = solWallets.map((w, _i) => [
         Markup.button.callback(
           `${w.label || w.address.slice(0, 8)}...`,
           `jito_wallet_enter_${w.id}`

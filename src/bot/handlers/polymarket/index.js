@@ -28,7 +28,6 @@ import {
   handleHistoryCommand,
   handleThemeSelectCommand,
   handleThemeTradesCommand,
-  loadPolymarketHistory,
 } from './ui.js';
 
 export {

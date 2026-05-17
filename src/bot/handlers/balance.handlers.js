@@ -13,7 +13,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
     if (wallets.length === 0) {
       return ctx
         .editMessageText("❌ Tu n'as pas encore de wallet.", mainMenuKeyboard())
-        .catch(() => {});
+        .catch((e) => logger.warn('balance.editMessageText failed', { chatId, error: e.message }));
     }
 
     const text = '💰 *Soldes de tes Wallets*' + await buildBalancesText(walletService, storage, chatId);
@@ -23,7 +23,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
         parse_mode: 'Markdown',
         ...mainMenuKeyboard(),
       })
-      .catch(() => {});
+      .catch((e) => logger.warn('balance.editMessageText failed', { chatId, error: e.message }));
   });
 
   bot.action('prices_eur', async (ctx) => {

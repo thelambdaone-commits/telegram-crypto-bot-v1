@@ -1,7 +1,6 @@
 import { deleteConfirmKeyboard, mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
 
 export function setupWalletDelete(bot, storage) {
   // Delete wallet - confirmation

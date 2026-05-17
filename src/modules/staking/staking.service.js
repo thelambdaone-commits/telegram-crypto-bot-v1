@@ -358,7 +358,7 @@ export class StakingService {
     return this.calculateYield(amount, apy, 1);
   }
 
-  static getDepositUrl(protocol, symbol) {
+  static getDepositUrl(protocol, _symbol) {
     return PROTOCOL_INFO[protocol]?.url || 'https://app.aave.com';
   }
 

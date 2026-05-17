@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { encrypt, decrypt } from '../shared/encryption.js';
 import { logger } from '../shared/logger.js';

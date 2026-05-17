@@ -3,7 +3,6 @@ import { JitoService } from '../../../../modules/staking/jito.js';
 import { mainMenuKeyboard, stakingExitKeyboard, jitoWithdrawalKeyboard, jitoStandardExitKeyboard } from '../../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../../shared/price.js';
-import { logger } from '../../../../shared/logger.js';
 import { formatAmount } from '../../../../shared/formatters.js';
 
 export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions) {

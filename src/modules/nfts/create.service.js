@@ -6,7 +6,7 @@
  * URL image only (PNG/JPG), no Telegram upload
  */
 
-import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { Connection, Keypair } from '@solana/web3.js';
 import splToken from '@solana/spl-token';
 const { createMint, getOrCreateAssociatedTokenAccount, mintTo } = splToken;
 import { config } from '../../core/config.js';

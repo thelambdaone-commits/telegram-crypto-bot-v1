@@ -1,8 +1,9 @@
 import { adminExtendedKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
-import { adminGuard, isAdmin } from '../../middlewares/auth.middleware.js';
+import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { config } from '../../../core/config.js';
+import { logger } from '../../../shared/logger.js';
 
 export function setupAdminStats(bot, storage) {
   // Global stats
@@ -14,7 +15,10 @@ export function setupAdminStats(bot, storage) {
 
     try {
       const stats = await storage.getGlobalStats();
-      const prices = await getPricesEUR().catch(() => ({ eth: 0, btc: 0, sol: 0 }));
+      const prices = await getPricesEUR().catch((e) => {
+        logger.warn('Failed to fetch prices for stats', { error: e.message });
+        return { eth: 0, btc: 0, sol: 0 };
+      });
 
       const { WalletService } = await import('../../../modules/wallet/wallet.service.js');
       const walletService = new WalletService(storage, config);

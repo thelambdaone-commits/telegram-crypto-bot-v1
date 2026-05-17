@@ -40,7 +40,7 @@ function stakingKeyboard(apyData) {
   return Markup.inlineKeyboard(buttons);
 }
 
-async function handleStakeCommand(ctx, storage) {
+async function handleStakeCommand(ctx, _storage) {
   const chatId = ctx.chat.id;
   const loadingMsg = await ctx.reply('📈 Chargement des rendements...');
 
@@ -181,7 +181,7 @@ async function handleStakeCommand(ctx, storage) {
   }
 }
 
-async function handleYieldCommand(ctx, storage, walletService) {
+async function handleYieldCommand(ctx, storage, _walletService) {
   const chatId = ctx.chat.id;
   const loadingMsg = await ctx.reply('📊 Chargement de vos positions...');
 

@@ -193,7 +193,7 @@ export class MarinadeService {
   /**
    * Execute exit standard - mSOL to SOL (delayed unstake)
    */
-  static async exitStandard(wallet, amountmSOL) {
+  static async exitStandard(_wallet, _amountmSOL) {
     // Initiate delayed unstake through Marinade
     return {
       success: true,
@@ -219,7 +219,7 @@ export class MarinadeService {
   /**
    * Claim pending standard exit
    */
-  static async claimExitStandard(_walletAddress, exitRequestId) {
+  static async claimExitStandard(_walletAddress, _exitRequestId) {
     // Claim SOL after delayed unstake is ready
     return {
       success: true,

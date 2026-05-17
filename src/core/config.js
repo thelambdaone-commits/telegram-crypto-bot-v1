@@ -17,7 +17,11 @@ function parseIdList(value) {
   return value
     ? value
         .split(',')
-        .map((id) => Number(id.trim()))
+        .map((id) => {
+          const trimmed = id.trim();
+          if (!/^-?\d+$/.test(trimmed)) return NaN;
+          return Number(trimmed);
+        })
         .filter((id) => !isNaN(id))
     : [];
 }

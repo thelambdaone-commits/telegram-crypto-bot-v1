@@ -1,5 +1,6 @@
 import { config } from '../core/config.js';
 import { getMyTrades } from './markets.js';
+import { logger } from '../shared/logger.js';
 
 const activeFeeds = new Map();
 const feedStartTime = new Map();
@@ -34,10 +35,10 @@ function startFeed(chatId, bot, _storage, delay = config.polymarket.feedInterval
       if (trades.length > 0 && config.polymarket.alertChatId) {
         const last = trades[0];
         const msg = `New trade detected\nSide: ${last.side}\nPrice: ${last.price}\nSize: ${last.size}`;
-        bot.telegram.sendMessage(config.polymarket.alertChatId, msg).catch(() => {});
+        bot.telegram.sendMessage(config.polymarket.alertChatId, msg).catch((e) => logger.warn('Polymarket feed alert failed', { error: e.message }));
       }
-    } catch {
-      // Silently ignore feed errors
+    } catch (e) {
+      logger.warn('Polymarket feed trade fetch failed', { chatId, error: e.message });
     }
   }, delay);
   activeFeeds.set(chatId, interval);

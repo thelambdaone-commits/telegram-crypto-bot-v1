@@ -1,5 +1,5 @@
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { EMOJIS } from '../../messages/index.js';
 import { logger } from '../../../shared/logger.js';
 import { ERROR_CODES } from '../../../shared/errors.js';
 

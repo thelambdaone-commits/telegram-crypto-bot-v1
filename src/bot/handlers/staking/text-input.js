@@ -6,9 +6,7 @@
 import { Markup } from 'telegraf';
 import { JitoService } from '../../../modules/staking/jito.js';
 import {
-  confirmationKeyboard,
   mainMenuKeyboard,
-  stakingExitKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../shared/price.js';

@@ -1,4 +1,3 @@
-import { Markup } from 'telegraf';
 import { SolanaBurner } from '../../../modules/dust/solana.burner.js';
 import { ethers } from 'ethers';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';

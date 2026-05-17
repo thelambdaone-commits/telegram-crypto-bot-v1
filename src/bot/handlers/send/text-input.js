@@ -1,12 +1,10 @@
 import {
   mainMenuKeyboard,
   amountTypeKeyboard,
-  quickAmountKeyboard,
   feeSelectionKeyboard,
 } from '../../keyboards/index.js';
 import { detectChain } from '../../../shared/address-detector.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { handleSendError } from './helpers.js';
 
 export function setupSendTextInput(bot, storage, walletService, sessions) {

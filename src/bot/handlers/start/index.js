@@ -2,7 +2,6 @@ import { Markup } from 'telegraf';
 import { mainMenuKeyboard, mainReplyKeyboard } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { config } from '../../../core/config.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { logger } from '../../../shared/logger.js';
 import { escapeMarkdown } from '../../../shared/utils/telegram.js';
 

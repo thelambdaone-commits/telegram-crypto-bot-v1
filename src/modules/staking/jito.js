@@ -18,11 +18,9 @@ const SOL_RPC = JITO_RPC;
 // Jito Stake Pool Constants
 const STAKE_POOL_PROGRAM_ID = new PublicKey('SPoo1Ku8WFXoNDS9keSTneZabDECtSTAkgSxzZByMkB');
 const JITO_STAKE_POOL_ADDRESS = new PublicKey('Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb');
-const SYSTEM_PROGRAM_ID = new PublicKey('11111111111111111111111111111111');
-const STAKE_PROGRAM_ID = new PublicKey('Stake11111111111111111111111111111111111111');
+const STAKE_PROGRAM_ID = new PublicKey('Stake11111111111111111111111111111111111111111');
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const SYSVAR_CLOCK_ID = new PublicKey('SysvarC1ock11111111111111111111111111111111');
-const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 
 let connection;
 
@@ -34,7 +32,7 @@ const getConnection = () => {
 };
 
 export class JitoService {
-  static async getBalance(walletAddress, retryCount = 3) {
+  static async getBalance(walletAddress, _retryCount = 3) {
     logger.debug('getBalance called', { service: 'jito', walletAddress });
 
     try {
@@ -365,7 +363,7 @@ export class JitoService {
     }
   }
 
-  static async quoteExitStandard(amountJitoSOL) {
+  static async quoteExitStandard(_amountJitoSOL) {
     return {
       success: false,
       error: 'Standard exit not implemented in V1',
