@@ -35,6 +35,8 @@ export const CALLBACKS = {
   // Market
   PRICES_EUR: 'prices_eur',
   HELP_MENU: 'help_menu',
+  STAKING_MENU: 'staking_menu',
+  STAKING_OPTIMIZER: 'staking_optimizer',
   STAKING_YIELD: 'staking_yield',
   LIQUID_STAKING_MENU: 'liquid_staking_menu',
   DUST_ANALYSIS: 'dust_analysis',
@@ -57,6 +59,11 @@ export const CALLBACKS = {
   JITO_EXIT_STD_MANUAL: 'jito_exit_std_manual',
   JITO_WITHDRAW: 'jito_withdraw',
   JITO_UNSTAKE_PENDING_INFO: 'jito_unstake_pending_info',
+  AAVE_MENU: 'aave_menu',
+  AAVE_DEPOSIT_MENU: 'aave_deposit_menu',
+  AAVE_WITHDRAW_MENU: 'aave_withdraw_menu',
+  ETH_STAKING_MENU: 'eth_staking_menu',
+  CURVE_LP_MENU: 'curve_lp_menu',
 
   // Admin
   ADMIN_PANEL: 'admin_panel',
@@ -107,6 +114,12 @@ export const dynamicCallback = {
   jitoUnstakeAutoRepair: (requestId) => `jito_unstake_auto_repair_${requestId}`,
   jitoUnstakeManualSync: (requestId) => `jito_unstake_manual_sync_${requestId}`,
   jitoUnstakeDelete: (requestId) => `jito_unstake_delete_${requestId}`,
+  aaveChain: (action, chain) => `aave_${action}_chain_${chain}`,
+  aaveToken: (action, chain, token) => `aave_${action}_token_${chain}_${token}`,
+  aaveWallet: (action, chain, token, walletId) => `aave_${action}_wallet_${chain}_${token}_${walletId}`,
+  ethStakeAction: (action, protocol) => `eth_stake_${action}_${protocol}`,
+  ethStakeWallet: (action, protocol, walletId) => `eth_stake_${action}_${protocol}_${walletId}`,
+  curvePool: (poolId) => `curve_pool_${poolId}`,
 };
 
 // Regex patterns for dynamic callbacks
@@ -133,4 +146,7 @@ export const CALLBACK_REGEX = {
   JITO_UNSTAKE_AUTO_REPAIR: /^jito_unstake_auto_repair_(\d+)$/,
   JITO_UNSTAKE_MANUAL_SYNC: /^jito_unstake_manual_sync_(\d+)$/,
   JITO_UNSTAKE_DELETE: /^jito_unstake_delete_(\d+)$/,
+  AAVE_CHAIN: /^aave_(deposit|withdraw)_chain_(.+)$/,
+  AAVE_TOKEN: /^aave_(deposit|withdraw)_token_(.+)_(USDC|USDT)$/,
+  AAVE_WALLET: /^aave_(deposit|withdraw)_wallet_(.+)_(USDC|USDT)_(.+)$/,
 };

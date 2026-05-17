@@ -1,29 +1,166 @@
 import { Markup } from 'telegraf';
 import { StakingService } from '../../../modules/staking/staking.service.js';
 import { JitoService } from '../../../modules/staking/jito.js';
+import { ethLstProvider } from '../../../modules/staking/providers/registry.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
+import { stakingHubKeyboard } from '../../keyboards/staking.keyboards.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
 import { formatAmountShort as formatAmount } from '../../../shared/formatters.js';
+import { getAaveChains } from '../../../core/staking.config.js';
 
 function formatCurrency(value) {
   return StakingService.formatCurrency(value);
 }
 
+function toNumber(value) {
+  const num = Number.parseFloat(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatFee(value) {
+  if (value <= 0.005) return '<$0.01';
+  return formatCurrency(value);
+}
+
+function getOpportunityUrl(row) {
+  if (row.protocol === 'Aave V3') {
+    return 'https://app.aave.com/';
+  }
+  if (row.protocol === 'Kamino') {
+    return 'https://app.kamino.finance/lend';
+  }
+  if (row.protocol === 'Jupiter Lend') {
+    return 'https://jup.ag/lend';
+  }
+  return null;
+}
+
+function buildYieldRows(apyData, defaultAmount) {
+  const rows = [];
+
+  for (const chain of getAaveChains()) {
+    const chainApy = apyData.aave?.chains?.[chain.id];
+    if (!chainApy?.tokens) continue;
+
+    for (const token of ['USDC', 'USDT']) {
+      const entry = chainApy.tokens[token];
+      const apy = toNumber(entry?.apy);
+      if (!entry || apy <= 0) continue;
+
+      const profit = StakingService.calculateProfit({
+        amount: defaultAmount,
+        apy,
+        months: 12,
+        protocol: 'aave-v3',
+      });
+
+      rows.push({
+        apy,
+        token,
+        protocol: 'Aave V3',
+        chain: chain.displayName,
+        icon: chain.icon,
+        source: entry.source || 'llama.fi',
+        yearlyYield: StakingService.calculateYield(defaultAmount, apy, 12),
+        monthlyYield: StakingService.calculateYield(defaultAmount, apy, 1),
+        fees: profit.totalFees,
+      });
+    }
+  }
+
+  if (apyData.jupiter?.tokens?.USDC) {
+    const apy = toNumber(apyData.jupiter.tokens.USDC.apy);
+    const profit = StakingService.calculateProfit({
+      amount: defaultAmount,
+      apy,
+      months: 12,
+      protocol: 'jupiter',
+    });
+    rows.push({
+      apy,
+      token: 'USDC',
+      protocol: 'Jupiter Lend',
+      chain: 'Solana',
+      icon: '🟣',
+      source: 'estimation',
+      yearlyYield: StakingService.calculateYield(defaultAmount, apy, 12),
+      monthlyYield: StakingService.calculateYield(defaultAmount, apy, 1),
+      fees: profit.totalFees,
+    });
+  }
+
+  if (apyData.jupiter?.tokens?.USDT) {
+    const apy = toNumber(apyData.jupiter.tokens.USDT.apy);
+    const profit = StakingService.calculateProfit({
+      amount: defaultAmount,
+      apy,
+      months: 12,
+      protocol: 'jupiter',
+    });
+    rows.push({
+      apy,
+      token: 'USDT',
+      protocol: 'Jupiter Lend',
+      chain: 'Solana',
+      icon: '🟣',
+      source: 'estimation',
+      yearlyYield: StakingService.calculateYield(defaultAmount, apy, 12),
+      monthlyYield: StakingService.calculateYield(defaultAmount, apy, 1),
+      fees: profit.totalFees,
+    });
+  }
+
+  if (apyData.kamino?.tokens?.USDC) {
+    const apy = toNumber(apyData.kamino.tokens.USDC.apy);
+    const profit = StakingService.calculateProfit({
+      amount: defaultAmount,
+      apy,
+      months: 12,
+      protocol: 'kamino',
+    });
+    rows.push({
+      apy,
+      token: 'USDC',
+      protocol: 'Kamino',
+      chain: 'Solana',
+      icon: '🟣',
+      source: 'live',
+      yearlyYield: StakingService.calculateYield(defaultAmount, apy, 12),
+      monthlyYield: StakingService.calculateYield(defaultAmount, apy, 1),
+      fees: profit.totalFees,
+    });
+  }
+
+  return rows.sort((a, b) => b.apy - a.apy);
+}
+
+function formatYieldRows(rows) {
+  if (rows.length === 0) {
+    return 'Aucun rendement disponible pour le moment.\n';
+  }
+
+  return rows
+    .map((row, index) => {
+      const rank = index + 1;
+      const url = getOpportunityUrl(row);
+      const link = url ? `\n   [Ouvrir le site officiel](${url})` : '';
+      return (
+        `${rank}. ${row.icon} *${row.apy.toFixed(2)}%* • ${row.protocol} ${row.token}\n` +
+        `   ${row.chain} • 1 an: *+${formatCurrency(row.yearlyYield)}* • 1 mois: +${formatCurrency(row.monthlyYield)}\n` +
+        `   Frais estimés: ~${formatFee(row.fees)} • source: ${row.source}` +
+        link
+      );
+    })
+    .join('\n\n');
+}
+
 function stakingKeyboard(apyData) {
   const buttons = [];
 
-  if (apyData?.aave?.tokens?.USDC || apyData?.aave?.tokens?.USDT) {
-    const aaveButtons = [];
-    if (apyData.aave.tokens.USDC) {
-      aaveButtons.push(Markup.button.callback('Aave USDC', 'stake_aave_usdc'));
-    }
-    if (apyData.aave.tokens.USDT) {
-      aaveButtons.push(Markup.button.callback('Aave USDT', 'stake_aave_usdt'));
-    }
-    if (aaveButtons.length > 0) {
-      buttons.push(aaveButtons);
-    }
+  if (apyData?.aave?.chains) {
+    buttons.push([Markup.button.callback('🔷 Aave V3 USDC/USDT', CALLBACKS.AAVE_MENU)]);
   }
 
   if (apyData?.kamino?.tokens?.USDC) {
@@ -55,102 +192,12 @@ async function handleStakeCommand(ctx, _storage) {
     let text = '📈 *Staking - Rendements*\n\n';
     text += '💡 *Exemple: depot de 1000$*\n\n';
 
+    const rows = buildYieldRows(apyData, defaultAmount);
+
     text += '━━━━━━━━━━━━\n';
-    text += '🔷 *Arbitrum - Aave V3*\n';
+    text += '🏆 *Meilleurs rendements disponibles*\n';
     text += '━━━━━━━━━━━━\n';
-
-    if (apyData.aave.tokens.USDC) {
-      const apy = apyData.aave.tokens.USDC.apy;
-      const profit = StakingService.calculateProfit({
-        amount: defaultAmount,
-        apy,
-        months: 12,
-        protocol: 'aave-v3',
-      });
-
-      text += `USDC • APY: *${StakingService.formatApy(apy)}*\n\n`;
-      text += `📅 1 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 1))}*\n`;
-      text += `📅 3 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 3))}*\n`;
-      text += `📅 6 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 6))}*\n`;
-      text += `📅 1 an: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 12))}*\n\n`;
-      text += `⚠️ Frais totaux: *${formatCurrency(profit.totalFees)}*\n`;
-    }
-
-    if (apyData.aave.tokens.USDT) {
-      const apy = apyData.aave.tokens.USDT.apy;
-      const profit = StakingService.calculateProfit({
-        amount: defaultAmount,
-        apy,
-        months: 12,
-        protocol: 'aave-v3',
-      });
-
-      text += `USDT • APY: *${StakingService.formatApy(apy)}*\n\n`;
-      text += `📅 1 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 1))}*\n`;
-      text += `📅 3 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 3))}*\n`;
-      text += `📅 6 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 6))}*\n`;
-      text += `📅 1 an: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 12))}*\n\n`;
-      text += `⚠️ Frais totaux: *${formatCurrency(profit.totalFees)}*\n`;
-    }
-
-    text += '\n━━━━━━━━━━━━\n';
-    text += '🟣 *Solana - Kamino*\n';
-    text += '━━━━━━━━━━━━\n';
-
-    if (apyData.kamino.tokens.USDC) {
-      const apy = apyData.kamino.tokens.USDC.apy;
-      const profit = StakingService.calculateProfit({
-        amount: defaultAmount,
-        apy,
-        months: 12,
-        protocol: 'kamino',
-      });
-
-      text += `USDC • APY: *${StakingService.formatApy(apy)}*\n\n`;
-      text += `📅 1 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 1))}*\n`;
-      text += `📅 3 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 3))}*\n`;
-      text += `📅 6 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 6))}*\n`;
-      text += `📅 1 an: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 12))}*\n\n`;
-      text += `⚠️ Frais totaux: *${formatCurrency(profit.totalFees)}*\n`;
-    }
-
-    text += '\n━━━━━━━━━━━━\n';
-    text += '🟣 *Solana - Jupiter Lend*\n';
-    text += '━━━━━━━━━━━━\n';
-
-    if (apyData.jupiter.tokens.USDC) {
-      const apy = apyData.jupiter.tokens.USDC.apy;
-      const profit = StakingService.calculateProfit({
-        amount: defaultAmount,
-        apy,
-        months: 12,
-        protocol: 'jupiter',
-      });
-
-      text += `USDC • APY: *${StakingService.formatApy(apy)}*\n\n`;
-      text += `📅 1 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 1))}*\n`;
-      text += `📅 3 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 3))}*\n`;
-      text += `📅 6 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 6))}*\n`;
-      text += `📅 1 an: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 12))}*\n\n`;
-      text += `⚠️ Frais totaux: *${formatCurrency(profit.totalFees)}*\n`;
-    }
-
-    if (apyData.jupiter.tokens.USDT) {
-      const apy = apyData.jupiter.tokens.USDT.apy;
-      const profit = StakingService.calculateProfit({
-        amount: defaultAmount,
-        apy,
-        months: 12,
-        protocol: 'jupiter',
-      });
-
-      text += `USDT • APY: *${StakingService.formatApy(apy)}*\n\n`;
-      text += `📅 1 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 1))}*\n`;
-      text += `📅 3 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 3))}*\n`;
-      text += `📅 6 mois: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 6))}*\n`;
-      text += `📅 1 an: *+${formatCurrency(StakingService.calculateYield(defaultAmount, apy, 12))}*\n\n`;
-      text += `⚠️ Frais totaux: *${formatCurrency(profit.totalFees)}*\n`;
-    }
+    text += formatYieldRows(rows);
 
     text += '\n━━━━━━━━━━━━\n';
     text += '_Utilisez /calc <montant> <token> <protocole>_\n';
@@ -161,7 +208,7 @@ async function handleStakeCommand(ctx, _storage) {
 
     await ctx.reply(text, {
       parse_mode: 'Markdown',
-      ...stakingKeyboard(apyData),
+      ...stakingHubKeyboard(),
     });
   } catch (error) {
     logger.logError(error, { context: 'handleStakeCommand', chatId });
@@ -187,7 +234,7 @@ async function handleYieldCommand(ctx, storage, _walletService) {
 
   try {
     const wallets = await storage.getWallets(chatId);
-    const ethWallets = wallets.filter((w) => w.chain === 'eth');
+    const evmWallets = wallets.filter((w) => ['eth', 'arb', 'matic', 'op', 'base'].includes(w.chain));
     const solWallets = wallets.filter((w) => w.chain === 'sol');
 
     let text = '📊 *Mes Positions de Staking*\n\n';
@@ -195,24 +242,24 @@ async function handleYieldCommand(ctx, storage, _walletService) {
     let totalMonthlyYield = 0;
     let hasPositions = false;
 
-    if (ethWallets.length > 0) {
-      text += '🔷 *Arbitrum - Aave V3*\n';
+    if (evmWallets.length > 0) {
+      text += '🔷 *Aave V3*\n';
       text += '━━━━━━━━━━━━\n';
 
       const apyData = await StakingService.getAaveApy();
 
-      for (const wallet of ethWallets) {
+      for (const wallet of evmWallets) {
         try {
           const positions = await Promise.race([
-            StakingService.getUserAavePosition(wallet.address, 'arbitrum'),
+            StakingService.getUserAavePosition(wallet.address, wallet.chain),
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
           ]);
 
-          for (const [symbol, pos] of Object.entries(positions)) {
-            const apy = apyData[symbol]?.apy || '1.65';
+          for (const pos of Object.values(positions)) {
+            const apy = apyData.chains?.[pos.chain]?.tokens?.[pos.symbol]?.apy || '1.65';
             const monthlyYield = StakingService.calculateMonthlyYield(pos.amount, apy);
 
-            text += `${symbol}: *${formatAmount(pos.amount)} $*\n`;
+            text += `${pos.chainName || wallet.chain.toUpperCase()} ${pos.symbol}: *${formatAmount(pos.amount)} $*\n`;
             text += `APY: ${StakingService.formatApy(apy)}\n`;
             text += `Gains/mois: ~${formatCurrency(monthlyYield)}\n\n`;
 
@@ -227,6 +274,34 @@ async function handleYieldCommand(ctx, storage, _walletService) {
 
       if (!hasPositions) {
         text += '_Aucune position_\n\n';
+      }
+    }
+
+    const ethOnlyWallets = wallets.filter((w) => w.chain === 'eth');
+    if (ethOnlyWallets.length > 0) {
+      text += '⚡ *ETH Staking*\n';
+      text += '━━━━━━━━━━━━\n';
+
+      for (const wallet of ethOnlyWallets) {
+        try {
+          const positions = await Promise.race([
+            ethLstProvider.getPositions(wallet.address),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+          ]);
+
+          for (const pos of positions) {
+            const monthlyYield = StakingService.calculateMonthlyYield(pos.amount, pos.apy);
+            text += `${pos.name} ${pos.symbol}: *${formatAmount(pos.amount)}*\n`;
+            text += `APY: ${StakingService.formatApy(pos.apy)}\n`;
+            text += `Gains/mois: ~${formatAmount(monthlyYield)} ${pos.symbol}\n\n`;
+            hasPositions = true;
+          }
+        } catch (e) {
+          logger.warn('Failed to fetch ETH staking position', {
+            walletAddress: wallet.address,
+            error: e.message,
+          });
+        }
       }
     }
 

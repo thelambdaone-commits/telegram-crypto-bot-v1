@@ -230,6 +230,54 @@ export class StorageService {
     });
   }
 
+  async checkDailyVolume(chatId, chain, amount, limit) {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const resetKey = today.toISOString();
+
+      data.dailyVolume = data.dailyVolume || {};
+      if (data.dailyVolume.resetAt !== resetKey) {
+        data.dailyVolume = { resetAt: resetKey, totals: {} };
+      }
+
+      const normalizedChain = String(chain).toLowerCase();
+      const current = Number(data.dailyVolume.totals?.[normalizedChain] || 0);
+      const next = current + Number(amount || 0);
+
+      return {
+        allowed: next <= limit,
+        current,
+        next,
+        limit,
+        chain: normalizedChain,
+        resetAt: resetKey,
+      };
+    });
+  }
+
+  async recordDailyVolume(chatId, chain, amount) {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const resetKey = today.toISOString();
+
+      data.dailyVolume = data.dailyVolume || {};
+      if (data.dailyVolume.resetAt !== resetKey) {
+        data.dailyVolume = { resetAt: resetKey, totals: {} };
+      }
+
+      const normalizedChain = String(chain).toLowerCase();
+      const current = Number(data.dailyVolume.totals?.[normalizedChain] || 0);
+      data.dailyVolume.totals[normalizedChain] = current + Number(amount || 0);
+      await this.saveUserData(chatId, data);
+
+      return data.dailyVolume.totals[normalizedChain];
+    });
+  }
+
   // Pending transactions for double-send protection
   async addPendingTransaction(chatId, txData) {
     return this._withLock(chatId, async () => {

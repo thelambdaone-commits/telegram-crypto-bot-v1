@@ -1,12 +1,18 @@
-import { mainMenuKeyboard, liquidStakingKeyboard } from '../../keyboards/index.js';
+import { liquidStakingKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { handleStakeCommand, handleYieldCommand } from './display.js';
 import { handleCalcCommand } from './calculator.js';
 import { setupJitoHandlers } from './jito.js';
 import { setupMarinadeHandlers } from './marinade.js';
+import { setupAaveHandlers } from './providers/aave.js';
+import { setupEthStakingHandlers } from './providers/eth-staking.js';
+import { setupStakingOptimizerHandlers } from './optimizer.js';
 import { setupStakingTextInput } from './text-input.js';
 
 export function setupStakingHandlers(bot, storage, walletService, sessions) {
+  setupStakingOptimizerHandlers(bot, storage, walletService, sessions);
+  setupAaveHandlers(bot, storage, walletService, sessions);
+  setupEthStakingHandlers(bot, storage, walletService, sessions);
   setupJitoHandlers(bot, storage, walletService, sessions);
   setupMarinadeHandlers(bot, storage, walletService, sessions);
   setupStakingTextInput(bot, storage, walletService, sessions);
@@ -33,6 +39,11 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
     await handleYieldCommand(ctx, storage, walletService);
   });
 
+  bot.action('staking_menu', async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    await handleStakeCommand(ctx, storage);
+  });
+
   bot.action('liquid_staking_menu', async (ctx) => {
     await safeAnswerCbQuery(ctx);
 
@@ -43,56 +54,6 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
         '🥈 *Marinade* - Equilibre\n\n' +
         '_Les deux offrent une sortie rapide_',
       { parse_mode: 'Markdown', ...liquidStakingKeyboard() }
-    );
-  });
-
-  bot.action('stake_aave_usdc', async (ctx) => {
-    await safeAnswerCbQuery(ctx);
-    ctx.reply(
-      '🔷 *Depot Aave USDC*\n\n' +
-        "1. Ouvrez l'app Aave:\n" +
-        'https://app.aave.com\n\n' +
-        '2. Selectionnez Arbitrum\n' +
-        '3. Deposez USDC\n\n' +
-        '_Liens officiels uniquement pour votre securite_',
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
-  });
-
-  bot.action('stake_aave_usdt', async (ctx) => {
-    await safeAnswerCbQuery(ctx);
-    ctx.reply(
-      '🔷 *Depot Aave USDT*\n\n' +
-        "1. Ouvrez l'app Aave:\n" +
-        'https://app.aave.com\n\n' +
-        '2. Selectionnez Arbitrum\n' +
-        '3. Deposez USDT\n\n' +
-        '_Liens officiels uniquement pour votre securite_',
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
-  });
-
-  bot.action('stake_kamino', async (ctx) => {
-    await safeAnswerCbQuery(ctx);
-    ctx.reply(
-      '🟣 *Depot Kamino USDC*\n\n' +
-        '1. Ouvrez Kamino:\n' +
-        'https://app.kamino.finance/lend\n\n' +
-        '2. Deposez USDC sur Solana\n\n' +
-        '_Liens officiels uniquement pour votre securite_',
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
-    );
-  });
-
-  bot.action('stake_jupiter', async (ctx) => {
-    await safeAnswerCbQuery(ctx);
-    ctx.reply(
-      '🟣 *Depot Jupiter Lend*\n\n' +
-        '1. Ouvrez Jupiter:\n' +
-        'https://jup.ag/lend\n\n' +
-        '2. Deposez USDC ou USDT\n\n' +
-        '_Liens officiels uniquement pour votre securite_',
-      { parse_mode: 'Markdown', ...mainMenuKeyboard() }
     );
   });
 }

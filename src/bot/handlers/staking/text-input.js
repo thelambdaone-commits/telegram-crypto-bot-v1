@@ -5,10 +5,17 @@
 
 import { Markup } from 'telegraf';
 import { JitoService } from '../../../modules/staking/jito.js';
+import { aaveProvider, ethLstProvider } from '../../../modules/staking/providers/registry.js';
+import { getAaveChain, getEthStakingProvider } from '../../../core/staking.config.js';
 import {
   mainMenuKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
+import {
+  dailyVolumeCheck,
+  formatDailyLimitMessage,
+  recordDailyVolume,
+} from '../../middlewares/security.middleware.js';
 import { formatEUR, getPricesEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
 import { formatAmount } from '../../../shared/formatters.js';
@@ -47,6 +54,26 @@ export function setupStakingTextInput(bot, storage, walletService, sessions) {
       return;
     }
 
+    if (state === 'AAVE_DEPOSIT_AMOUNT') {
+      await handleAaveAmount(ctx, text, storage, walletService, sessions, 'deposit');
+      return;
+    }
+
+    if (state === 'AAVE_WITHDRAW_AMOUNT') {
+      await handleAaveAmount(ctx, text, storage, walletService, sessions, 'withdraw');
+      return;
+    }
+
+    if (state === 'ETH_STAKE_DEPOSIT_AMOUNT') {
+      await handleEthStakeAmount(ctx, text, storage, walletService, sessions, 'deposit');
+      return;
+    }
+
+    if (state === 'ETH_STAKE_WITHDRAW_AMOUNT') {
+      await handleEthStakeAmount(ctx, text, storage, walletService, sessions, 'withdraw');
+      return;
+    }
+
     return next();
   });
 
@@ -74,6 +101,22 @@ export function setupStakingTextInput(bot, storage, walletService, sessions) {
     await handleJitoExitStandardConfirm(ctx, storage, walletService, sessions);
   });
 
+  bot.action('confirm_aave_deposit', async (ctx) => {
+    await handleAaveConfirm(ctx, storage, sessions, 'deposit');
+  });
+
+  bot.action('confirm_aave_withdraw', async (ctx) => {
+    await handleAaveConfirm(ctx, storage, sessions, 'withdraw');
+  });
+
+  bot.action('confirm_eth_stake_deposit', async (ctx) => {
+    await handleEthStakeConfirm(ctx, storage, sessions, 'deposit');
+  });
+
+  bot.action('confirm_eth_stake_withdraw', async (ctx) => {
+    await handleEthStakeConfirm(ctx, storage, sessions, 'withdraw');
+  });
+
   bot.action('jito_exit_manual', async (ctx) => {
     await handleJitoExitManual(ctx, storage, walletService, sessions);
   });
@@ -85,6 +128,308 @@ export function setupStakingTextInput(bot, storage, walletService, sessions) {
   });
 
   logger.info('Staking text input handlers initialized', { service: 'staking' });
+}
+
+async function handleEthStakeAmount(ctx, text, storage, walletService, sessions, action) {
+  const chatId = ctx.chat.id;
+  const data = sessions.getData(chatId);
+  const protocol = getEthStakingProvider(data?.protocolId);
+  const walletId = data?.walletId;
+
+  if (!protocol || !walletId) {
+    sessions.clearState(chatId);
+    sessions.clearData(chatId);
+    return ctx.reply('❌ Session ETH staking expirée.', mainMenuKeyboard());
+  }
+
+  const cleaned = text.trim().replace(',', '.').toLowerCase();
+  const isMax = action === 'withdraw' && ['max', 'tout', 'all', '100%'].includes(cleaned);
+  const amount = isMax ? 0 : Number.parseFloat(cleaned);
+
+  if (!isMax && (!Number.isFinite(amount) || amount <= 0)) {
+    return ctx.reply(
+      action === 'withdraw'
+        ? '❌ Montant invalide. Entre un montant positif ou `max`.'
+        : '❌ Montant invalide. Entre un montant positif en ETH.',
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  try {
+    const wallet = await storage.getWalletWithKey(chatId, walletId);
+    if (!wallet || wallet.isCorrupted) {
+      throw new Error('Wallet introuvable ou clé illisible');
+    }
+
+    if (action === 'deposit') {
+      const balance = await walletService.getBalance(chatId, walletId);
+      const available = Number.parseFloat(balance.balance || '0');
+      if (amount > available) {
+        return ctx.reply(
+          `❌ Solde ETH insuffisant.\n\nDisponible: *${formatAmount(available)} ETH*\nDemandé: *${formatAmount(amount)} ETH*`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+    }
+
+    const quote = await ethLstProvider.quote({
+      protocolId: protocol.id,
+      amount: isMax ? 0 : amount,
+    });
+
+    if (action === 'deposit' && !quote.directDepositEnabled) {
+      return ctx.reply(
+        `❌ Dépôt direct désactivé pour ${protocol.displayName}.\n\nUtilise le front officiel ou un DEX avec liquidité ${protocol.receiptToken}.`,
+        { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
+      );
+    }
+
+    sessions.updateData(chatId, { amount, max: isMax, quote });
+    sessions.setState(
+      chatId,
+      action === 'deposit' ? 'ETH_STAKE_DEPOSIT_CONFIRM' : 'ETH_STAKE_WITHDRAW_CONFIRM'
+    );
+
+    const title = action === 'deposit' ? '⚡ Stake ETH' : '📤 Retrait ETH staking';
+    const amountLabel = isMax ? `Tout le solde ${protocol.receiptToken}` : `${formatAmount(amount)} ${action === 'deposit' ? 'ETH' : protocol.receiptToken}`;
+
+    await ctx.reply(
+      `${title}\n\n` +
+        `Provider: *${protocol.displayName}*\n` +
+        `Token reçu: *${protocol.receiptToken}*\n` +
+        `Montant: *${amountLabel}*\n` +
+        `APY estimé: *${quote.apy}%*\n\n` +
+        'Confirmer ?',
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [
+            Markup.button.callback(
+              '✅ Confirmer',
+              action === 'deposit' ? 'confirm_eth_stake_deposit' : 'confirm_eth_stake_withdraw'
+            ),
+          ],
+          [Markup.button.callback('❌ Annuler', 'cancel_staking')],
+        ]),
+      }
+    );
+  } catch (error) {
+    logger.logError(error, { context: 'handleEthStakeAmount', chatId, action });
+    return ctx.reply(`❌ Erreur ETH staking: ${error.message}`, mainMenuKeyboard());
+  }
+}
+
+async function handleEthStakeConfirm(ctx, storage, sessions, action) {
+  const chatId = ctx.chat.id;
+  await safeAnswerCbQuery(ctx);
+  const data = sessions.getData(chatId);
+  const protocol = getEthStakingProvider(data?.protocolId);
+
+  try {
+    const wallet = await storage.getWalletWithKey(chatId, data?.walletId);
+    if (!protocol || !wallet || wallet.isCorrupted) {
+      throw new Error('Session ETH staking invalide ou wallet introuvable');
+    }
+
+    await ctx.editMessageText(`${Formatting.loading} *Transaction ETH staking en cours...*`, {
+      parse_mode: 'Markdown',
+    });
+
+    if (action === 'deposit') {
+      const volumeCheck = await dailyVolumeCheck(storage, chatId, data.amount, 'eth');
+      if (!volumeCheck.allowed) {
+        return ctx.editMessageText(formatDailyLimitMessage(volumeCheck, 'ETH'), {
+          parse_mode: 'Markdown',
+          ...mainMenuKeyboard(),
+        });
+      }
+    }
+
+    const result =
+      action === 'deposit'
+        ? await ethLstProvider.deposit({
+            privateKey: wallet.privateKey,
+            protocolId: protocol.id,
+            amount: data.amount,
+          })
+        : await ethLstProvider.withdraw({
+            privateKey: wallet.privateKey,
+            protocolId: protocol.id,
+            amount: data.amount,
+            max: Boolean(data.max),
+          });
+
+    sessions.clearState(chatId);
+    sessions.clearData(chatId);
+    if (action === 'deposit') {
+      await recordDailyVolume(storage, chatId, data.amount, 'eth');
+    }
+
+    await ctx.editMessageText(
+      '✅ *Transaction confirmée*\n\n' +
+        `Provider: *${protocol.displayName}*\n` +
+        `Token: *${protocol.receiptToken}*\n` +
+        `Montant: *${data.max ? 'max' : formatAmount(data.amount)}*\n` +
+        `🔗 [Voir transaction](${result.explorerUrl})`,
+      { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
+    );
+  } catch (error) {
+    logger.logError(error, { context: 'handleEthStakeConfirm', chatId, action });
+    await ctx.editMessageText(`❌ Erreur ETH staking: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+  }
+}
+
+async function handleAaveAmount(ctx, text, storage, walletService, sessions, action) {
+  const chatId = ctx.chat.id;
+  const data = sessions.getData(chatId);
+  const chain = getAaveChain(data?.chainId);
+  const tokenSymbol = data?.tokenSymbol;
+  const walletId = data?.walletId;
+
+  if (!chain || !tokenSymbol || !walletId) {
+    sessions.clearState(chatId);
+    sessions.clearData(chatId);
+    return ctx.reply('❌ Session Aave expirée. Recommence depuis le menu staking.', mainMenuKeyboard());
+  }
+
+  const cleaned = text.trim().replace(',', '.').toLowerCase();
+  const isMax = action === 'withdraw' && ['max', 'tout', 'all', '100%'].includes(cleaned);
+  const amount = isMax ? 0 : Number.parseFloat(cleaned);
+
+  if (!isMax && (!Number.isFinite(amount) || amount <= 0)) {
+    return ctx.reply(
+      action === 'withdraw'
+        ? '❌ Montant invalide. Entre un montant positif ou `max`.'
+        : '❌ Montant invalide. Entre un montant positif.',
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  try {
+    const wallet = await storage.getWalletWithKey(chatId, walletId);
+    if (!wallet || wallet.isCorrupted) {
+      sessions.clearState(chatId);
+      return ctx.reply('❌ Wallet introuvable ou clé illisible.', mainMenuKeyboard());
+    }
+
+    if (action === 'deposit') {
+      const balance = await walletService.getBalance(chatId, walletId, tokenSymbol);
+      const available = Number.parseFloat(balance.balance || '0');
+      if (amount > available) {
+        return ctx.reply(
+          `❌ Solde insuffisant.\n\nDisponible: *${formatAmount(available)} ${tokenSymbol}*\nDemandé: *${formatAmount(amount)} ${tokenSymbol}*`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+    }
+
+    const quote = await aaveProvider.quote({
+      chainId: chain.id,
+      symbol: tokenSymbol,
+      amount: isMax ? 0 : amount,
+    });
+
+    sessions.updateData(chatId, {
+      amount,
+      max: isMax,
+      quote,
+    });
+    sessions.setState(chatId, action === 'deposit' ? 'AAVE_DEPOSIT_CONFIRM' : 'AAVE_WITHDRAW_CONFIRM');
+
+    const title = action === 'deposit' ? '📥 Dépôt Aave V3' : '📤 Retrait Aave V3';
+    const actionLabel = action === 'deposit' ? 'déposer' : 'retirer';
+    const amountLabel = isMax ? `Tout le solde ${tokenSymbol}` : `${formatAmount(amount)} ${tokenSymbol}`;
+
+    await ctx.reply(
+      `${title}\n\n` +
+        `Réseau: *${chain.displayName}*\n` +
+        `Token: *${tokenSymbol}*\n` +
+        `Montant: *${amountLabel}*\n` +
+        `APY estimé: *${quote.apy}%* (${quote.apySource})\n\n` +
+        `Confirmer ${actionLabel} sur Aave ?`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('✅ Confirmer', action === 'deposit' ? 'confirm_aave_deposit' : 'confirm_aave_withdraw')],
+          [Markup.button.callback('❌ Annuler', 'cancel_staking')],
+        ]),
+      }
+    );
+  } catch (error) {
+    logger.logError(error, { context: 'handleAaveAmount', chatId, action });
+    return ctx.reply(`❌ Erreur Aave: ${error.message}`, mainMenuKeyboard());
+  }
+}
+
+async function handleAaveConfirm(ctx, storage, sessions, action) {
+  const chatId = ctx.chat.id;
+  await safeAnswerCbQuery(ctx);
+
+  const data = sessions.getData(chatId);
+  const chain = getAaveChain(data?.chainId);
+  const tokenSymbol = data?.tokenSymbol;
+
+  try {
+    const wallet = await storage.getWalletWithKey(chatId, data?.walletId);
+    if (!chain || !tokenSymbol || !wallet || wallet.isCorrupted) {
+      throw new Error('Session Aave invalide ou wallet introuvable');
+    }
+
+    await ctx.editMessageText(`${Formatting.loading} *Transaction Aave en cours...*`, {
+      parse_mode: 'Markdown',
+    });
+
+    if (action === 'deposit') {
+      const volumeCheck = await dailyVolumeCheck(storage, chatId, data.amount, 'usd');
+      if (!volumeCheck.allowed) {
+        return ctx.editMessageText(formatDailyLimitMessage(volumeCheck, tokenSymbol), {
+          parse_mode: 'Markdown',
+          ...mainMenuKeyboard(),
+        });
+      }
+    }
+
+    const result =
+      action === 'deposit'
+        ? await aaveProvider.deposit({
+            privateKey: wallet.privateKey,
+            chainId: chain.id,
+            symbol: tokenSymbol,
+            amount: data.amount,
+          })
+        : await aaveProvider.withdraw({
+            privateKey: wallet.privateKey,
+            chainId: chain.id,
+            symbol: tokenSymbol,
+            amount: data.amount,
+            max: Boolean(data.max),
+          });
+
+    sessions.clearState(chatId);
+    sessions.clearData(chatId);
+    if (action === 'deposit') {
+      await recordDailyVolume(storage, chatId, data.amount, 'usd');
+    }
+
+    const doneLabel = action === 'deposit' ? 'Dépôt effectué' : 'Retrait effectué';
+    await ctx.editMessageText(
+      `✅ *${doneLabel}*\n\n` +
+        `Réseau: *${chain.displayName}*\n` +
+        `Token: *${tokenSymbol}*\n` +
+        `Montant: *${data.max ? 'max' : formatAmount(data.amount)} ${tokenSymbol}*\n` +
+        `🔗 [Voir transaction](${result.explorerUrl})`,
+      { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
+    );
+  } catch (error) {
+    logger.logError(error, { context: 'handleAaveConfirm', chatId, action });
+    await ctx.editMessageText(`❌ Erreur Aave: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+  }
 }
 
 async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService, sessions) {
@@ -252,6 +597,14 @@ async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
       parse_mode: 'Markdown',
     });
 
+    const volumeCheck = await dailyVolumeCheck(storage, chatId, amount, 'sol');
+    if (!volumeCheck.allowed) {
+      return ctx.editMessageText(formatDailyLimitMessage(volumeCheck, 'SOL'), {
+        parse_mode: 'Markdown',
+        ...mainMenuKeyboard(),
+      });
+    }
+
     const result = await JitoService.enter(wallet.privateKey, amount);
 
     if (!result.success) {
@@ -278,6 +631,7 @@ async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
 
     sessions.clearData(chatId);
     sessions.clearState(chatId);
+    await recordDailyVolume(storage, chatId, amount, 'sol');
     } catch (error) {
       logger.logError(error, { context: 'handleJitoEnterConfirm', chatId });
       await ctx.editMessageText(`❌ Erreur: ${error.message}`, {

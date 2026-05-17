@@ -1,40 +1,22 @@
 const KAMINO_API = 'https://api.kamino.finance';
 const KAMINO_MAIN_MARKET = '7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF';
 
-const AAVE_TOKENS = {
-  arbitrum: {
-    USDC: {
-      symbol: 'USDC',
-      address: '0xaf88d065e77c8cc2239327c5edb3a432268e5831',
-      aToken: '0x724dc807b04555b71ed48a6896b6f41593b8c637',
-      decimals: 6,
-      protocol: 'aave-v3',
-    },
-    USDT: {
-      symbol: 'USDT',
-      address: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
-      aToken: '0xfb00ac187a8eb5bfa0bd74c942cdb1f3844b4b40',
-      decimals: 6,
-      protocol: 'aave-v3',
-    },
-  },
-};
-
 const JUPITER_TOKENS = {
   USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
   USDT: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
 };
 
 import { config } from '../../core/config.js';
+import { getAaveChains } from '../../core/staking.config.js';
 import { logger } from '../../shared/logger.js';
+import { aaveProvider } from './providers/registry.js';
 
-const ARB_RPC = config.rpc.arb || 'https://arb1.arbitrum.io/rpc';
 const SOL_RPC = config.rpc.stakingSol || config.rpc.sol;
 
 const PROTOCOL_INFO = {
   'aave-v3': {
     name: 'Aave V3',
-    chain: 'Arbitrum',
+    chain: 'Multi-chain',
     networkFeeDeposit: 0.02,
     networkFeeWithdraw: 0.02,
     slippage: 0,
@@ -62,60 +44,76 @@ const PROTOCOL_INFO = {
 };
 
 let apyCache = {
-  aave: null,
-  kamino: null,
-  jupiter: null,
-  lastUpdate: 0,
+  aave: { data: null, lastUpdate: 0 },
+  kamino: { data: null, lastUpdate: 0 },
+  jupiter: { data: null, lastUpdate: 0 },
 };
 const CACHE_DURATION = 5 * 60 * 1000;
 
 export class StakingService {
   static async getAaveApy() {
-    if (apyCache.aave && Date.now() - apyCache.lastUpdate < CACHE_DURATION) {
-      return apyCache.aave;
+    if (apyCache.aave.data && Date.now() - apyCache.aave.lastUpdate < CACHE_DURATION) {
+      return apyCache.aave.data;
     }
 
     try {
-      const response = await fetch('https://api.llama.fi/pools/aave-v3', {
-        signal: AbortSignal.timeout(5000),
-      });
+      const chains = {};
+      const flat = {};
 
-      if (!response.ok) throw new Error('API error');
-
-      const data = await response.json();
-
-      const arbPools = data.filter(
-        (p) => p.chain === 'Arbitrum' && (p.symbol === 'USDC' || p.symbol === 'USDT')
-      );
-
-      const result = {};
-      for (const pool of arbPools) {
-        result[pool.symbol] = {
-          apy: pool.apy ? (pool.apy * 100).toFixed(2) : '1.65',
-          apyBase: pool.apyBase ? (pool.apyBase * 100).toFixed(2) : '1.65',
-          tvlUsd: pool.tvlUsd || 0,
-          symbol: pool.symbol,
+      for (const chain of getAaveChains()) {
+        chains[chain.id] = {
+          id: chain.id,
+          name: chain.displayName,
+          icon: chain.icon,
+          tokens: {},
         };
+
+        for (const token of Object.values(chain.tokens)) {
+          try {
+            const quote = await aaveProvider.quote({
+              chainId: chain.id,
+              symbol: token.symbol,
+            });
+            const entry = {
+              apy: quote.apy,
+              symbol: token.symbol,
+              source: quote.apySource,
+              chain: chain.id,
+              chainName: chain.displayName,
+            };
+            chains[chain.id].tokens[token.symbol] = entry;
+            const current = flat[token.symbol];
+            if (!current || Number(entry.apy) > Number(current.apy)) {
+              flat[token.symbol] = entry;
+            }
+          } catch (error) {
+            logger.warn('Failed to fetch Aave APY', {
+              chain: chain.id,
+              symbol: token.symbol,
+              error: error.message,
+            });
+          }
+        }
       }
 
-      if (!result.USDC) result.USDC = { apy: '1.65', symbol: 'USDC' };
-      if (!result.USDT) result.USDT = { apy: '2.13', symbol: 'USDT' };
-
-      apyCache.aave = result;
-      apyCache.lastUpdate = Date.now();
+      const result = { tokens: flat, chains };
+      apyCache.aave = { data: result, lastUpdate: Date.now() };
       return result;
     } catch (error) {
       logger.logError(error, { context: 'staking.getAaveApy' });
       return {
-        USDC: { apy: '1.65', symbol: 'USDC' },
-        USDT: { apy: '2.13', symbol: 'USDT' },
+        tokens: {
+          USDC: { apy: '1.65', symbol: 'USDC', chain: 'arb', chainName: 'Arbitrum' },
+          USDT: { apy: '2.13', symbol: 'USDT', chain: 'arb', chainName: 'Arbitrum' },
+        },
+        chains: {},
       };
     }
   }
 
   static async getKaminoApy() {
-    if (apyCache.kamino && Date.now() - apyCache.lastUpdate < CACHE_DURATION) {
-      return apyCache.kamino;
+    if (apyCache.kamino.data && Date.now() - apyCache.kamino.lastUpdate < CACHE_DURATION) {
+      return apyCache.kamino.data;
     }
 
     try {
@@ -138,8 +136,7 @@ export class StakingService {
             symbol: 'USDC',
           },
         };
-        apyCache.kamino = result;
-        apyCache.lastUpdate = Date.now();
+        apyCache.kamino = { data: result, lastUpdate: Date.now() };
         return result;
       }
     } catch (error) {
@@ -147,22 +144,20 @@ export class StakingService {
     }
 
     const result = { USDC: { apy: '3.80', symbol: 'USDC' } };
-    apyCache.kamino = result;
-    apyCache.lastUpdate = Date.now();
+    apyCache.kamino = { data: result, lastUpdate: Date.now() };
     return result;
   }
 
   static async getJupiterApy() {
-    if (apyCache.jupiter && Date.now() - apyCache.lastUpdate < CACHE_DURATION) {
-      return apyCache.jupiter;
+    if (apyCache.jupiter.data && Date.now() - apyCache.jupiter.lastUpdate < CACHE_DURATION) {
+      return apyCache.jupiter.data;
     }
 
     const result = {
       USDC: { apy: '5.20', symbol: 'USDC' },
       USDT: { apy: '4.80', symbol: 'USDT' },
     };
-    apyCache.jupiter = result;
-    apyCache.lastUpdate = Date.now();
+    apyCache.jupiter = { data: result, lastUpdate: Date.now() };
     return result;
   }
 
@@ -174,7 +169,7 @@ export class StakingService {
     ]);
 
     return {
-      aave: { ...PROTOCOL_INFO['aave-v3'], tokens: aave },
+      aave: { ...PROTOCOL_INFO['aave-v3'], ...aave },
       kamino: { ...PROTOCOL_INFO.kamino, tokens: kamino },
       jupiter: { ...PROTOCOL_INFO.jupiter, tokens: jupiter },
     };
@@ -242,38 +237,22 @@ export class StakingService {
 
   static async getUserAavePosition(address, chain = 'arbitrum') {
     try {
-      const ethers = await import('ethers');
-      const provider = new ethers.JsonRpcProvider(ARB_RPC);
-
-      const tokens = AAVE_TOKENS[chain] || {};
-      const positions = {};
-
-      for (const [symbol, token] of Object.entries(tokens)) {
-        try {
-          const aTokenContract = new ethers.Contract(
-            token.aToken,
-            ['function balanceOf(address) view returns (uint256)'],
-            provider
-          );
-
-          const balance = await aTokenContract.balanceOf(address);
-          const balanceNormalized = Number(balance) / Math.pow(10, token.decimals);
-
-          if (balanceNormalized > 0.001) {
-            positions[symbol] = {
-              amount: balanceNormalized.toFixed(2),
-              aTokenBalance: balance.toString(),
-              symbol,
-              decimals: token.decimals,
-              protocol: 'aave-v3',
-            };
-          }
-        } catch (e) {
-          logger.warn('Error fetching Aave token balance', { symbol, error: e.message });
-        }
-      }
-
-      return positions;
+      const chainId = chain === 'arbitrum' ? 'arb' : chain;
+      const positions = await aaveProvider.getPositions(address, chainId);
+      return Object.fromEntries(
+        positions.map((position) => [
+          `${position.chain}:${position.symbol}`,
+          {
+            amount: position.amount.toFixed(2),
+            aTokenBalance: position.aTokenBalance,
+            symbol: position.symbol,
+            chain: position.chain,
+            chainName: position.chainName,
+            decimals: 6,
+            protocol: 'aave-v3',
+          },
+        ])
+      );
     } catch (error) {
       logger.logError(error, { context: 'staking.getUserAavePosition', address });
       return {};

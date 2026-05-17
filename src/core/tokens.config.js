@@ -123,7 +123,7 @@ export const TOKEN_CONFIGS = {
     native: 'ETH',
     tokens: {
       USDC: {
-        address: '0x4ed4e862860bedbc957758f444b32ea15ef592cd7',
+        address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
         decimals: 6,
         type: 'stablecoin',
         icon: '💵',

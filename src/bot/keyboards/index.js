@@ -14,7 +14,8 @@ export function mainReplyKeyboard() {
     ['💵 Soldes', '🔎 Analyser'],
     ['🆕 Nouveau Wallet', '🔐 Mes Clés'],
     ['📊 Cours EUR', '🆘 Help'],
-    ["➕ Plus d'actions", '❌ Fermer'],
+    ['🏆 Staking Optimizer', "➕ Plus d'actions"],
+    ['❌ Fermer'],
   ]).resize();
 }
 
@@ -37,7 +38,10 @@ export function mainMenuKeyboard() {
       Markup.button.callback('🆘 Help', CALLBACKS.HELP_MENU),
     ],
     [
+      Markup.button.callback('🏆 Staking Optimizer', CALLBACKS.STAKING_OPTIMIZER),
       Markup.button.callback("➕ Plus d'actions", CALLBACKS.PLUS_ACTIONS),
+    ],
+    [
       Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MENU),
     ],
   ]);
@@ -46,7 +50,15 @@ export function mainMenuKeyboard() {
 export function advancedActionsKeyboard() {
   return Markup.inlineKeyboard([
     [
-      Markup.button.callback('📈 Staking', CALLBACKS.STAKING_YIELD),
+      Markup.button.callback('🏆 Staking Optimizer', CALLBACKS.STAKING_OPTIMIZER),
+      Markup.button.callback('📈 Staking', CALLBACKS.STAKING_MENU),
+    ],
+    [
+      Markup.button.callback('🔷 Aave V3', CALLBACKS.AAVE_MENU),
+      Markup.button.callback('⚡ ETH Staking', CALLBACKS.ETH_STAKING_MENU),
+    ],
+    [
+      Markup.button.callback('🔄 Curve LP', CALLBACKS.CURVE_LP_MENU),
       Markup.button.callback('💧 Liquid Staking', CALLBACKS.LIQUID_STAKING_MENU),
     ],
     [
@@ -54,8 +66,8 @@ export function advancedActionsKeyboard() {
       Markup.button.callback('🧹 Dust Keeper', CALLBACKS.DUST_ANALYSIS),
     ],
     [
-      Markup.button.callback('🔥 Burn SOL', CALLBACKS.BURN_TOKENS),
       Markup.button.callback('🎯 Polymarket', CALLBACKS.PM_MENU_REFRESH),
+      Markup.button.callback('🔥 Burn SOL', CALLBACKS.BURN_TOKENS),
     ],
     [
       Markup.button.callback('⛏️ Créer un Token', CALLBACKS.CREATE_TOKEN),

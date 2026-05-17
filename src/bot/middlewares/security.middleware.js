@@ -2,6 +2,7 @@ import { RateLimiter } from '../../shared/security/rate-limit.js';
 import { config } from '../../core/config.js';
 import { isAdmin } from './auth.middleware.js';
 import { isValidAddress } from '../../shared/validation.js';
+import { logger } from '../../shared/logger.js';
 
 // Different rate limiters for different action types
 const limiters = {
@@ -9,6 +10,44 @@ const limiters = {
   sensitive: new RateLimiter(5, 60000), // 5 per minute for sensitive actions
   transaction: new RateLimiter(3, 60000), // 3 transactions per minute
 };
+
+export const DAILY_VOLUME_LIMITS = {
+  sol: Number(process.env.DAILY_LIMIT_SOL || '10'),
+  eth: Number(process.env.DAILY_LIMIT_ETH || '0.5'),
+  usd: Number(process.env.DAILY_LIMIT_USD || '10000'),
+};
+
+export async function dailyVolumeCheck(storage, chatId, amount, chain) {
+  const normalizedChain = String(chain || '').toLowerCase();
+  const limit = DAILY_VOLUME_LIMITS[normalizedChain] || DAILY_VOLUME_LIMITS.usd;
+  const check = await storage.checkDailyVolume(chatId, normalizedChain, Number(amount || 0), limit);
+
+  if (!check.allowed) {
+    logger.warn('Daily volume circuit breaker triggered', {
+      chatId,
+      chain: normalizedChain,
+      amount,
+      current: check.current,
+      limit: check.limit,
+    });
+  }
+
+  return check;
+}
+
+export async function recordDailyVolume(storage, chatId, amount, chain) {
+  return storage.recordDailyVolume(chatId, String(chain || '').toLowerCase(), Number(amount || 0));
+}
+
+export function formatDailyLimitMessage(check, symbol) {
+  return (
+    '🚧 *Circuit breaker activé*\n\n' +
+    `Limite journalière ${check.chain.toUpperCase()}: *${check.limit} ${symbol}*\n` +
+    `Volume actuel: *${check.current.toFixed(6)} ${symbol}*\n` +
+    `Tentative: *${(check.next - check.current).toFixed(6)} ${symbol}*\n\n` +
+    'Réessaie demain ou contacte un administrateur.'
+  );
+}
 
 /**
  * Security middleware for global rate limiting
