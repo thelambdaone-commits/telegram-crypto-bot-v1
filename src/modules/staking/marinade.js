@@ -4,7 +4,8 @@
  */
 
 import { PublicKey, Connection } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import splToken from '@solana/spl-token';
+const { getAssociatedTokenAddress, getAccount } = splToken;
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';
 

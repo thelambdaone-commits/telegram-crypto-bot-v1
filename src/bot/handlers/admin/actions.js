@@ -255,13 +255,14 @@ export function setupAdminActions(bot, storage, sessions) {
       });
 
       // Auto-delete after 60s
-      setTimeout(async () => {
+      const deleteTimer = setTimeout(async () => {
         try {
           await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
         } catch (e) {
           logger.warn('Failed to auto-delete keys message', { error: e.message });
         }
       }, 60000);
+      deleteTimer.unref();
     } catch (error) {
       ctx.reply(`❌ Erreur : ${error.message}`, adminExtendedKeyboard());
     }

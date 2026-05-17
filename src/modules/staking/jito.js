@@ -4,7 +4,8 @@
  */
 
 import { PublicKey, Connection, Keypair, VersionedTransaction, Transaction, TransactionInstruction, SystemProgram, StakeProgram } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import splToken from '@solana/spl-token';
+const { getAssociatedTokenAddress, getAccount } = splToken;
 import { getPricesEUR } from '../../shared/price.js';
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';

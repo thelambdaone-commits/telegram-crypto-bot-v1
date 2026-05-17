@@ -59,6 +59,9 @@ export function transactionRateLimit(ctx, next) {
   const chatId = ctx.chat?.id;
   if (!chatId) return next();
 
+  // Admin bypass
+  if (isAdmin(ctx)) return next();
+
   const check = limiters.transaction.isAllowed(chatId);
 
   if (!check.allowed) {

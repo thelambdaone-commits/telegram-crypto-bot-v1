@@ -20,6 +20,7 @@ function clearableTimeout(key, callback, delay) {
     pendingTimeouts.delete(key);
     callback();
   }, delay);
+  timeoutId.unref();
 
   pendingTimeouts.set(key, timeoutId);
 }

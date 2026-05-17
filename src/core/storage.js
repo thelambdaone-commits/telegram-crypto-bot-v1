@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { decrypt, encrypt } from '../shared/encryption.js';
@@ -11,7 +12,7 @@ import { logger } from '../shared/logger.js';
  * Removed passphrase system - uses only masterKey
  */
 export class StorageService {
-  constructor(dataPath, masterKey) {
+  constructor(dataPath, masterKey, options = {}) {
     this.dataPath = dataPath;
     this.masterKey = masterKey;
     this.locks = new Map();
@@ -19,7 +20,7 @@ export class StorageService {
     this.polymarket = new PolymarketCredentialsService(this);
     this.secrets = new SecretVault(dataPath, masterKey);
     this.cache = new Map();
-    this.cacheTTL = 30000; // 30 seconds
+    this.cacheTTL = options.cacheTtl || 60000; // 60 seconds default
     logger.info('Stockage initialise', { path: this.dataPath });
   }
 
@@ -235,7 +236,7 @@ export class StorageService {
       const data = await this.loadUserData(chatId);
 
       const pendingTx = {
-        id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `tx-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
         walletId: txData.walletId,
         toAddress: txData.toAddress,
         amount: txData.amount,

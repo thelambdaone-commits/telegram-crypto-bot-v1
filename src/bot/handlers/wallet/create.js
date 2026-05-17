@@ -119,12 +119,13 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
       const sentMsg = await ctx.reply(message, { parse_mode: 'Markdown', ...mainMenuKeyboard() });
 
-      setTimeout(async () => {
+      const deleteTimer = setTimeout(async () => {
         try {
           await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
           ctx.reply('💡 _Message de sécurité supprimé._', { parse_mode: 'Markdown' });
         } catch (e) {}
       }, 60000);
+      deleteTimer.unref();
     } catch (error) {
       const { mainMenuKeyboard } = await import('../../keyboards/index.js');
       return ctx.reply(`❌ Erreur: ${error.message}`, mainMenuKeyboard());

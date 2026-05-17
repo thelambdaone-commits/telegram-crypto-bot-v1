@@ -105,6 +105,7 @@ export async function inputPrompt(ctx, options) {
     sessionsRef.clearState(chatId);
     resolvePrompt(null);
   }, timeout);
+  timeoutId.unref();
 
   sessionsRef.setState(chatId, `${PROMPT_STATE_PREFIX}${sessionKey}`);
 

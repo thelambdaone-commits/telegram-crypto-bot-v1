@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../src/core/config.js';
+import { decrypt } from '../src/shared/encryption.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,20 +14,27 @@ async function checkExports() {
 
   try {
     const files = await fs.readdir(exportsDir);
-    const jsonFiles = files
-      .filter((f) => f.endsWith('.json'))
+    const exportFiles = files
+      .filter((f) => f.endsWith('.enc') || f.endsWith('.json'))
       .sort()
       .reverse();
 
-    if (jsonFiles.length === 0) {
+    if (exportFiles.length === 0) {
       console.log("❌ Aucun fichier d'export trouve.");
       return;
     }
 
-    for (const file of jsonFiles) {
+    for (const file of exportFiles) {
       const filepath = path.join(exportsDir, file);
-      const content = await fs.readFile(filepath, 'utf8');
-      const data = JSON.parse(content);
+      const raw = await fs.readFile(filepath, 'utf8');
+
+      let data;
+      if (file.endsWith('.enc')) {
+        const decrypted = decrypt(raw, config.masterKey);
+        data = JSON.parse(decrypted);
+      } else {
+        data = JSON.parse(raw);
+      }
 
       console.log(`📄 ${file}`);
       console.log(`   - ${data.credentials?.length || 0} credential(s)`);

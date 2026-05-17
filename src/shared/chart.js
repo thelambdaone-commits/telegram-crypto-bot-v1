@@ -1,22 +1,29 @@
 /**
  * Chart Generation Service - Creates price charts for cryptocurrencies
  */
-import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import { formatPriceUpdateDate } from './price.js';
+import { COINGECKO_API, COIN_IDS, fetchWithFallback, COINGECKO_API_KEY } from './coingecko.js';
 
 const width = 800;
 const height = 400;
-import { COINGECKO_API, COIN_IDS, fetchWithFallback, COINGECKO_API_KEY } from './coingecko.js';
 const GRAPH_USAGE = 'Usage : /graph btc 7|30|90|365|all';
 const SUPPORTED_PERIODS = new Set(['7', '30', '90', '365', 'all']);
 const PRICE_HISTORY_CACHE_TTL = 5 * 60 * 1000;
 const PRICE_HISTORY_STALE_TTL = 60 * 60 * 1000;
 
-const chartJSNodeCanvas = new ChartJSNodeCanvas({
-  width,
-  height,
-  backgroundColour: '#1a1a2e',
-});
+let chartJSNodeCanvas = null;
+
+async function getCanvas() {
+  if (!chartJSNodeCanvas) {
+    const { ChartJSNodeCanvas } = await import('chartjs-node-canvas');
+    chartJSNodeCanvas = new ChartJSNodeCanvas({
+      width,
+      height,
+      backgroundColour: '#1a1a2e',
+    });
+  }
+  return chartJSNodeCanvas;
+}
 
 const priceHistoryCache = new Map();
 const priceHistoryInflight = new Map();
@@ -315,7 +322,8 @@ export async function generatePriceChart(chain, days) {
   };
 
   // Generate chart as PNG buffer
-  const imageBuffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+  const canvas = await getCanvas();
+  const imageBuffer = await canvas.renderToBuffer(configuration);
 
   return {
     buffer: imageBuffer,

@@ -95,6 +95,7 @@ function clearableTimeout(key, callback, delay) {
     pendingTimeouts.delete(key);
     callback();
   }, delay);
+  timeoutId.unref();
 
   pendingTimeouts.set(key, timeoutId);
 }
@@ -130,9 +131,10 @@ export async function handleShowCredentialsCommand(ctx, storage) {
     return;
   }
   displayLocks.set(chatId, now);
-  setTimeout(() => {
+  const lockTimer = setTimeout(() => {
     if (displayLocks.get(chatId) === now) displayLocks.delete(chatId);
   }, 5000);
+  lockTimer.unref();
 
   try {
     const creds = await storage.getPolymarketCredentials(chatId);

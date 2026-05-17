@@ -8,7 +8,8 @@ import {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
+import splToken from '@solana/spl-token';
+const { getAssociatedTokenAddress, getAccount, createAssociatedTokenAccountInstruction } = splToken;
 import { BaseProvider } from './base.provider.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 import { TOKEN_CONFIGS, getTokenConfig } from '../core/tokens.config.js';
@@ -27,7 +28,6 @@ export class SolanaChain extends BaseProvider {
     const endpoints = [
       rpcUrl,
       'https://api.mainnet-beta.solana.com',
-      'https://solana-mainnet.g.alchemy.com/v2/demo',
       'https://rpc.ankr.com/solana',
     ].filter(Boolean);
 

@@ -82,6 +82,7 @@ export async function confirmFlow(ctx, options) {
       /* message may already be gone */
     }
   }, timeout);
+  record.timeoutId.unref();
 
   pending.set(id, record);
 }

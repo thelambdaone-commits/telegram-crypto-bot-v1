@@ -63,15 +63,17 @@ async function exportCredentials() {
   }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filename = `credentials-export-${timestamp}.json`;
+  const filename = `credentials-export-${timestamp}.enc`;
   const filepath = path.join(exportsDir, filename);
 
-  await fs.writeFile(filepath, JSON.stringify(exportsData, null, 2));
+  const plaintext = JSON.stringify(exportsData, null, 2);
+  const encrypted = encrypt(plaintext, config.masterKey);
+  await fs.writeFile(filepath, encrypted, 'utf8');
 
   console.log(`✅ ${exportsData.credentials.length} credential(s) exportee(s)`);
-  console.log(`📁 Fichier: ${filepath}`);
-  console.log('\n⚠️ Protegez ce fichier - il contient des donnees sensibles!');
-  console.log('💡 Utilisez ce fichier pour importer vos credentials dans un autre bot.\n');
+  console.log(`📁 Fichier chiffré: ${filepath}`);
+  console.log('\n🔐 Fichier chiffré avec AES-256-GCM (masterKey)');
+  console.log('💡 Pour importer: dechiffrer avec la meme masterKey.\n');
 }
 
 exportCredentials().catch((err) => {

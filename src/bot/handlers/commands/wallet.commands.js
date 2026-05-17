@@ -123,12 +123,13 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
         ...mainReplyKeyboard(),
       });
 
-      setTimeout(async () => {
+      const deleteTimer = setTimeout(async () => {
         try {
           await ctx.telegram.deleteMessage(chatId, sentMsg.message_id);
           ctx.reply('🔒 _Message de sécurité supprimé._', { parse_mode: 'Markdown' });
         } catch (e) {}
       }, 60000);
+      deleteTimer.unref();
     } catch (error) {
       try {
         await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);

@@ -177,8 +177,8 @@ export class DepositMonitor {
   /**
    * Start monitoring (check every 5 minutes)
    */
-  start() {
-    this.initialize();
+  async start() {
+    await this.initialize();
 
     this.interval = setInterval(() => {
       this.checkDeposits();
