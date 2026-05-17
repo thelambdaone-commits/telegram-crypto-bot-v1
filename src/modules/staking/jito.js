@@ -18,7 +18,7 @@ const SOL_RPC = JITO_RPC;
 // Jito Stake Pool Constants
 const STAKE_POOL_PROGRAM_ID = new PublicKey('SPoo1Ku8WFXoNDS9keSTneZabDECtSTAkgSxzZByMkB');
 const JITO_STAKE_POOL_ADDRESS = new PublicKey('Jito4APyf642JPZPx3hGc6WWJ8zPKtRbRs4P815Awbb');
-const STAKE_PROGRAM_ID = new PublicKey('Stake11111111111111111111111111111111111111111');
+const STAKE_PROGRAM_ID = StakeProgram.programId;
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const SYSVAR_CLOCK_ID = new PublicKey('SysvarC1ock11111111111111111111111111111111');
 
