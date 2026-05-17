@@ -4,8 +4,7 @@
  */
 
 import { PublicKey, Connection } from '@solana/web3.js';
-import splToken from '@solana/spl-token';
-const { getAssociatedTokenAddress, getAccount } = splToken;
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';
 
@@ -33,7 +32,7 @@ export class MarinadeService {
       const walletPubkey = new PublicKey(walletAddress);
 
       // Get ATA for mSOL
-      const ata = await getAssociatedTokenAddress(walletPubkey, mintPubkey);
+      const ata = await getAssociatedTokenAddress(mintPubkey, walletPubkey);
 
       try {
         const accountInfo = await getAccount(conn, ata);

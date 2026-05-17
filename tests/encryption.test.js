@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { encrypt, decrypt, generateKey, deriveKey, hashPassphrase, verifyPassphrase } from '../src/shared/encryption.js';
+import { encrypt, decrypt, generateKey, deriveKey, hashPassphrase, verifyPassphrase, deriveUserKey } from '../src/shared/encryption.js';
 import { logger, LogLevel } from '../src/shared/logger.js';
 
 const masterKey = crypto.randomBytes(32).toString('hex');
@@ -98,4 +98,70 @@ test('logger redact returns primitives unchanged', () => {
   assert.equal(logger.redact('hello'), 'hello');
   assert.equal(logger.redact(42), 42);
   assert.equal(logger.redact(null), null);
+});
+
+// --- deriveUserKey tests ---
+
+test('deriveUserKey produces deterministic output for same userId', () => {
+  const key1 = deriveUserKey(masterKey, 12345);
+  const key2 = deriveUserKey(masterKey, 12345);
+  assert.equal(key1, key2);
+  assert.equal(key1.length, 64);
+});
+
+test('deriveUserKey produces different keys for different users', () => {
+  const key1 = deriveUserKey(masterKey, 12345);
+  const key2 = deriveUserKey(masterKey, 67890);
+  assert.notEqual(key1, key2);
+});
+
+test('deriveUserKey produces different keys with different master keys', () => {
+  const otherKey = crypto.randomBytes(32).toString('hex');
+  const key1 = deriveUserKey(masterKey, 12345);
+  const key2 = deriveUserKey(otherKey, 12345);
+  assert.notEqual(key1, key2);
+});
+
+test('deriveUserKey key works with encrypt/decrypt round-trip', () => {
+  const userKey = deriveUserKey(masterKey, 42);
+  const plaintext = 'user-specific-data';
+  const encrypted = encrypt(plaintext, userKey);
+  const decrypted = decrypt(encrypted, userKey);
+  assert.equal(decrypted, plaintext);
+});
+
+// --- IV migration tests (12-byte new format vs 16-byte legacy) ---
+
+test('new format (12-byte IV) can be decrypted', () => {
+  const plaintext = 'test with new IV format';
+  const encrypted = encrypt(plaintext, masterKey);
+  const decrypted = decrypt(encrypted, masterKey);
+  assert.equal(decrypted, plaintext);
+});
+
+test('legacy format (16-byte IV, no version byte) can still be decrypted', () => {
+  const keyBuffer = Buffer.from(masterKey, 'hex');
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
+  const encrypted = Buffer.concat([cipher.update('legacy-data', 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  const legacyCiphertext = Buffer.concat([iv, tag, encrypted]).toString('base64');
+
+  const decrypted = decrypt(legacyCiphertext, masterKey);
+  assert.equal(decrypted, 'legacy-data');
+});
+
+test('round-trip with user derived key using new format', () => {
+  const userKey = deriveUserKey(masterKey, 999);
+  const plaintext = 'multi-user test';
+  const encrypted = encrypt(plaintext, userKey);
+  const decrypted = decrypt(encrypted, userKey);
+  assert.equal(decrypted, plaintext);
+});
+
+test('decrypt with wrong derived key fails', () => {
+  const userKey = deriveUserKey(masterKey, 1);
+  const wrongUserKey = deriveUserKey(masterKey, 2);
+  const encrypted = encrypt('secret', userKey);
+  assert.throws(() => decrypt(encrypted, wrongUserKey), Error);
 });

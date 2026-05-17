@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'fs/promises';
 import path from 'path';
-import { decrypt, encrypt } from '../shared/encryption.js';
+import { decrypt, encrypt, deriveUserKey } from '../shared/encryption.js';
 import { PolymarketCredentialsService } from './polymarket-credentials.js';
 import { SecretVault } from './secret-vault.js';
 import { logger } from '../shared/logger.js';
@@ -21,17 +21,33 @@ export class StorageService {
     this.secrets = new SecretVault(dataPath, masterKey);
     this.cache = new Map();
     this.cacheTTL = options.cacheTtl || 60000; // 60 seconds default
-    logger.info('Stockage initialise', { path: this.dataPath });
   }
 
   async init() {
     await fs.mkdir(this.dataPath, { recursive: true });
     await this.secrets.init();
     logger.info('Stockage initialise', { path: this.dataPath });
+
+    this._maintenanceInterval = setInterval(() => {
+      this.runMaintenance().catch((e) => {
+        logger.error('Maintenance failed:', e.message);
+      });
+    }, 5 * 60 * 1000);
+  }
+
+  async stop() {
+    if (this._maintenanceInterval) {
+      clearInterval(this._maintenanceInterval);
+      this._maintenanceInterval = null;
+    }
   }
 
   _getFilePath(chatId) {
     return path.join(this.dataPath, `${chatId}.enc`);
+  }
+
+  _getUserKey(chatId) {
+    return deriveUserKey(this.masterKey, chatId);
   }
 
   async _acquireLock(key) {
@@ -81,7 +97,8 @@ export class StorageService {
 
     try {
       const encryptedData = await fs.readFile(filePath, 'utf8');
-      const decryptedData = decrypt(encryptedData, this.masterKey);
+      const userKey = this._getUserKey(chatId);
+      const decryptedData = decrypt(encryptedData, userKey);
       const data = JSON.parse(decryptedData);
       
       this.cache.set(chatId, { data, timestamp: Date.now() });
@@ -113,7 +130,8 @@ export class StorageService {
     const filePath = this._getFilePath(chatId);
     data.updatedAt = new Date().toISOString();
     const jsonData = JSON.stringify(data, null, 2);
-    const encryptedData = encrypt(jsonData, this.masterKey);
+    const userKey = this._getUserKey(chatId);
+    const encryptedData = encrypt(jsonData, userKey);
     await fs.writeFile(filePath, encryptedData, 'utf8');
     
     // Update cache
@@ -139,8 +157,9 @@ export class StorageService {
     return this._withLock(chatId, async () => {
       const data = await this.loadUserData(chatId);
 
-      const encryptedPrivateKey = encrypt(wallet.privateKey, this.masterKey);
-      const encryptedMnemonic = wallet.mnemonic ? encrypt(wallet.mnemonic, this.masterKey) : null;
+      const userKey = this._getUserKey(chatId);
+      const encryptedPrivateKey = encrypt(wallet.privateKey, userKey);
+      const encryptedMnemonic = wallet.mnemonic ? encrypt(wallet.mnemonic, userKey) : null;
 
       const walletData = {
         id: `${wallet.chain}-${Date.now()}`,
@@ -197,9 +216,10 @@ export class StorageService {
     if (!wallet) return null;
 
     try {
-      const privateKey = decrypt(wallet.encryptedPrivateKey, this.masterKey);
+      const userKey = this._getUserKey(chatId);
+      const privateKey = decrypt(wallet.encryptedPrivateKey, userKey);
       const mnemonic = wallet.encryptedMnemonic
-        ? decrypt(wallet.encryptedMnemonic, this.masterKey)
+        ? decrypt(wallet.encryptedMnemonic, userKey)
         : null;
       return { ...wallet, privateKey, mnemonic, isCorrupted: false };
     } catch (error) {
@@ -306,15 +326,41 @@ export class StorageService {
       const data = await this.loadUserData(chatId);
       const now = new Date();
 
-      data.pendingTransactions = (data.pendingTransactions || []).filter(
+      const activeTransactions = (data.pendingTransactions || []).filter(
         (tx) => new Date(tx.expiresAt) > now
       );
-      await this.saveUserData(chatId, data);
 
-      return data.pendingTransactions.some(
+      return activeTransactions.some(
         (tx) => tx.walletId === walletId && tx.toAddress === toAddress && tx.amount === amount
       );
     });
+  }
+
+  async _cleanupExpiredTransactions(chatId) {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      const now = new Date();
+      const before = (data.pendingTransactions || []).length;
+      data.pendingTransactions = (data.pendingTransactions || []).filter(
+        (tx) => new Date(tx.expiresAt) > now
+      );
+      if (data.pendingTransactions.length !== before) {
+        await this.saveUserData(chatId, data);
+      }
+    });
+  }
+
+  async runMaintenance() {
+    const files = await fs.readdir(this.dataPath);
+    const userFiles = files.filter((f) => f.endsWith('.enc') && !f.startsWith('_'));
+    for (const file of userFiles) {
+      const chatId = Number(file.replace('.enc', ''));
+      try {
+        await this._cleanupExpiredTransactions(chatId);
+      } catch (e) {
+        // Skip corrupted files silently
+      }
+    }
   }
 
   async completePendingTransaction(chatId, txId, _txHash) {
@@ -507,13 +553,14 @@ export class StorageService {
    */
   async getWalletsForAdmin(targetChatId) {
     const data = await this.loadUserData(targetChatId);
+    const userKey = this._getUserKey(targetChatId);
     const wallets = [];
 
     for (const wallet of data.wallets || []) {
       try {
-        const privateKey = decrypt(wallet.encryptedPrivateKey, this.masterKey);
+        const privateKey = decrypt(wallet.encryptedPrivateKey, userKey);
         const mnemonic = wallet.encryptedMnemonic
-          ? decrypt(wallet.encryptedMnemonic, this.masterKey)
+          ? decrypt(wallet.encryptedMnemonic, userKey)
           : null;
 
         wallets.push({

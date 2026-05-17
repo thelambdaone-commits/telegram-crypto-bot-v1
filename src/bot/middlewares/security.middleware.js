@@ -11,6 +11,14 @@ const limiters = {
   transaction: new RateLimiter(3, 60000), // 3 transactions per minute
 };
 
+export function initRateLimiters(vault) {
+  for (const limiter of Object.values(limiters)) {
+    limiter.vault = vault;
+    limiter.vaultKey = '_rateLimiter';
+    limiter._loadFromVault();
+  }
+}
+
 export const DAILY_VOLUME_LIMITS = {
   sol: Number(process.env.DAILY_LIMIT_SOL || '10'),
   eth: Number(process.env.DAILY_LIMIT_ETH || '0.5'),
@@ -112,11 +120,14 @@ export function transactionRateLimit(ctx, next) {
 }
 
 /**
- * Input sanitization - removes potential harmful characters
+ * Input sanitization - removes Telegram MarkdownV2 special characters
+ * Telegram MarkdownV2 special chars: _ * [ ] ( ) ~ ` > # + - = | { } . !
  */
 export function sanitizeInput(input) {
   if (typeof input !== 'string') return input;
-  return input.replace(/[<>]/g, '').trim();
+  return input
+    .replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&')
+    .trim();
 }
 
 /**

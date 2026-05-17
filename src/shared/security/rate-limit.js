@@ -1,13 +1,60 @@
 /**
  * Rate limiter and anti-spam protection
+ * Blacklist is persisted via SecretVault to survive restarts.
  */
 export class RateLimiter {
-  constructor(limit = 30, windowMs = 60000) {
+  constructor(limit = 30, windowMs = 60000, vault = null) {
     this.limit = limit;
     this.windowMs = windowMs;
     this.requests = new Map();
     this.blacklist = new Set();
     this.warnings = new Map();
+    this.vault = vault;
+    this.vaultKey = '_rateLimiter';
+    this._dirty = false;
+
+    if (this.vault) {
+      this._loadFromVault();
+    }
+  }
+
+  _loadFromVault() {
+    try {
+      const saved = this.vault.get(this.vaultKey);
+      if (saved) {
+        const data = typeof saved === 'string' ? JSON.parse(saved) : saved;
+        if (data.blacklist) {
+          this.blacklist = new Set(data.blacklist);
+        }
+        if (data.warnings) {
+          this.warnings = new Map(Object.entries(data.warnings));
+        }
+      }
+    } catch (e) {
+      // Ignore corrupted data
+    }
+  }
+
+  async _saveToVault() {
+    if (!this.vault) return;
+    try {
+      await this.vault.set(this.vaultKey, {
+        blacklist: Array.from(this.blacklist),
+        warnings: Object.fromEntries(this.warnings),
+      });
+      this._dirty = false;
+    } catch (e) {
+      // Ignore save failures
+    }
+  }
+
+  _markDirty() {
+    if (!this._dirty) {
+      this._dirty = true;
+      setTimeout(() => {
+        this._saveToVault().catch(() => {});
+      }, 100);
+    }
   }
 
   /**
@@ -32,8 +79,11 @@ export class RateLimiter {
       // Auto-blacklist after 5 warnings
       if (warnings >= 5) {
         this.blacklist.add(chatId);
+        this._markDirty();
         return { allowed: false, reason: 'blacklist_auto' };
       }
+
+      this._markDirty();
 
       return {
         allowed: false,
@@ -54,6 +104,7 @@ export class RateLimiter {
    */
   addToBlacklist(chatId) {
     this.blacklist.add(chatId);
+    this._markDirty();
   }
 
   /**
@@ -62,6 +113,7 @@ export class RateLimiter {
   removeFromBlacklist(chatId) {
     this.blacklist.delete(chatId);
     this.warnings.delete(chatId);
+    this._markDirty();
   }
 
   /**
@@ -97,5 +149,12 @@ export class RateLimiter {
         this.warnings.delete(chatId);
       }
     }
+  }
+
+  /**
+   * Force immediate persist to disk
+   */
+  async flush() {
+    await this._saveToVault();
   }
 }

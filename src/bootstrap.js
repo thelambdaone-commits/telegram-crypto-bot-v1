@@ -8,6 +8,7 @@ import { StorageService } from './core/storage.js';
 import { logger } from './shared/logger.js';
 import { cleanupAllFeeds } from './clob/feed.js';
 import { auditLogger } from './shared/security/audit-logger.js';
+import { initRateLimiters } from './bot/middlewares/security.middleware.js';
 
 export class App {
   constructor() {
@@ -22,6 +23,8 @@ export class App {
     this.bot = new Telegraf(config.botToken);
     this.storage = new StorageService(config.dataPath, config.masterKey);
     await this.storage.init();
+
+    initRateLimiters(this.storage.secrets);
 
     logger.info('Bot starting', { adminId: config.adminChatId });
 
@@ -83,6 +86,9 @@ export class App {
       cleanupAllFeeds();
       if (this.depositMonitor) {
         this.depositMonitor.stop();
+      }
+      if (this.storage) {
+        await this.storage.stop();
       }
       if (this.sessions) {
         await this.sessions.stop();

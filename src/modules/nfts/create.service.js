@@ -7,8 +7,7 @@
  */
 
 import { Connection, Keypair } from '@solana/web3.js';
-import splToken from '@solana/spl-token';
-const { createMint, getOrCreateAssociatedTokenAccount, mintTo } = splToken;
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';
 

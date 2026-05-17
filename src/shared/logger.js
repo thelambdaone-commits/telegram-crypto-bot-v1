@@ -1,4 +1,5 @@
-import { appendFileSync, existsSync, mkdirSync, statSync, renameSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync } from 'fs';
+import { rename, stat } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -60,16 +61,18 @@ class Logger {
   }
 
   /**
-   * Rotate log file if it exceeds max size
+   * Rotate log file if it exceeds max size (async)
    */
-  rotateIfNeeded(logPath) {
-    if (!existsSync(logPath)) return;
+  async rotateIfNeeded(logPath) {
+    try {
+      const stats = await stat(logPath).catch(() => null);
+      if (!stats || stats.size <= MAX_LOG_SIZE) return;
 
-    const stats = statSync(logPath);
-    if (stats.size > MAX_LOG_SIZE) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const rotatedPath = logPath.replace('.log', `.${timestamp}.log`);
-      renameSync(logPath, rotatedPath);
+      await rename(logPath, rotatedPath);
+    } catch {
+      // Silently ignore rotation failures
     }
   }
 
@@ -107,14 +110,14 @@ class Logger {
    * Console output is filtered by LOG_LEVEL.
    */
   write(level, message, context = {}) {
-    this.rotateIfNeeded(this.logPath);
+    this.rotateIfNeeded(this.logPath).catch(() => {});
 
     const entry = this.formatEntry(level, message, context);
     appendFileSync(this.logPath, entry + '\n');
 
     // Also write errors to separate file
     if (level === LogLevel.ERROR) {
-      this.rotateIfNeeded(this.errorLogPath);
+      this.rotateIfNeeded(this.errorLogPath).catch(() => {});
       appendFileSync(this.errorLogPath, entry + '\n');
     }
 

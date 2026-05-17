@@ -8,8 +8,7 @@ import {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import splToken from '@solana/spl-token';
-const { getAssociatedTokenAddress, getAccount, createAssociatedTokenAccountInstruction } = splToken;
+import { getAssociatedTokenAddress, getAccount, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
 import { BaseProvider } from './base.provider.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 import { TOKEN_CONFIGS, getTokenConfig } from '../core/tokens.config.js';
@@ -421,7 +420,7 @@ export class SolanaChain extends BaseProvider {
     const mintPubkey = new PublicKey(mintAddress);
     const conn = this.connection;
 
-    const ata = await getAssociatedTokenAddress(walletPubkey, mintPubkey);
+    const ata = await getAssociatedTokenAddress(mintPubkey, walletPubkey);
 
     try {
       const accountInfo = await getAccount(conn, ata);
@@ -447,7 +446,7 @@ export class SolanaChain extends BaseProvider {
     const mintPubkey = new PublicKey(mintAddress);
     const conn = this.connection;
 
-    const ata = await getAssociatedTokenAddress(keypair.publicKey, mintPubkey);
+    const ata = await getAssociatedTokenAddress(mintPubkey, keypair.publicKey);
 
     try {
       await getAccount(conn, ata);

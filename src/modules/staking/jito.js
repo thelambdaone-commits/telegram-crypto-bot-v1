@@ -4,8 +4,7 @@
  */
 
 import { PublicKey, Connection, Keypair, VersionedTransaction, Transaction, TransactionInstruction, SystemProgram, StakeProgram } from '@solana/web3.js';
-import splToken from '@solana/spl-token';
-const { getAssociatedTokenAddress, getAccount } = splToken;
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 import { getPricesEUR } from '../../shared/price.js';
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';
@@ -40,7 +39,7 @@ export class JitoService {
       const mintPubkey = new PublicKey(JITO_MINT);
       const conn = getConnection();
 
-      const ata = await getAssociatedTokenAddress(walletPubkey, mintPubkey);
+      const ata = await getAssociatedTokenAddress(mintPubkey, walletPubkey);
 
       let balance = 0;
       let hasAccount = false;
