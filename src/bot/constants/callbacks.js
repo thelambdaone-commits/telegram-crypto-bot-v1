@@ -85,7 +85,6 @@ export const CALLBACKS = {
   PM_MENU_ORDERS: 'pm_menu_orders',
   PM_MENU_POSITIONS: 'pm_menu_positions',
   PM_MENU_PNL: 'pm_menu_pnl',
-  PM_SHOW_CREDENTIALS: 'pm_show_credentials',
   PM_DISCONNECT: 'pm_disconnect',
   PM_CANCEL: 'pm_cancel',
   PM_CONFIRM_DISCONNECT: 'pm_confirm_disconnect',

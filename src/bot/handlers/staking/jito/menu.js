@@ -5,6 +5,16 @@ import { safeAnswerCbQuery } from '../../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../../shared/price.js';
 import { logger } from '../../../../shared/logger.js';
 import { syncJitoUnstakes } from './sync.js';
+import { sendWalletKeysFile } from '../../wallet/key-file.js';
+
+async function sendJitoWalletKeys(ctx, storage, chatId, walletId) {
+  const wallet = await storage.getWalletWithKey(chatId, walletId);
+  if (!wallet || wallet.isCorrupted) {
+    throw new Error('Wallet JitoSOL introuvable ou corrompu');
+  }
+
+  await sendWalletKeysFile(ctx, wallet, storage, { scope: 'jitosol' });
+}
 
 export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
   bot.action('jito_staking', async (ctx) => {
@@ -47,6 +57,7 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
         }
         solWallet = solWallets[0];
         sessions.updateData(chatId, { stakingWalletId: solWallet.id });
+        await sendJitoWalletKeys(ctx, storage, chatId, solWallet.id);
       }
 
       const balanceResult = await JitoService.getBalance(solWallet.address);
@@ -152,6 +163,7 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
     const walletId = ctx.match[1];
 
     sessions.setData(chatId, { ...sessions.getData(chatId), stakingWalletId: walletId });
+    await sendJitoWalletKeys(ctx, storage, chatId, walletId);
 
     await ctx.editMessageText(
       '✅ *Wallet sélectionné*\n\nLe bot va maintenant utiliser ce wallet pour JitoSOL.',

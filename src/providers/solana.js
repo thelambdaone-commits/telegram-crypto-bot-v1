@@ -8,7 +8,11 @@ import {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount, createAssociatedTokenAccountInstruction } from '@solana/spl-token';
+import {
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  getAssociatedTokenAddress,
+} from '../shared/solana-token.js';
 import { BaseProvider } from './base.provider.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 import { TOKEN_CONFIGS, getTokenConfig } from '../core/tokens.config.js';
@@ -19,13 +23,15 @@ import * as bip39 from 'bip39';
 import bs58 from 'bs58';
 
 export class SolanaChain extends BaseProvider {
-  constructor(rpcUrl) {
+  constructor(rpcUrl, fallbackRpcUrls = []) {
     super('Solana', 'SOL');
     this.primaryRpcUrl = rpcUrl;
     this.connection = new Connection(rpcUrl, 'confirmed');
 
+    const configuredFallbacks = Array.isArray(fallbackRpcUrls) ? fallbackRpcUrls : [fallbackRpcUrls];
     const endpoints = [
       rpcUrl,
+      ...configuredFallbacks,
       'https://api.mainnet-beta.solana.com',
       'https://rpc.ankr.com/solana',
     ].filter(Boolean);

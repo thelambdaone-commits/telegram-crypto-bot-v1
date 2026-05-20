@@ -26,6 +26,15 @@ function parseIdList(value) {
     : [];
 }
 
+function parseUrlList(value) {
+  return value
+    ? value
+        .split(',')
+        .map((url) => url.trim())
+        .filter(Boolean)
+    : [];
+}
+
 const adminChatId = parseIdList(process.env.ADMIN_CHAT_ID);
 const configuredAdminUserId = parseIdList(process.env.ADMIN_USER_ID || process.env.ADMIN_USER_IDS);
 const adminUserId = [...configuredAdminUserId, ...adminChatId.filter((id) => id > 0)];
@@ -54,6 +63,7 @@ export const config = {
   rpc: {
     eth: vault.get('ethRpc') || process.env.ETH_RPC_URL || 'https://eth.llamarpc.com',
     sol: vault.get('solRpc') || process.env.SOL_RPC_URL,
+    solFallbacks: parseUrlList(process.env.SOL_RPC_FALLBACK_URLS),
     btcApi: vault.get('btcApi') || process.env.BTC_API_URL || 'https://mempool.space/api',
     arb: vault.get('arbRpc') || process.env.ARB_RPC_URL || 'https://arb1.arbitrum.io/rpc',
     ltcApi: vault.get('ltcApi') || process.env.LTC_API_URL || 'https://litecoinspace.org/api',

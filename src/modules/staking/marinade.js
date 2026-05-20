@@ -4,7 +4,7 @@
  */
 
 import { PublicKey, Connection } from '@solana/web3.js';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import { getAssociatedTokenAddress, getAccount } from '../../shared/solana-token.js';
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';
 

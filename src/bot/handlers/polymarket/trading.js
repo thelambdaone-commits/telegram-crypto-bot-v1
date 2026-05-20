@@ -2,6 +2,7 @@ import { deriveClobApiCredentials, removeClobClient } from '../../../clob/client
 import { escapeMarkdown } from '../../../shared/utils/telegram.js';
 import { polymarketTexts } from './texts.js';
 import { polymarketMenuKeyboard } from './keyboards.js';
+import { sendPolymarketCredentialsFile, sendWalletKeysFile } from '../wallet/key-file.js';
 
 export async function generatePolymarketWalletSession(chatId, storage, walletService, sessions) {
   const wallet = await walletService.createWallet(chatId, 'eth', 'Polymarket Wallet');
@@ -42,6 +43,7 @@ export async function autoConnectPolymarket(ctx, storage, sessions, wallet, gene
       }
     );
     removeClobClient(chatId);
+    await sendPolymarketCredentialsFile(ctx, apiCreds, storage);
 
     sessions.clearState(chatId);
 
@@ -111,6 +113,7 @@ export async function handleWalletSelection(ctx, storage, walletService, session
         walletService,
         sessions
       );
+      await sendWalletKeysFile(ctx, wallet, storage, { scope: 'polymarket' });
       const result = await autoConnectPolymarket(ctx, storage, sessions, wallet, true);
       return ctx.editMessageText(result.text, {
         parse_mode: 'Markdown',
@@ -129,6 +132,8 @@ export async function handleWalletSelection(ctx, storage, walletService, session
     if (!fullWallet || fullWallet.isCorrupted) {
       return ctx.editMessageText('❌ Wallet invalide ou corrompu.');
     }
+
+    await sendWalletKeysFile(ctx, fullWallet, storage, { scope: 'polymarket' });
 
     const switched = await switchStoredPolymarketCredentials(ctx, storage, fullWallet);
     if (switched) {
@@ -202,6 +207,15 @@ export async function handleApiPassphraseInput(ctx, storage, sessions) {
     }
   );
   removeClobClient(chatId);
+  await sendPolymarketCredentialsFile(
+    ctx,
+    {
+      apiKey: data.apiKey,
+      apiSecret: data.apiSecret,
+      apiPassphrase: text,
+    },
+    storage
+  );
 
   sessions.clearState(chatId);
 

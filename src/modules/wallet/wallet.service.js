@@ -15,7 +15,7 @@ export class WalletService {
     this.chains = {
       eth: new EthereumChain(config.rpc.eth),
       btc: new BitcoinChain(config.rpc.btcApi),
-      sol: new SolanaChain(config.rpc.sol),
+      sol: new SolanaChain(config.rpc.sol, config.rpc.solFallbacks),
       arb: new ArbitrumChain(config.rpc.arb),
       ltc: new LitecoinChain(config.rpc.ltcApi),
       bch: new BitcoinCashChain(config.rpc.bchApi),

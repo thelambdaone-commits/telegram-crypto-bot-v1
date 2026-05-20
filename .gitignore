@@ -38,6 +38,7 @@ Thumbs.db
 .idea/
 .vscode/
 .codex
+.opencode/
 *.swp
 *.swo
 

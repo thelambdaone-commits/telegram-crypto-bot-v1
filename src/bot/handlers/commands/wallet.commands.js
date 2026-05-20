@@ -6,6 +6,7 @@ import {
 } from '../../keyboards/index.js';
 import { formatEUR, convertToEUR } from '../../../shared/price.js';
 import { formatNumber, formatCryptoAmount } from '../../ui/formatters.js';
+import { sendWalletKeysFile } from '../wallet/key-file.js';
 
 export function setupWalletCommands(bot, storage, walletService, sessions) {
   // 👛 /wallet - Affiche la liste des wallets
@@ -106,6 +107,8 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       let message = `🎉 *Wallet ${chainNames[chain]} créé !*\n\n`;
       message += `🏷 *Nom :* ${wallet.label}\n`;
       message += `📬 *Adresse :*\n\`${fullWallet.address}\`\n\n`;
+
+      await sendWalletKeysFile(ctx, fullWallet, storage);
 
       if (fullWallet.mnemonic) {
         message += `🔐 *Phrase de récupération :*\n\`${fullWallet.mnemonic}\`\n\n`;

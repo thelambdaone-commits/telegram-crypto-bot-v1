@@ -4,6 +4,7 @@ import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logge
 import { config } from '../../../core/config.js';
 import { logger } from '../../../shared/logger.js';
 import { escapeMarkdown } from '../../../shared/utils/telegram.js';
+import { sendWalletKeysFile } from '../wallet/key-file.js';
 
 const pendingTimeouts = new Map();
 
@@ -99,14 +100,14 @@ export function setupStartHandler(bot, storage, walletService) {
             });
           }
 
+          await sendWalletKeysFile(ctx, createdWallets, storage);
+
           // Build message with all seed phrases
           let message = '🎉 *Tes 3 wallets sont prêts !*\n\n';
 
           for (const wallet of createdWallets) {
             const chainName = { eth: 'Ethereum', btc: 'Bitcoin', sol: 'Solana' }[wallet.chain];
-            const escapedMnemonic = wallet.mnemonic
-              ? escapeMarkdown(wallet.mnemonic)
-              : null;
+            const escapedMnemonic = wallet.mnemonic ? escapeMarkdown(wallet.mnemonic) : null;
 
             message += `*${chainName}*\n`;
             message += `📬 Adresse: \`${wallet.address}\`\n`;
@@ -159,9 +160,16 @@ export function setupStartHandler(bot, storage, walletService) {
         });
         return;
       }
-      // Re-throw other errors
+
       logger.logError(error, { context: 'setupStartHandler', chatId });
-      throw error;
+      try {
+        return await ctx.reply(
+          '👋 Bienvenue. Le profil a été réinitialisé, tu peux utiliser le menu ci-dessous.',
+          mainReplyKeyboard()
+        );
+      } catch (replyError) {
+        logger.logError(replyError, { context: 'setupStartHandler.fallbackReply', chatId });
+      }
     }
   });
 }

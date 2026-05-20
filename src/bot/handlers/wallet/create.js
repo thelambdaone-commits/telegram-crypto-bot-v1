@@ -4,6 +4,7 @@ import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logge
 import { config } from '../../../core/config.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { logger } from '../../../shared/logger.js';
+import { sendWalletKeysFile } from './key-file.js';
 
 export function setupWalletCreate(bot, storage, walletService, sessions) {
   // Create wallet - show chain selection
@@ -73,6 +74,7 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
       }
 
       const { mainMenuKeyboard } = await import('../../keyboards/index.js');
+      await sendWalletKeysFile(ctx, fullWallet, storage);
 
       const l2Info = {
         matic:

@@ -45,8 +45,11 @@ export class FileStore {
         try {
           json = decrypt(content, this.masterKey);
         } catch (e) {
+          const quarantinePath = `${this.filePath}.corrupt-${Date.now()}`;
+          await fs.rename(this.filePath, quarantinePath).catch(() => {});
           logger.error('Failed to decrypt sessions file - key might have changed', {
             error: e.message,
+            quarantinePath,
           });
           return {};
         }

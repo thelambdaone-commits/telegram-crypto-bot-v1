@@ -50,6 +50,45 @@ export class StorageService {
     return deriveUserKey(this.masterKey, chatId);
   }
 
+  _createDefaultUserData(chatId) {
+    return {
+      chatId,
+      wallets: [],
+      pendingTransactions: [],
+      settings: {
+        defaultFeeLevel: 'average',
+      },
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  _isUnreadableUserDataError(error) {
+    return (
+      error?.name === 'SyntaxError' ||
+      error?.message === 'Unsupported state or unable to authenticate data' ||
+      error?.message?.startsWith('Invalid authentication tag length')
+    );
+  }
+
+  async _quarantineUnreadableUserFile(chatId, filePath, error) {
+    const quarantinePath = `${filePath}.corrupt-${Date.now()}`;
+    try {
+      await fs.rename(filePath, quarantinePath);
+      this.cache.delete(chatId);
+      logger.error('User data file unreadable; moved aside and recreated on next save', {
+        chatId,
+        quarantinePath,
+        error: error.message,
+      });
+    } catch (renameError) {
+      logger.error('Failed to quarantine unreadable user data file', {
+        chatId,
+        error: renameError.message,
+        originalError: error.message,
+      });
+    }
+  }
+
   async _acquireLock(key) {
     key = String(key);
     const previousTail = this.locks.get(key) || Promise.resolve();
@@ -105,17 +144,12 @@ export class StorageService {
       return data;
     } catch (error) {
       if (error.code === 'ENOENT') {
-        const defaultData = {
-          chatId,
-          wallets: [],
-          pendingTransactions: [],
-          settings: {
-            defaultFeeLevel: 'average',
-          },
-          createdAt: new Date().toISOString(),
-        };
         // Don't cache default data until it's actually saved
-        return defaultData;
+        return this._createDefaultUserData(chatId);
+      }
+      if (this._isUnreadableUserDataError(error)) {
+        await this._quarantineUnreadableUserFile(chatId, filePath, error);
+        return this._createDefaultUserData(chatId);
       }
       throw error;
     }
@@ -147,6 +181,42 @@ export class StorageService {
       userData.firstName = firstName;
       userData.username = username;
       await this.saveUserData(chatId, userData);
+    });
+  }
+
+  async getNextKeysFilename(chatId, scope = 'default', prefix = 'keys') {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      const safeScope = String(scope || 'default')
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '');
+      const safePrefix = String(prefix || 'keys')
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '') || 'keys';
+      const counterKey = safeScope === 'default' ? 'default' : safeScope;
+      const scopedCounterKey = `${safePrefix}:${counterKey}`;
+
+      data.keysFileCounters = data.keysFileCounters || {};
+      const currentIndex = Number(
+        data.keysFileCounters[scopedCounterKey] ??
+          data.keysFileCounters[counterKey] ??
+          (safePrefix === 'keys' && counterKey === 'default' ? data.keysFileCounter : 0) ??
+          0
+      );
+      const nextIndex = currentIndex + 1;
+
+      data.keysFileCounters[scopedCounterKey] = nextIndex;
+      if (safePrefix === 'keys') {
+        data.keysFileCounters[counterKey] = nextIndex;
+      }
+      if (safePrefix === 'keys' && counterKey === 'default') {
+        data.keysFileCounter = nextIndex;
+      }
+
+      await this.saveUserData(chatId, data);
+
+      const baseName = counterKey === 'default' ? safePrefix : `${safePrefix}-${counterKey}`;
+      return nextIndex === 1 ? `${baseName}.txt` : `${baseName}${nextIndex}.txt`;
     });
   }
 

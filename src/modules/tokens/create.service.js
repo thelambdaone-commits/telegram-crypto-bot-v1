@@ -6,7 +6,13 @@
  */
 
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
-import { createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, AuthorityType } from '@solana/spl-token';
+import {
+  AuthorityType,
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+  setAuthority,
+} from '../../shared/solana-token.js';
 import { config } from '../../core/config.js';
 import { logger } from '../../shared/logger.js';
 

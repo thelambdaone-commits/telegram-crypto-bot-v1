@@ -61,6 +61,7 @@ test('new Polymarket wallet is generated and stored in session on click', async 
       assert.equal(walletId, wallet.id);
       return wallet;
     },
+    getNextKeysFilename: async () => 'keys.txt',
   };
   const walletService = {
     createWallet: async (chatId, chain, label) => {
@@ -83,6 +84,7 @@ test('new Polymarket wallet is generated and stored in session on click', async 
     chat: { id: 42 },
     callbackQuery: { data: 'pm_new_wallet' },
     answerCbQuery: async () => {},
+    replyWithDocument: async () => ({ message_id: 10 }),
     editMessageText: async () => {},
     match: undefined,
   };
@@ -173,7 +175,7 @@ test('confirm disconnect removes credentials and edits message', async () => {
   assert.equal(edited, true);
 });
 
-test('connected Polymarket menu includes credentials display action', async () => {
+test('connected Polymarket menu does not register credentials display action', async () => {
   const actions = new Map();
   const bot = {
     on: () => {},
@@ -190,7 +192,7 @@ test('connected Polymarket menu includes credentials display action', async () =
 
   setupPolymarketHandlers(bot, storage, {}, sessions);
 
-  assert.equal(typeof actions.get('pm_show_credentials'), 'function');
+  assert.equal(actions.has('pm_show_credentials'), false);
 });
 
 test('connected Polymarket menu includes portfolio PnL button', async () => {
