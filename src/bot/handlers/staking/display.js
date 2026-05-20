@@ -154,8 +154,51 @@ function formatYieldRows(rows) {
     .join('\n\n');
 }
 
-async function handleStakeCommand(ctx, _storage) {
+async function handleStakeCommand(ctx, _storage, { edit = false } = {}) {
   const chatId = ctx.chat.id;
+
+  if (edit) {
+    try {
+      const apyData = await Promise.race([
+        StakingService.getAllApy(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+      ]);
+
+      const defaultAmount = 1000;
+      let text = '📈 *Staking - Rendements*\n\n';
+      text += '💡 *Exemple: depot de 1000$*\n\n';
+      const rows = buildYieldRows(apyData, defaultAmount);
+      text += '━━━━━━━━━━━━\n';
+      text += '🏆 *Meilleurs rendements disponibles*\n';
+      text += '━━━━━━━━━━━━\n';
+      text += formatYieldRows(rows);
+      text += '\n━━━━━━━━━━━━\n';
+      text += '_Utilisez /calc <montant> <token> <protocole>_\n';
+      text += '_pour calculer avec votre propre montant_\n';
+      text += '_ou /yield pour voir vos positions_';
+
+      await ctx.editMessageText(text, {
+        parse_mode: 'Markdown',
+        ...stakingHubKeyboard(),
+      });
+    } catch (error) {
+      logger.logError(error, { context: 'handleStakeCommand', chatId });
+      try {
+        await ctx.editMessageText(
+          '❌ Impossible de charger les rendements.\n\n' +
+            '━━━━━━━━━━━━\n' +
+            '🔷 Arbitrum - Aave V3: USDC ~1.65%, USDT ~2.13%\n' +
+            '🟣 Solana - Kamino: USDC ~3.80%\n' +
+            '🟣 Solana - Jupiter: USDC ~5.20%, USDT ~4.80%\n' +
+            '━━━━━━━━━━━━\n' +
+            '_Ces taux sont approximatifs_',
+          { parse_mode: 'Markdown', ...mainMenuKeyboard() }
+        );
+      } catch (e) {}
+    }
+    return;
+  }
+
   const loadingMsg = await ctx.reply('📈 Chargement des rendements...');
 
   try {

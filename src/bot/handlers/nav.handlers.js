@@ -70,7 +70,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Hears: Envoyer
-  bot.hears(['📡 Envoyer', '💸 Envoyer'], async (ctx) => {
+  bot.hears(['💸 Envoyer', '📡 Envoyer'], async (ctx) => {
     const wallets = await storage.getWallets(ctx.chat.id);
     if (wallets.length === 0) return ctx.reply("❌ Tu n'as pas encore de wallet.");
     ctx.reply('📡 *Envoyer des fonds*\n\nDepuis quel wallet ?', {
@@ -80,7 +80,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Hears: Analyser
-  bot.hears(['🔎 Analyser', '🔍 Analyser'], async (ctx) => {
+  bot.hears(['🔍 Analyser', '🔎 Analyser'], async (ctx) => {
     sessions.setState(ctx.chat.id, 'ENTER_ADDRESS_ANALYZE');
     ctx.reply(
       "🔎 *Analyse d'adresse*\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE) pour voir son solde et tous ses tokens.",
@@ -91,8 +91,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     );
   });
 
-  // Hears: 🆕 Nouveau Wallet
-  bot.hears('🆕 Nouveau Wallet', async (ctx) => {
+  // Hears: ➕ Nouveau Wallet
+  bot.hears(['➕ Nouveau Wallet', '🆕 Nouveau Wallet'], async (ctx) => {
     ctx.reply('➕ *Créer un nouveau wallet*\n\nChoisis le réseau :', {
       parse_mode: 'Markdown',
       ...chainSelectionKeyboard('chain_'),
@@ -100,7 +100,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Hears: help buttons
-  bot.hears(['🆘 Help', '❓ Aide'], async (ctx) => {
+  bot.hears(['❓ Aide', '🆘 Help'], async (ctx) => {
     await ctx.reply(getFullHelpText(), {
       parse_mode: 'Markdown',
       ...mainMenuKeyboard(),

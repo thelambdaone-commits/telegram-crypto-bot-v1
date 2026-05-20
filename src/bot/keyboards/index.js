@@ -10,12 +10,10 @@ export * from './send.keyboards.js';
 // Core/Infrastructure Keyboards
 export function mainReplyKeyboard() {
   return Markup.keyboard([
-    ['💰 Mes Wallets', '📡 Envoyer'],
-    ['💵 Soldes', '🔎 Analyser'],
-    ['🆕 Nouveau Wallet', '🔐 Mes Clés'],
-    ['📊 Cours EUR', '🆘 Help'],
-    ['🏆 Staking Optimizer', "➕ Plus d'actions"],
-    ['❌ Fermer'],
+    ['💰 Mes Wallets', '💸 Envoyer'],
+    ['🔍 Analyser', '📊 Cours EUR'],
+    ['➕ Nouveau Wallet', '💵 Soldes'],
+    ['❓ Aide'],
   ]).resize();
 }
 
@@ -23,7 +21,7 @@ export function mainMenuKeyboard() {
   return Markup.inlineKeyboard([
     [
       Markup.button.callback('💰 Mes Wallets', CALLBACKS.LIST_WALLETS),
-      Markup.button.callback('📡 Envoyer', CALLBACKS.SEND_FUNDS),
+      Markup.button.callback('💸 Envoyer', CALLBACKS.SEND_FUNDS),
     ],
     [
       Markup.button.callback('💵 Soldes', CALLBACKS.VIEW_BALANCES),

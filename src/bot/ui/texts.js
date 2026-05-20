@@ -30,6 +30,7 @@ ${sectionTitle('📊', 'INFOS MARCHÉ')}
 
 ${sectionTitle('🆘', 'GÉNÉRAL')}
 \`/start\` — 🚀 Menu principal
+\`/menu\` — 🏠 Menu interactif (boutons inline)
 \`/help\` — ❓ Cette aide
 \`/learn\` — 📚 Leçon : Coin vs Token
 
@@ -73,7 +74,8 @@ ${sectionTitle('📚', 'ÉDUCATION')}
 \`/learn\` — 📖 Leçon : Coin vs Token
 
 ${sectionTitle('🆘', 'GÉNÉRAL')}
-\`/start\` — 🚀 Démarrer / Menu principal
+\`/start\` — 🚀 Démarrer
+\`/menu\` — 🏠 Menu interactif (boutons inline)
 \`/help\` — ❓ Cette aide
 
 💡 *Astuce :* Utilise les boutons du menu pour une navigation plus facile !

@@ -41,7 +41,7 @@ export function setupStakingHandlers(bot, storage, walletService, sessions) {
 
   bot.action('staking_menu', async (ctx) => {
     await safeAnswerCbQuery(ctx);
-    await handleStakeCommand(ctx, storage);
+    await handleStakeCommand(ctx, storage, { edit: true });
   });
 
   bot.action('liquid_staking_menu', async (ctx) => {

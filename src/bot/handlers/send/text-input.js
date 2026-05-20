@@ -5,6 +5,7 @@ import {
 } from '../../keyboards/index.js';
 import { detectChain } from '../../../shared/address-detector.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
+import { getTokenExplorerUrl } from '../../../shared/explorer.js';
 import { handleSendError } from './helpers.js';
 
 export function setupSendTextInput(bot, storage, walletService, sessions) {
@@ -109,14 +110,15 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
         text.startsWith('/') ||
         [
           '💰 Mes Wallets',
-          '📡 Envoyer',
           '💸 Envoyer',
           '💵 Soldes',
           '🔍 Analyser',
           '🔎 Analyser',
-          '🔐 Mes Clés',
           '📊 Cours EUR',
+          '❓ Aide',
           '🆘 Help',
+          '➕ Nouveau Wallet',
+          '🆕 Nouveau Wallet',
           "➕ Plus d'actions",
           '❌ Fermer',
           '👑 Admin',
@@ -173,8 +175,13 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
           if (unknownTokens.length > 0) {
             message += '\n📦 *Fallback Tokens:*\n';
             for (const token of unknownTokens) {
+              const tokenUrl = getTokenExplorerUrl(chain, token.mint);
               message += `${token.icon} *${token.symbol}:* ${token.amount.toFixed(token.decimals <= 6 ? 2 : 6)}\n`;
-              message += `   └ \`${token.mint}\`\n`;
+              if (tokenUrl) {
+                message += `   └ [🔗 Voir](${tokenUrl})\n`;
+              } else {
+                message += `   └ \`${token.mint}\`\n`;
+              }
             }
           }
         }
@@ -182,7 +189,7 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
         const { addressAnalyzedKeyboard } = await import('../../keyboards/index.js');
         ctx.reply(message, {
           parse_mode: 'Markdown',
-          ...addressAnalyzedKeyboard(chain),
+          ...addressAnalyzedKeyboard(chain, text),
         });
         sessions.setState(chatId, 'IDLE');
         logger.info('Address analysis completed', {

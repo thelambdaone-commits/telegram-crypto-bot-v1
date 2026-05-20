@@ -1,4 +1,4 @@
-import { mainReplyKeyboard } from '../../keyboards/index.js';
+import { mainMenuKeyboard, mainReplyKeyboard } from '../../keyboards/index.js';
 import { getFullHelpText } from '../../ui/index.js';
 
 export function setupInfoCommands(bot) {
@@ -7,6 +7,14 @@ export function setupInfoCommands(bot) {
     await ctx.reply(getFullHelpText(), {
       parse_mode: 'Markdown',
       ...mainReplyKeyboard(),
+    });
+  });
+
+  // 🏠 /menu - Menu principal interactif (inline)
+  bot.command('menu', async (ctx) => {
+    await ctx.reply('🏠 *Menu Principal*', {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
     });
   });
 
