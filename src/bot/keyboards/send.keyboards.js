@@ -1,5 +1,6 @@
 import { Markup } from 'telegraf';
 import { CALLBACKS } from '../constants/callbacks.js';
+import { getAddressExplorerUrl, getExplorerName } from '../../shared/explorer.js';
 
 export function feeSelectionKeyboard(recommendedLevel = 'slow') {
   return Markup.inlineKeyboard([
@@ -67,10 +68,22 @@ export function quickAmountKeyboard() {
   ]);
 }
 
-export function addressAnalyzedKeyboard(chain) {
-  return Markup.inlineKeyboard([
+export function addressAnalyzedKeyboard(chain, address) {
+  const buttons = [];
+
+  if (address) {
+    const url = getAddressExplorerUrl(chain, address);
+    if (url) {
+      const name = getExplorerName(chain);
+      buttons.push([Markup.button.url(`🔗 Voir sur ${name}`, url)]);
+    }
+  }
+
+  buttons.push(
     [Markup.button.callback('📤 Envoyer a cette adresse', `send_to_analyzed_${chain}`)],
     [Markup.button.callback('🔍 Analyser une autre adresse', CALLBACKS.ANALYZE_ADDRESS)],
     [Markup.button.callback('↩️ Retour au menu', CALLBACKS.BACK_TO_MENU)],
-  ]);
+  );
+
+  return Markup.inlineKeyboard(buttons);
 }
