@@ -140,7 +140,9 @@ export class StakingService {
         return result;
       }
     } catch (error) {
-      logger.logError(error, { context: 'staking.getKaminoApy' });
+      logger.warn('Kamino APY unavailable, using fallback estimate', {
+        error: error.message,
+      });
     }
 
     const result = { USDC: { apy: '3.80', symbol: 'USDC' } };

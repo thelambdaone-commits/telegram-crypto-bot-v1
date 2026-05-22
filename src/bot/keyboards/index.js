@@ -39,9 +39,7 @@ export function mainMenuKeyboard() {
       Markup.button.callback('🏆 Staking Optimizer', CALLBACKS.STAKING_OPTIMIZER),
       Markup.button.callback("➕ Plus d'actions", CALLBACKS.PLUS_ACTIONS),
     ],
-    [
-      Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MENU),
-    ],
+    [Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MENU)],
   ]);
 }
 
@@ -59,10 +57,7 @@ export function advancedActionsKeyboard() {
       Markup.button.callback('🔄 Curve LP', CALLBACKS.CURVE_LP_MENU),
       Markup.button.callback('💧 Liquid Staking', CALLBACKS.LIQUID_STAKING_MENU),
     ],
-    [
-      Markup.button.callback('📊 Cours EUR', CALLBACKS.PRICES_EUR),
-      Markup.button.callback('🧹 Dust Keeper', CALLBACKS.DUST_ANALYSIS),
-    ],
+    [Markup.button.callback('🧹 Dust Keeper', CALLBACKS.DUST_ANALYSIS)],
     [
       Markup.button.callback('🎯 Polymarket', CALLBACKS.PM_MENU_REFRESH),
       Markup.button.callback('🔥 Burn SOL', CALLBACKS.BURN_TOKENS),

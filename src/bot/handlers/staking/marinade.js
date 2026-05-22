@@ -9,16 +9,21 @@ import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
+import {
+  getPreferredStakingWallet,
+  getSolWallets,
+  setPreferredStakingWallet,
+  stakingWalletSelectionKeyboard,
+} from './wallet-selection.js';
 
-export function setupMarinadeHandlers(bot, storage, _walletService) {
+export function setupMarinadeHandlers(bot, storage, _walletService, sessions) {
   // Show Marinade staking menu
   bot.action('marinade_staking', async (ctx) => {
     await safeAnswerCbQuery(ctx);
 
     try {
       const chatId = ctx.chat.id;
-      const wallets = await storage.getWallets(chatId);
-      const solWallets = wallets.filter((w) => w.chain === 'sol');
+      const solWallets = await getSolWallets(storage, chatId);
 
       if (solWallets.length === 0) {
         return ctx.editMessageText(
@@ -27,7 +32,24 @@ export function setupMarinadeHandlers(bot, storage, _walletService) {
         );
       }
 
-      const solWallet = solWallets[0];
+      const solWallet = await getPreferredStakingWallet(storage, sessions, chatId, solWallets);
+      if (!solWallet) {
+        return ctx.editMessageText(
+          '🥈 *Marinade - Sélection du Wallet*\n\n' +
+            'Choisissez le wallet Solana à utiliser. Le wallet marqué ⭐ sera repris automatiquement ensuite.',
+          {
+            parse_mode: 'Markdown',
+            ...stakingWalletSelectionKeyboard({
+              wallets: solWallets,
+              activeWalletId: sessions?.getData(chatId)?.stakingWalletId,
+              callbackPrefix: 'marinade_select_wallet',
+              backCallback: 'liquid_staking_menu',
+            }),
+          }
+        );
+      }
+
+      await setPreferredStakingWallet(storage, sessions, chatId, solWallet.id);
 
       // Get mSOL balance
       const balanceResult = await MarinadeService.getBalance(solWallet.address);
@@ -46,20 +68,29 @@ export function setupMarinadeHandlers(bot, storage, _walletService) {
       const symbol = tokenLabel;
 
       // Build menu
-      const keyboard = Markup.inlineKeyboard([
+      const keyboardRows = [
         [Markup.button.callback(`🔄 SOL → ${tokenLabel}`, `marinade_enter_${solWallet.id}`)],
         [
           Markup.button.callback('⚡ Sortie rapide', `marinade_exit_fast_${solWallet.id}`),
           Markup.button.callback('⏳ Sortie standard', `marinade_exit_standard_${solWallet.id}`),
         ],
-        [Markup.button.callback('↩️ Retour', 'liquid_staking_menu')],
-      ]);
+      ];
+
+      if (solWallets.length > 1) {
+        keyboardRows.push([
+          Markup.button.callback('⭐ Changer wallet', 'marinade_wallet_selection'),
+        ]);
+      }
+
+      keyboardRows.push([Markup.button.callback('↩️ Retour', 'liquid_staking_menu')]);
+      const keyboard = Markup.inlineKeyboard(keyboardRows);
 
       await ctx.editMessageText(
         '🥈 *Marinade*\n\n' +
           `💰 Solde ${tokenLabel} : *${mSolBalance.toFixed(4)} ${symbol}*\n` +
           `💶 Valeur : ${formatEUR(mSolValueEUR)}\n` +
-          `📊 APY estimee : *${apy}*\n\n` +
+          `📊 APY estimée : *${apy}*\n` +
+          `⭐ Wallet : \`${solWallet.label || solWallet.address.slice(0, 8)}...\`\n\n` +
           '_Sortie rapide : swap immediate vers SOL (via Jupiter)\n' +
           'Sortie standard : delayed unstake avec claim necessaire_',
         {
@@ -76,9 +107,47 @@ export function setupMarinadeHandlers(bot, storage, _walletService) {
     }
   });
 
+  bot.action('marinade_wallet_selection', async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    const chatId = ctx.chat.id;
+    const solWallets = await getSolWallets(storage, chatId);
+    const activeWallet = await getPreferredStakingWallet(storage, sessions, chatId, solWallets);
+
+    await ctx.editMessageText(
+      '⭐ *Wallet Solana actif*\n\n' +
+        'Choisissez le wallet à utiliser pour JitoSOL et Marinade. Le wallet actif est marqué ⭐.',
+      {
+        parse_mode: 'Markdown',
+        ...stakingWalletSelectionKeyboard({
+          wallets: solWallets,
+          activeWalletId: activeWallet?.id,
+          callbackPrefix: 'marinade_select_wallet',
+          backCallback: 'marinade_staking',
+        }),
+      }
+    );
+  });
+
+  bot.action(/^marinade_select_wallet_(.+)$/, async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    const chatId = ctx.chat.id;
+    await setPreferredStakingWallet(storage, sessions, chatId, ctx.match[1]);
+
+    await ctx.editMessageText(
+      '✅ *Wallet actif mis à jour*\n\nIl sera utilisé automatiquement pour JitoSOL et Marinade.',
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('➡️ Retour au Menu Marinade', 'marinade_staking')],
+        ]),
+      }
+    );
+  });
+
   // Enter Marinade (SOL -> mSOL)
   bot.action(/^marinade_enter_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
+    await setPreferredStakingWallet(storage, sessions, ctx.chat.id, ctx.match[1]);
 
     await ctx.editMessageText(
       '🔄 *Sol -> Marinade (mSOL)*\n\n' +
@@ -91,6 +160,7 @@ export function setupMarinadeHandlers(bot, storage, _walletService) {
   // Exit Fast (mSOL -> SOL swap)
   bot.action(/^marinade_exit_fast_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
+    await setPreferredStakingWallet(storage, sessions, ctx.chat.id, ctx.match[1]);
 
     await ctx.editMessageText(
       '⚡ *Sortie rapide - mSOL -> SOL*\n\n' +
@@ -104,6 +174,7 @@ export function setupMarinadeHandlers(bot, storage, _walletService) {
   // Exit Standard (delayed unstake)
   bot.action(/^marinade_exit_standard_(.+)$/, async (ctx) => {
     await safeAnswerCbQuery(ctx);
+    await setPreferredStakingWallet(storage, sessions, ctx.chat.id, ctx.match[1]);
 
     await ctx.editMessageText(
       '⏳ *Sortie standard - mSOL -> SOL*\n\n' +

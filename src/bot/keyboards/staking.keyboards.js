@@ -13,6 +13,7 @@ export function liquidStakingKeyboard() {
       Markup.button.callback('🥇 JitoSOL', CALLBACKS.JITO_STAKING),
       Markup.button.callback('🥈 Marinade', CALLBACKS.MARINADE_STAKING),
     ],
+    [Markup.button.callback('⭐ Changer wallet', 'staking_wallet_selection')],
     [Markup.button.callback('↩️ Retour', CALLBACKS.STAKING_MENU)],
   ]);
 }
@@ -65,7 +66,10 @@ export function jitoUnstakeStatusKeyboard(requestId, canClaim = false, hasAddres
 
   if (!hasAddress) {
     buttons.push([
-      Markup.button.callback('🔍 Recherche automatique', dynamicCallback.jitoUnstakeAutoRepair(requestId)),
+      Markup.button.callback(
+        '🔍 Recherche automatique',
+        dynamicCallback.jitoUnstakeAutoRepair(requestId)
+      ),
     ]);
     buttons.push([
       Markup.button.callback(
@@ -74,7 +78,10 @@ export function jitoUnstakeStatusKeyboard(requestId, canClaim = false, hasAddres
       ),
     ]);
     buttons.push([
-      Markup.button.callback('🗑 Supprimer cette demande', dynamicCallback.jitoUnstakeDelete(requestId)),
+      Markup.button.callback(
+        '🗑 Supprimer cette demande',
+        dynamicCallback.jitoUnstakeDelete(requestId)
+      ),
     ]);
   }
 
@@ -107,7 +114,12 @@ export function aaveTokenKeyboard(action, chainId) {
   const buttons = Object.keys(chain?.tokens || {}).map((symbol) => [
     Markup.button.callback(symbol, dynamicCallback.aaveToken(action, chainId, symbol)),
   ]);
-  buttons.push([Markup.button.callback('↩️ Retour', action === 'deposit' ? CALLBACKS.AAVE_DEPOSIT_MENU : CALLBACKS.AAVE_WITHDRAW_MENU)]);
+  buttons.push([
+    Markup.button.callback(
+      '↩️ Retour',
+      action === 'deposit' ? CALLBACKS.AAVE_DEPOSIT_MENU : CALLBACKS.AAVE_WITHDRAW_MENU
+    ),
+  ]);
   return Markup.inlineKeyboard(buttons);
 }
 
@@ -148,10 +160,20 @@ export function ethStakingProtocolKeyboard(protocolId, canDeposit = true) {
   const provider = getEthStakingProviders().find((item) => item.id === protocolId);
   const depositAllowed = canDeposit && provider?.directDepositEnabled !== false;
   if (depositAllowed) {
-    buttons.push([Markup.button.callback('📥 Staker ETH', dynamicCallback.ethStakeAction('deposit', protocolId))]);
+    buttons.push([
+      Markup.button.callback(
+        '📥 Staker ETH',
+        dynamicCallback.ethStakeAction('deposit', protocolId)
+      ),
+    ]);
   }
   if (provider?.directWithdrawEnabled !== false) {
-    buttons.push([Markup.button.callback('📤 Retirer / unwrap', dynamicCallback.ethStakeAction('withdraw', protocolId))]);
+    buttons.push([
+      Markup.button.callback(
+        '📤 Retirer / unwrap',
+        dynamicCallback.ethStakeAction('withdraw', protocolId)
+      ),
+    ]);
   }
   buttons.push([Markup.button.callback('↩️ Retour', CALLBACKS.ETH_STAKING_MENU)]);
   return Markup.inlineKeyboard(buttons);
@@ -164,7 +186,9 @@ export function ethStakingWalletKeyboard(action, protocolId, wallets) {
       dynamicCallback.ethStakeWallet(action, protocolId, wallet.id)
     ),
   ]);
-  buttons.push([Markup.button.callback('↩️ Retour', dynamicCallback.ethStakeAction('menu', protocolId))]);
+  buttons.push([
+    Markup.button.callback('↩️ Retour', dynamicCallback.ethStakeAction('menu', protocolId)),
+  ]);
   return Markup.inlineKeyboard(buttons);
 }
 

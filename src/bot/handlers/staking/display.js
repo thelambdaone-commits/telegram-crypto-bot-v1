@@ -3,6 +3,7 @@ import { JitoService } from '../../../modules/staking/jito.js';
 import { ethLstProvider } from '../../../modules/staking/providers/registry.js';
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { stakingHubKeyboard } from '../../keyboards/staking.keyboards.js';
+import { safeEditMessage } from '../../../shared/utils/telegram.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
 import { formatAmountShort as formatAmount } from '../../../shared/formatters.js';
@@ -177,7 +178,7 @@ async function handleStakeCommand(ctx, _storage, { edit = false } = {}) {
       text += '_pour calculer avec votre propre montant_\n';
       text += '_ou /yield pour voir vos positions_';
 
-      await ctx.editMessageText(text, {
+      await safeEditMessage(ctx, text, {
         parse_mode: 'Markdown',
         ...stakingHubKeyboard(),
       });
@@ -254,7 +255,9 @@ async function handleYieldCommand(ctx, storage, _walletService) {
 
   try {
     const wallets = await storage.getWallets(chatId);
-    const evmWallets = wallets.filter((w) => ['eth', 'arb', 'matic', 'op', 'base'].includes(w.chain));
+    const evmWallets = wallets.filter((w) =>
+      ['eth', 'arb', 'matic', 'op', 'base'].includes(w.chain)
+    );
     const solWallets = wallets.filter((w) => w.chain === 'sol');
 
     let text = '📊 *Mes Positions de Staking*\n\n';
@@ -288,7 +291,10 @@ async function handleYieldCommand(ctx, storage, _walletService) {
             hasPositions = true;
           }
         } catch (e) {
-          logger.warn('Failed to fetch Aave position', { walletAddress: wallet.address, error: e.message });
+          logger.warn('Failed to fetch Aave position', {
+            walletAddress: wallet.address,
+            error: e.message,
+          });
         }
       }
 
@@ -341,7 +347,10 @@ async function handleYieldCommand(ctx, storage, _walletService) {
             hasPositions = true;
           }
         } catch (e) {
-          logger.warn('Failed to fetch Kamino position', { walletAddress: wallet.address, error: e.message });
+          logger.warn('Failed to fetch Kamino position', {
+            walletAddress: wallet.address,
+            error: e.message,
+          });
         }
 
         try {
@@ -355,7 +364,10 @@ async function handleYieldCommand(ctx, storage, _walletService) {
             hasPositions = true;
           }
         } catch (e) {
-          logger.warn('Failed to fetch Jupiter position', { walletAddress: wallet.address, error: e.message });
+          logger.warn('Failed to fetch Jupiter position', {
+            walletAddress: wallet.address,
+            error: e.message,
+          });
         }
 
         try {
@@ -372,7 +384,10 @@ async function handleYieldCommand(ctx, storage, _walletService) {
             hasPositions = true;
           }
         } catch (e) {
-          logger.warn('Failed to fetch Jito balance', { walletAddress: wallet.address, error: e.message });
+          logger.warn('Failed to fetch Jito balance', {
+            walletAddress: wallet.address,
+            error: e.message,
+          });
         }
       }
 

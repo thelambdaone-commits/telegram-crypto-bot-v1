@@ -1,9 +1,20 @@
 import { Markup } from 'telegraf';
 import { JitoService } from '../../../../modules/staking/jito.js';
-import { mainMenuKeyboard, stakingExitKeyboard, jitoWithdrawalKeyboard, jitoStandardExitKeyboard } from '../../../keyboards/index.js';
+import {
+  mainMenuKeyboard,
+  stakingExitKeyboard,
+  jitoWithdrawalKeyboard,
+  jitoStandardExitKeyboard,
+} from '../../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../../utils.js';
 import { formatEUR, getPricesEUR } from '../../../../shared/price.js';
 import { formatAmount } from '../../../../shared/formatters.js';
+import {
+  getPreferredStakingWallet,
+  getSolWallets,
+  setPreferredStakingWallet,
+  stakingWalletSelectionKeyboard,
+} from '../wallet-selection.js';
 
 export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions) {
   bot.action(/^jito_exit_fast_(.+)$/, async (ctx) => {
@@ -12,8 +23,7 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
     const action = ctx.match[1];
 
     if (action === 'select') {
-      const wallets = await storage.getWallets(chatId);
-      const solWallets = wallets.filter((w) => w.chain === 'sol');
+      const solWallets = await getSolWallets(storage, chatId);
 
       if (solWallets.length === 0) {
         return ctx.editMessageText("❌ Tu n'as pas de wallet Solana.", {
@@ -22,14 +32,10 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
         });
       }
 
-      const sessionWalletId = sessions.getData(chatId)?.stakingWalletId;
-      let solWallet = sessionWalletId ? solWallets.find((w) => w.id === sessionWalletId) : null;
-
-      if (!solWallet && solWallets.length === 1) {
-        solWallet = solWallets[0];
-      }
+      const solWallet = await getPreferredStakingWallet(storage, sessions, chatId, solWallets);
 
       if (solWallet) {
+        await setPreferredStakingWallet(storage, sessions, chatId, solWallet.id);
         const balanceResult = await JitoService.getBalance(solWallet.address);
         const jitoBalance = balanceResult.success ? balanceResult.balance : 0;
         const prices = await getPricesEUR();
@@ -65,22 +71,24 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
         );
       }
 
-      const buttons = solWallets.map((w) => [
-        Markup.button.callback(
-          `${w.label || w.address.slice(0, 8)}...`,
-          `jito_wallet_exit_${w.id}`
-        ),
-      ]);
-      buttons.push([Markup.button.callback('↩️ Retour', 'jito_staking')]);
-
-      await ctx.editMessageText('⚡ *Convertir JitoSOL → SOL*\n\nSélectionne ton wallet Solana :', {
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard(buttons),
-      });
+      await ctx.editMessageText(
+        '⚡ *Convertir JitoSOL → SOL*\n\n' +
+          'Sélectionne ton wallet Solana. Il restera actif pour les prochaines opérations :',
+        {
+          parse_mode: 'Markdown',
+          ...stakingWalletSelectionKeyboard({
+            wallets: solWallets,
+            activeWalletId: sessions.getData(chatId)?.stakingWalletId,
+            callbackPrefix: 'jito_wallet_exit',
+            backCallback: 'jito_staking',
+          }),
+        }
+      );
       return;
     }
 
     const walletId = ctx.match[1];
+    await setPreferredStakingWallet(storage, sessions, chatId, walletId);
     const wallet = await storage.getWalletWithKey(chatId, walletId);
     const balanceResult = await JitoService.getBalance(wallet.address);
     const jitoBalance = balanceResult.success ? balanceResult.balance : 0;
@@ -122,6 +130,7 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
     const chatId = ctx.chat.id;
     const walletId = ctx.match[1];
 
+    await setPreferredStakingWallet(storage, sessions, chatId, walletId);
     const wallet = await storage.getWalletWithKey(chatId, walletId);
     if (!wallet) {
       return ctx.editMessageText('❌ Wallet non trouvé.', mainMenuKeyboard());
@@ -168,7 +177,7 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
       '💸 *Retrait JitoSOL*\n\n' +
         'Choisissez votre mode de retrait :\n\n' +
         '⚡ *Rapide* (Swap) : Immédiat, frais de swap (~0.1-0.3%).\n' +
-        "⏳ *Standard* (Unstake) : Sans frais, délai de 2-3 jours (fin d'epoch).",
+        "⏳ *Standard* (Unstake) : Pas de frais de swap, frais réseau minimes, délai de 2-3 jours (fin d'epoch).",
       { parse_mode: 'Markdown', ...jitoWithdrawalKeyboard() }
     );
   });
@@ -177,8 +186,7 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
     await safeAnswerCbQuery(ctx);
     const chatId = ctx.chat.id;
 
-    const wallets = await storage.getWallets(chatId);
-    const solWallets = wallets.filter((w) => w.chain === 'sol');
+    const solWallets = await getSolWallets(storage, chatId);
 
     if (solWallets.length === 0) {
       return ctx.editMessageText("❌ Tu n'as pas de wallet Solana.", {
@@ -187,22 +195,19 @@ export function setupJitoWithdrawHandlers(bot, storage, walletService, sessions)
       });
     }
 
-    const sessionWalletId = sessions.getData(chatId)?.stakingWalletId;
-    let solWallet = sessionWalletId ? solWallets.find((w) => w.id === sessionWalletId) : null;
+    const solWallet = await getPreferredStakingWallet(storage, sessions, chatId, solWallets);
 
     if (!solWallet) {
-      if (solWallets.length === 1) {
-        solWallet = solWallets[0];
-      } else {
-        return ctx.editMessageText(
-          "💳 *Veuillez d'abord sélectionner un wallet* dans le menu JitoSOL principal.",
-          {
-            parse_mode: 'Markdown',
-            ...Markup.inlineKeyboard([[Markup.button.callback('↩️ Retour', 'jito_staking')]]),
-          }
-        );
-      }
+      return ctx.editMessageText(
+        "💳 *Veuillez d'abord sélectionner un wallet* dans le menu JitoSOL principal.",
+        {
+          parse_mode: 'Markdown',
+          ...Markup.inlineKeyboard([[Markup.button.callback('↩️ Retour', 'jito_staking')]]),
+        }
+      );
     }
+
+    await setPreferredStakingWallet(storage, sessions, chatId, solWallet.id);
 
     const balanceResult = await JitoService.getBalance(solWallet.address);
     const jitoBalance = balanceResult.success ? balanceResult.balance : 0;

@@ -6,6 +6,13 @@ import { formatEUR, getPricesEUR } from '../../../../shared/price.js';
 import { logger } from '../../../../shared/logger.js';
 import { syncJitoUnstakes } from './sync.js';
 import { sendWalletKeysFile } from '../../wallet/key-file.js';
+import {
+  formatStakingWalletLabel,
+  getPreferredStakingWallet,
+  getSolWallets,
+  setPreferredStakingWallet,
+  stakingWalletSelectionKeyboard,
+} from '../wallet-selection.js';
 
 async function sendJitoWalletKeys(ctx, storage, chatId, walletId) {
   const wallet = await storage.getWalletWithKey(chatId, walletId);
@@ -22,8 +29,7 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
 
     try {
       const chatId = ctx.chat.id;
-      const wallets = await storage.getWallets(chatId);
-      const solWallets = wallets.filter((w) => w.chain === 'sol');
+      const solWallets = await getSolWallets(storage, chatId);
 
       if (solWallets.length === 0) {
         return ctx.editMessageText(
@@ -32,31 +38,26 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
         );
       }
 
-      const solWalletId = sessions.getData(chatId)?.stakingWalletId;
-      let solWallet;
-
-      if (solWalletId) {
-        solWallet = solWallets.find((w) => w.id === solWalletId);
-      }
+      let solWallet = await getPreferredStakingWallet(storage, sessions, chatId, solWallets);
 
       if (!solWallet) {
         if (solWallets.length > 1) {
-          const buttons = solWallets.map((w) => [
-            Markup.button.callback(
-              `${w.label || w.address.slice(0, 8)}...`,
-              `jito_select_wallet_${w.id}`
-            ),
-          ]);
-          buttons.push([Markup.button.callback('↩️ Retour', 'liquid_staking_menu')]);
-
           return ctx.editMessageText(
             '💎 *JitoSOL - Sélection du Wallet*\n\n' +
-              'Plusieurs wallets Solana détectés. Lequel souhaitez-vous utiliser ?',
-            { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
+              'Choisissez le wallet Solana à utiliser. Le wallet marqué ⭐ sera repris automatiquement ensuite.',
+            {
+              parse_mode: 'Markdown',
+              ...stakingWalletSelectionKeyboard({
+                wallets: solWallets,
+                activeWalletId: sessions.getData(chatId)?.stakingWalletId,
+                callbackPrefix: 'jito_select_wallet',
+                backCallback: 'liquid_staking_menu',
+              }),
+            }
           );
         }
         solWallet = solWallets[0];
-        sessions.updateData(chatId, { stakingWalletId: solWallet.id });
+        await setPreferredStakingWallet(storage, sessions, chatId, solWallet.id);
         await sendJitoWalletKeys(ctx, storage, chatId, solWallet.id);
       }
 
@@ -64,8 +65,6 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
       const jitoBalance = balanceResult.success ? balanceResult.balance : 0;
       const rateSol = balanceResult.success ? balanceResult.rateSol : 1.127;
       const valueSOL = jitoBalance * rateSol;
-      const initialSOL = jitoBalance;
-      const gainsSOL = valueSOL - initialSOL;
 
       const apyResult = await JitoService.getApy();
       const apy = apyResult.success ? `${apyResult.apy.toFixed(2)}%` : 'N/A';
@@ -73,7 +72,6 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
       const prices = await getPricesEUR();
       const solPrice = prices.sol || 0;
       const jitoValueEUR = valueSOL * solPrice;
-      const gainsEUR = gainsSOL * solPrice;
 
       const keyboardRows = [
         [Markup.button.callback('🔄 Déposer (SOL → JitoSOL)', 'jito_enter_select')],
@@ -96,9 +94,7 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
       }
 
       if (solWallets.length > 1) {
-        keyboardRows.push([
-          Markup.button.callback('💳 Changer de wallet', 'jito_wallet_selection'),
-        ]);
+        keyboardRows.push([Markup.button.callback('⭐ Changer wallet', 'jito_wallet_selection')]);
       }
 
       keyboardRows.push([Markup.button.callback('↩️ Retour', 'liquid_staking_menu')]);
@@ -109,17 +105,14 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
         '🥇 *JitoSOL - Liquid Staking*\n' +
           '━━━━━━━━━━━━\n' +
           `💰 *Solde* : \`${jitoBalance.toFixed(6)}\` JitoSOL\n` +
-          `📊 *Valeur* : \`${valueSOL.toFixed(6)}\` SOL\n` +
+          `📊 *Équivalent* : \`${valueSOL.toFixed(6)}\` SOL\n` +
           `💶 *Estimation* : \`${formatEUR(jitoValueEUR)}\`\n` +
-          '━━━━━━━━━━━━\n' +
-          '📈 *Performances*\n' +
-          `Gain Total : \`+${gainsSOL.toFixed(6)}\` SOL\n` +
-          `Yield (est.) : \`+${formatEUR(gainsEUR)}\`\n` +
           '━━━━━━━━━━━━\n' +
           '📊 *Détails Techniques*\n' +
           `Taux : \`1 JitoSOL = ${rateSol.toFixed(4)} SOL\`\n` +
           `APY Actuel : *${apy}*\n\n` +
-          '_Le rendement est automatiquement ajouté à la valeur du token (LST)._',
+          `⭐ Wallet : \`${solWallet.label || solWallet.address.slice(0, 8)}...\`\n\n` +
+          '_Le solde est en JitoSOL. L’équivalent SOL est calculé avec le taux actuel. Le gain personnel nécessite l’historique du dépôt._',
         {
           parse_mode: 'Markdown',
           ...keyboard,
@@ -140,20 +133,21 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
   bot.action('jito_wallet_selection', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     const chatId = ctx.chat.id;
-    const wallets = await storage.getWallets(chatId);
-    const solWallets = wallets.filter((w) => w.chain === 'sol');
-
-    const buttons = solWallets.map((w) => [
-      Markup.button.callback(
-        `${w.label || w.address.slice(0, 8)}...`,
-        `jito_select_wallet_${w.id}`
-      ),
-    ]);
-    buttons.push([Markup.button.callback('↩️ Retour', 'jito_staking')]);
+    const solWallets = await getSolWallets(storage, chatId);
+    const activeWallet = await getPreferredStakingWallet(storage, sessions, chatId, solWallets);
 
     await ctx.editMessageText(
-      '💳 *Sélection du Wallet Solana*\n\nChoisissez le wallet à utiliser pour JitoSOL :',
-      { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
+      '⭐ *Wallet Solana actif*\n\n' +
+        'Choisissez le wallet à utiliser pour JitoSOL et Marinade. Le wallet actif est marqué ⭐.',
+      {
+        parse_mode: 'Markdown',
+        ...stakingWalletSelectionKeyboard({
+          wallets: solWallets,
+          activeWalletId: activeWallet?.id,
+          callbackPrefix: 'jito_select_wallet',
+          backCallback: 'jito_staking',
+        }),
+      }
     );
   });
 
@@ -162,11 +156,15 @@ export function setupJitoMenuHandlers(bot, storage, walletService, sessions) {
     const chatId = ctx.chat.id;
     const walletId = ctx.match[1];
 
-    sessions.setData(chatId, { ...sessions.getData(chatId), stakingWalletId: walletId });
+    await setPreferredStakingWallet(storage, sessions, chatId, walletId);
     await sendJitoWalletKeys(ctx, storage, chatId, walletId);
+    const wallet = await storage.getWalletById(chatId, walletId);
+    const walletLabel = wallet ? formatStakingWalletLabel(wallet) : `Wallet ${walletId}`;
 
     await ctx.editMessageText(
-      '✅ *Wallet sélectionné*\n\nLe bot va maintenant utiliser ce wallet pour JitoSOL.',
+      '✅ *Wallet actif mis à jour*\n\n' +
+        `⭐ ${walletLabel}\n\n` +
+        'Il sera utilisé automatiquement pour JitoSOL et Marinade.',
       {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([

@@ -7,9 +7,7 @@ import { Markup } from 'telegraf';
 import { JitoService } from '../../../modules/staking/jito.js';
 import { aaveProvider, ethLstProvider } from '../../../modules/staking/providers/registry.js';
 import { getAaveChain, getEthStakingProvider } from '../../../core/staking.config.js';
-import {
-  mainMenuKeyboard,
-} from '../../keyboards/index.js';
+import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery } from '../../utils.js';
 import {
   dailyVolumeCheck,
@@ -191,7 +189,9 @@ async function handleEthStakeAmount(ctx, text, storage, walletService, sessions,
     );
 
     const title = action === 'deposit' ? '⚡ Stake ETH' : '📤 Retrait ETH staking';
-    const amountLabel = isMax ? `Tout le solde ${protocol.receiptToken}` : `${formatAmount(amount)} ${action === 'deposit' ? 'ETH' : protocol.receiptToken}`;
+    const amountLabel = isMax
+      ? `Tout le solde ${protocol.receiptToken}`
+      : `${formatAmount(amount)} ${action === 'deposit' ? 'ETH' : protocol.receiptToken}`;
 
     await ctx.reply(
       `${title}\n\n` +
@@ -292,7 +292,10 @@ async function handleAaveAmount(ctx, text, storage, walletService, sessions, act
   if (!chain || !tokenSymbol || !walletId) {
     sessions.clearState(chatId);
     sessions.clearData(chatId);
-    return ctx.reply('❌ Session Aave expirée. Recommence depuis le menu staking.', mainMenuKeyboard());
+    return ctx.reply(
+      '❌ Session Aave expirée. Recommence depuis le menu staking.',
+      mainMenuKeyboard()
+    );
   }
 
   const cleaned = text.trim().replace(',', '.').toLowerCase();
@@ -337,11 +340,16 @@ async function handleAaveAmount(ctx, text, storage, walletService, sessions, act
       max: isMax,
       quote,
     });
-    sessions.setState(chatId, action === 'deposit' ? 'AAVE_DEPOSIT_CONFIRM' : 'AAVE_WITHDRAW_CONFIRM');
+    sessions.setState(
+      chatId,
+      action === 'deposit' ? 'AAVE_DEPOSIT_CONFIRM' : 'AAVE_WITHDRAW_CONFIRM'
+    );
 
     const title = action === 'deposit' ? '📥 Dépôt Aave V3' : '📤 Retrait Aave V3';
     const actionLabel = action === 'deposit' ? 'déposer' : 'retirer';
-    const amountLabel = isMax ? `Tout le solde ${tokenSymbol}` : `${formatAmount(amount)} ${tokenSymbol}`;
+    const amountLabel = isMax
+      ? `Tout le solde ${tokenSymbol}`
+      : `${formatAmount(amount)} ${tokenSymbol}`;
 
     await ctx.reply(
       `${title}\n\n` +
@@ -353,7 +361,12 @@ async function handleAaveAmount(ctx, text, storage, walletService, sessions, act
       {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
-          [Markup.button.callback('✅ Confirmer', action === 'deposit' ? 'confirm_aave_deposit' : 'confirm_aave_withdraw')],
+          [
+            Markup.button.callback(
+              '✅ Confirmer',
+              action === 'deposit' ? 'confirm_aave_deposit' : 'confirm_aave_withdraw'
+            ),
+          ],
           [Markup.button.callback('❌ Annuler', 'cancel_staking')],
         ]),
       }
@@ -458,14 +471,14 @@ async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService
 
   try {
     const prices = await getPricesEUR();
-    const jitoPriceEur = prices.jitosol || prices.sol || 0;
+    const solPriceEur = prices.sol || 0;
 
     const quote = await JitoService.quoteExitFast(amount);
     const feeSOL = quote.fee || 0.000005;
     const priceImpact = quote.priceImpact !== undefined ? quote.priceImpact : 0;
     const amountOut = quote.amountOut || amount;
     const minReceived = quote.minReceived || amountOut * 0.995;
-    const estimatedValueEUR = amountOut * jitoPriceEur;
+    const estimatedValueEUR = amountOut * solPriceEur;
 
     sessions.updateData(chatId, {
       amount: amount,
@@ -490,10 +503,10 @@ async function handleJitoExitQuickAmount(ctx, percentage, storage, walletService
         [Markup.button.callback('❌ Annuler', 'jito_staking')],
       ]),
     });
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoExitQuickAmount', chatId });
-      ctx.reply('❌ Erreur : ' + error.message, mainMenuKeyboard());
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoExitQuickAmount', chatId });
+    ctx.reply('❌ Erreur : ' + error.message, mainMenuKeyboard());
+  }
 }
 
 async function handleJitoEnterAmount(ctx, text, storage, walletService, sessions) {
@@ -566,14 +579,14 @@ async function handleJitoEnterAmount(ctx, text, storage, walletService, sessions
         "Le montant reçu peut varier légèrement au moment de l'exécution.",
       { parse_mode: 'Markdown', ...keyboard }
     );
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoEnterAmount', chatId });
-      await ctx.reply(`❌ Erreur: ${error.message}`, {
-        parse_mode: 'Markdown',
-        ...mainMenuKeyboard(),
-      });
-      sessions.clearState(chatId);
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoEnterAmount', chatId });
+    await ctx.reply(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+    sessions.clearState(chatId);
+  }
 }
 
 async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
@@ -632,14 +645,14 @@ async function handleJitoEnterConfirm(ctx, storage, walletService, sessions) {
     sessions.clearData(chatId);
     sessions.clearState(chatId);
     await recordDailyVolume(storage, chatId, amount, 'sol');
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoEnterConfirm', chatId });
-      await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
-        parse_mode: 'Markdown',
-        ...mainMenuKeyboard(),
-      });
-      sessions.clearState(chatId);
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoEnterConfirm', chatId });
+    await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+    sessions.clearState(chatId);
+  }
 }
 
 async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessions) {
@@ -656,32 +669,28 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     }
 
     const cleanedText = text.trim().replace(',', '.');
+    const isFiatInput = cleanedText.includes('€') || cleanedText.includes('$');
     const prices = await getPricesEUR();
-    const jitoPriceEur = prices.jitosol || prices.sol || 0;
+    const solPriceEur = prices.sol || 0;
+    const jitoPriceEur = prices.jitosol || solPriceEur || 0;
 
     let amount = 0;
     let inputLabel = '';
 
-    // Check for EUR input (e.g., "10€", "10 €", "10")
-    if (cleanedText.includes('€') || !cleanedText.includes('%')) {
+    // Check for EUR input (e.g., "10€", "10 €", "$10")
+    if (isFiatInput) {
       const eurMatch = cleanedText.replace(/[€$]/g, '').trim();
       const eurAmount = parseFloat(eurMatch);
 
-      if (!isNaN(eurAmount) && eurAmount > 0 && !cleanedText.includes('%')) {
+      if (!isNaN(eurAmount) && eurAmount > 0 && jitoPriceEur > 0) {
         // EUR input
         amount = eurAmount / jitoPriceEur;
         inputLabel = `${eurAmount}€ → ${formatAmount(amount)} JitoSOL`;
-      } else if (isNaN(eurAmount) || eurAmount <= 0) {
-        // Try as pure number (crypto input)
-        const cryptoAmount = parseFloat(cleanedText);
-        if (isNaN(cryptoAmount) || cryptoAmount <= 0) {
-          return ctx.reply(
-            '❌ Montant invalide.\n\nEntre un montant positif :\n• \`0.10\` → 0.10 JitoSOL\n• \`10€\` → ~10€ en JitoSOL\n• \`50%\` → 50% du solde',
-            { parse_mode: 'Markdown' }
-          );
-        }
-        amount = cryptoAmount;
-        inputLabel = `${formatAmount(amount)} JitoSOL`;
+      } else {
+        return ctx.reply(
+          '❌ Montant en euros invalide ou prix indisponible.\n\nEntre plutôt un montant en JitoSOL, par exemple `0.10`.',
+          { parse_mode: 'Markdown' }
+        );
       }
     }
 
@@ -702,7 +711,7 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     }
 
     // If still no amount, try as pure crypto number
-    if (amount === 0) {
+    if (amount === 0 && !isFiatInput) {
       const cryptoAmount = parseFloat(cleanedText);
       if (isNaN(cryptoAmount) || cryptoAmount <= 0) {
         return ctx.reply(
@@ -728,7 +737,7 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
     const amountOut = quote.amountOut || 0;
     const minReceived = quote.minReceived || amountOut * 0.995;
     const walletLabel = wallet?.label || wallet?.address?.slice(0, 8) + '...' || 'SOL';
-    const estimatedValueEUR = amount * jitoPriceEur;
+    const estimatedValueEUR = amountOut * solPriceEur;
 
     sessions.updateData(chatId, {
       amount: amount,
@@ -759,14 +768,14 @@ async function handleJitoExitFastAmount(ctx, text, storage, walletService, sessi
         "Le montant reçu peut varier légèrement au moment de l'exécution.",
       { parse_mode: 'Markdown', ...keyboard }
     );
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoExitFastAmount', chatId });
-      await ctx.reply(`❌ Erreur: ${error.message}`, {
-        parse_mode: 'Markdown',
-        ...mainMenuKeyboard(),
-      });
-      sessions.clearState(chatId);
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoExitFastAmount', chatId });
+    await ctx.reply(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+    sessions.clearState(chatId);
+  }
 }
 
 async function handleJitoExitManual(ctx, storage, walletService, sessions) {
@@ -831,14 +840,14 @@ async function handleJitoExitFastConfirm(ctx, storage, walletService, sessions) 
 
     sessions.clearData(chatId);
     sessions.clearState(chatId);
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoExitFastConfirm', chatId });
-      await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
-        parse_mode: 'Markdown',
-        ...mainMenuKeyboard(),
-      });
-      sessions.clearState(chatId);
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoExitFastConfirm', chatId });
+    await ctx.editMessageText(`❌ Erreur: ${error.message}`, {
+      parse_mode: 'Markdown',
+      ...mainMenuKeyboard(),
+    });
+    sessions.clearState(chatId);
+  }
 }
 
 async function handleJitoExitStandardConfirm(ctx, storage, walletService, sessions) {
@@ -888,7 +897,7 @@ async function handleJitoExitStandardConfirm(ctx, storage, walletService, sessio
       '✅ *Unstake initié avec succès !*\n\n' +
         `📥 Montant: *${formatAmount(amount)} JitoSOL*\n` +
         `🏦 Compte de stake: \`${stakeAddress}\`\n` +
-        '⏳ *Délai estimé:* ~2-3 jours (fin d\'epoch)\n\n' +
+        "⏳ *Délai estimé:* ~2-3 jours (fin d'epoch)\n\n" +
         '📌 *Prochaine étape:*\n' +
         "Une fois l'epoch terminée, utilise le menu Jito\n" +
         'pour réclamer tes SOL via "Claim Unstake".\n\n' +
@@ -921,23 +930,31 @@ async function handleJitoExitStandardAmount(ctx, text, storage, walletService, s
 
   try {
     const cleanedText = text.trim().replace(',', '.');
+    const isFiatInput = cleanedText.includes('€') || cleanedText.includes('$');
     const prices = await getPricesEUR();
     const jitoPriceEur = prices.jitosol || prices.sol || 0;
 
     let amount = 0;
 
     // Check for EUR input
-    if (cleanedText.includes('€') || !cleanedText.includes('%')) {
+    if (isFiatInput) {
       const eurMatch = cleanedText.replace(/[€$]/g, '').trim();
       const eurAmount = parseFloat(eurMatch);
 
-      if (!isNaN(eurAmount) && eurAmount > 0 && !cleanedText.includes('%')) {
+      if (!isNaN(eurAmount) && eurAmount > 0 && jitoPriceEur > 0) {
         amount = eurAmount / jitoPriceEur;
-      } else if (isNaN(eurAmount) || eurAmount <= 0) {
-        const cryptoAmount = parseFloat(cleanedText);
-        if (!isNaN(cryptoAmount) && cryptoAmount > 0) {
-          amount = cryptoAmount;
-        }
+      } else {
+        return ctx.reply(
+          '❌ Montant en euros invalide ou prix indisponible.\n\nEntre plutôt un montant en JitoSOL, par exemple `0.10`.',
+          { parse_mode: 'Markdown' }
+        );
+      }
+    }
+
+    if (amount === 0 && !cleanedText.includes('%') && !isFiatInput) {
+      const cryptoAmount = parseFloat(cleanedText);
+      if (!isNaN(cryptoAmount) && cryptoAmount > 0) {
+        amount = cryptoAmount;
       }
     }
 
@@ -975,10 +992,10 @@ async function handleJitoExitStandardAmount(ctx, text, storage, walletService, s
         ]),
       }
     );
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoExitStandardAmount', chatId });
-      await ctx.reply(`❌ Erreur: ${error.message}`);
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoExitStandardAmount', chatId });
+    await ctx.reply(`❌ Erreur: ${error.message}`);
+  }
 }
 
 async function handleJitoUnstakeManualAddress(ctx, text, storage, sessions) {
@@ -1017,10 +1034,10 @@ async function handleJitoUnstakeManualAddress(ctx, text, storage, sessions) {
         ]),
       }
     );
-    } catch (error) {
-      logger.logError(error, { context: 'handleJitoUnstakeManualAddress', chatId });
-      await ctx.reply(`❌ Erreur lors de l'enregistrement : ${error.message}`);
-    }
+  } catch (error) {
+    logger.logError(error, { context: 'handleJitoUnstakeManualAddress', chatId });
+    await ctx.reply(`❌ Erreur lors de l'enregistrement : ${error.message}`);
+  }
 }
 
 const Formatting = {
