@@ -237,6 +237,21 @@ export class EvmBaseProvider extends BaseProvider {
     };
   }
 
+  /** ERC-20 allowance (bigint) of `owner` toward `spender` for `tokenAddress`. */
+  async getTokenAllowance(owner, spender, tokenAddress) {
+    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, this.getProvider());
+    return await withTimeout(contract.allowance(owner, spender), 10000);
+  }
+
+  /** Approve `spender` to move `amount` (bigint) of `tokenAddress`. For swaps. */
+  async approveSpender(privateKey, tokenAddress, spender, amount) {
+    const wallet = new ethers.Wallet(privateKey, this.getProvider());
+    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
+    const tx = await withTimeout(contract.approve(spender, amount), 30000);
+    const receipt = await withTimeout(tx.wait(), 120000);
+    return { hash: tx.hash, status: receipt.status === 1 ? 'success' : 'failed' };
+  }
+
   async sendNative(wallet, toAddress, amount, feeLevel = 'average') {
     const fees = await this.estimateFees(wallet.address, toAddress, amount);
     const feeData = fees[feeLevel];

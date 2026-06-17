@@ -82,14 +82,69 @@ export class SwapService {
   }
 
   /**
-   * Execute a swap. HARD-GATED: throws unless swaps are explicitly enabled.
-   * Not yet wired to any handler — Phase 2 adds approval/slippage/confirmation
-   * before this can run.
+   * Execute a swap from the user's wallet. HARD-GATED behind config.swapEnabled.
+   * Flow: quote → (ERC-20 approve if allowance insufficient) → build calldata →
+   * sign+send via the provider. Native input needs no approval.
+   *
+   * @param {number} chatId
+   * @param {string} walletId  the user's wallet on the swap chain
+   * @param {string} fromSymbol
+   * @param {string} toSymbol
+   * @param {number|string} amountHuman
+   * @param {{ slippageBps?: number }} [opts]
    */
-  async executeSwap() {
+  async executeSwap(chatId, walletId, fromSymbol, toSymbol, amountHuman, { slippageBps = 50 } = {}) {
     if (!config.swapEnabled) {
       throw new Error('Les swaps sont désactivés (SWAP_ENABLED=false).');
     }
-    throw new Error('executeSwap: exécution non implémentée (Phase 2).');
+
+    const full = await this.walletService.storage.getWalletWithKey(chatId, walletId);
+    if (!full || full.isCorrupted || !full.privateKey) {
+      throw new Error('Wallet introuvable ou corrompu');
+    }
+    const chain = full.chain;
+    const quote = await this.getQuote(chain, fromSymbol, toSymbol, amountHuman);
+    const provider = this.walletService.chains[chain];
+    const amountInWei = parseUnits(quote.amountIn.toString(), quote.from.decimals);
+
+    // ERC-20 inputs must approve the aggregator router first (native: skip).
+    if (!quote.from.native) {
+      const allowance = await provider.getTokenAllowance(
+        full.address,
+        quote.routerAddress,
+        quote.from.address
+      );
+      if (BigInt(allowance) < amountInWei) {
+        await provider.approveSpender(
+          full.privateKey,
+          quote.from.address,
+          quote.routerAddress,
+          amountInWei
+        );
+      }
+    }
+
+    const built = await this.aggregator.buildSwapTx({
+      chain,
+      routeSummary: quote.routeSummary,
+      sender: full.address,
+      recipient: full.address,
+      slippageBps,
+    });
+
+    const result = await provider.sendRaw(full.privateKey, {
+      to: built.to,
+      data: built.data,
+      value: built.value,
+    });
+
+    return {
+      ...result,
+      chain,
+      fromSymbol: quote.fromSymbol,
+      toSymbol: quote.toSymbol,
+      amountIn: quote.amountIn,
+      amountOut: quote.amountOut,
+    };
   }
 }
