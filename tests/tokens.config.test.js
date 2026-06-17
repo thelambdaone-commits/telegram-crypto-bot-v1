@@ -22,12 +22,15 @@ const EXPECTED = {
     USDT: { address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
     WBTC: { address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 },
     DAI: { address: '0x6B175474E89094C44Da98b954EedeAC495271d0F', decimals: 18 },
+    LINK: { address: '0x514910771AF9Ca656af840dff83E8264EcF986CA', decimals: 18 },
+    UNI: { address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', decimals: 18 },
   },
   arb: {
     USDC: { address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6 },
     USDT: { address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', decimals: 6 },
     WBTC: { address: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f', decimals: 8 },
     DAI: { address: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', decimals: 18 },
+    ARB: { address: '0x912CE59144191C1204E64559FE8253a0e49E6548', decimals: 18 },
   },
   op: {
     USDC: { address: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', decimals: 6 },

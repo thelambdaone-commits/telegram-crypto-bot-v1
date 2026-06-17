@@ -72,6 +72,8 @@ export const COIN_IDS = {
   usdt: 'tether',
   dai: 'dai',
   wbtc: 'wrapped-bitcoin',
+  link: 'chainlink',
+  uni: 'uniswap',
   matic: 'polygon-ecosystem-token',
   pol: 'polygon-ecosystem-token',
   op: 'optimism',

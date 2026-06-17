@@ -75,6 +75,20 @@ export const TOKEN_CONFIGS = {
         icon: '💵',
         standard: 'ERC-20',
       },
+      LINK: {
+        address: '0x514910771AF9Ca656af840dff83E8264EcF986CA',
+        decimals: 18,
+        type: 'token',
+        icon: '🔗',
+        standard: 'ERC-20',
+      },
+      UNI: {
+        address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984',
+        decimals: 18,
+        type: 'token',
+        icon: '🦄',
+        standard: 'ERC-20',
+      },
     },
   },
   arb: {
@@ -110,6 +124,13 @@ export const TOKEN_CONFIGS = {
         icon: '💵',
         standard: 'Arbitrum',
         bridged: true,
+      },
+      ARB: {
+        address: '0x912CE59144191C1204E64559FE8253a0e49E6548',
+        decimals: 18,
+        type: 'governance',
+        icon: '🔵',
+        standard: 'Arbitrum',
       },
     },
   },
@@ -369,6 +390,9 @@ const ASSET_DISPLAY_ORDER = [
   'WBTC',
   'DAI',
   'OP',
+  'ARB',
+  'LINK',
+  'UNI',
   'mSOL',
 ];
 
