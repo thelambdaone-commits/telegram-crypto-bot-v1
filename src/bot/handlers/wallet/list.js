@@ -6,6 +6,7 @@ import {
 import { safeAnswerCbQuery } from '../../utils.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
+import { CHAIN_EMOJIS } from '../../ui/formatters.js';
 
 export function setupWalletList(bot, storage, walletService) {
   // List wallets
@@ -51,21 +52,7 @@ export function setupWalletList(bot, storage, walletService) {
       return ctx.editMessageText('😕 Wallet non trouvé', mainMenuKeyboard());
     }
 
-    const chainEmojis = {
-      eth: '🔷',
-      btc: '₿',
-      ltc: '◈',
-      bch: '₿',
-      sol: '◎',
-      arb: '🔴',
-      matic: '🟣',
-      op: '🔵',
-      base: '🟦',
-      avax: '🔺',
-      xmr: '🔒',
-      zec: '🛡️',
-    };
-    const chainEmoji = chainEmojis[wallet.chain] || '💎';
+    const chainEmoji = CHAIN_EMOJIS[wallet.chain] || '💎';
 
     // Show loading first
     await ctx.editMessageText(`${chainEmoji} *${wallet.label}*\n\n⏳ Chargement du solde...`, {

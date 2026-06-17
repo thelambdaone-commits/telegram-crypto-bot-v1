@@ -34,18 +34,25 @@ export function truncateAddress(address, start = 8, end = 6) {
 }
 
 /**
- * Emoji par chaîne
+ * Canonical chain → symbol map. Single source of truth for the whole bot:
+ * native coins use their real typographic symbol, EVM L2s use their brand
+ * colour. Arbitrum = blue, Optimism = red (official charts). Import this
+ * instead of redefining a local map.
  */
 export const CHAIN_EMOJIS = {
-  eth: '🔷',
-  btc: '🟠',
-  sol: '🟣',
-  arb: '🔴',
-  matic: '🟣',
-  op: '🔵',
+  eth: 'Ξ',
+  btc: '₿',
+  ltc: 'Ł',
+  bch: '🅑',
+  sol: '◎',
+  arb: '🔵',
+  matic: '⬡',
+  op: '🔴',
   base: '🟦',
-  ltc: '🪙',
-  bch: '🟢',
+  avax: '🔺',
+  trx: '🟥',
+  xmr: 'ɱ',
+  zec: 'Ⓩ',
 };
 
 /**

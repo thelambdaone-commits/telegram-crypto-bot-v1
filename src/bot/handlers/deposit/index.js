@@ -19,6 +19,7 @@ import {
 import { generateAddressQR } from '../../../shared/qr.js';
 import { buildPaymentURI } from '../../../shared/payment-uri.js';
 import { logger } from '../../../shared/logger.js';
+import { CHAIN_EMOJIS } from '../../ui/formatters.js';
 
 // EVM chains share one address, so any EVM wallet can receive on any of them.
 const EVM_CHAINS = new Set(['eth', 'arb', 'op', 'base', 'matic', 'avax']);
@@ -86,7 +87,8 @@ function assetsKeyboard() {
 function networksKeyboard(symbol, networks) {
   const rows = networks.map((n) => {
     const fee = feeEmoji(n.chain);
-    const text = `${fee ? fee + ' ' : ''}${netLabel(n)}${n.bridged ? ' • bridged' : ''}`;
+    const sym = CHAIN_EMOJIS[n.chain] ? `${CHAIN_EMOJIS[n.chain]} ` : '';
+    const text = `${fee ? fee + ' ' : ''}${sym}${netLabel(n)}${n.bridged ? ' • bridged' : ''}`;
     return [Markup.button.callback(text, `dep_n_${symbol}_${n.chain}`)];
   });
   rows.push([Markup.button.callback('🔙 Retour', CALLBACKS.DEPOSIT)]);
@@ -239,7 +241,7 @@ export function setupDepositHandlers(bot, storage) {
       return ctx.editMessageText(noWalletText(symbol, net), {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
-          [Markup.button.callback('➕ Créer un wallet', CALLBACKS.CREATE_WALLET)],
+          [Markup.button.callback('➕ Nouveau', CALLBACKS.CREATE_WALLET)],
           [Markup.button.callback('🔙 Retour', CALLBACKS.DEPOSIT)],
         ]),
       });

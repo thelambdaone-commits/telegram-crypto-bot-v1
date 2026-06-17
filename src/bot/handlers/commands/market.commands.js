@@ -58,7 +58,7 @@ export function setupMarketCommands(bot) {
       if (chain === 'eth') {
         const eth = await getEthFees();
         return ctx.reply(
-          `🔷 *Frais Ethereum* ${eth.level}\n\n💨 Gas Price : *${eth.gasPrice.toFixed(2)} Gwei*`,
+          `Ξ *Frais Ethereum* ${eth.level}\n\n💨 Gas Price : *${eth.gasPrice.toFixed(2)} Gwei*`,
           { parse_mode: 'Markdown' }
         );
       }
@@ -66,7 +66,7 @@ export function setupMarketCommands(bot) {
       if (chain === 'btc') {
         const btc = await getBtcFees();
         return ctx.reply(
-          `🟠 *Frais Bitcoin* ${btc.level}\n\n⚡ Rapide : *${btc.fastestFee} sat/vB*\n🕐 Moyen : *${btc.halfHourFee} sat/vB*`,
+          `₿ *Frais Bitcoin* ${btc.level}\n\n⚡ Rapide : *${btc.fastestFee} sat/vB*\n🕐 Moyen : *${btc.halfHourFee} sat/vB*`,
           { parse_mode: 'Markdown' }
         );
       }
@@ -74,7 +74,7 @@ export function setupMarketCommands(bot) {
       if (chain === 'sol') {
         const sol = await getSolFees();
         return ctx.reply(
-          `🟣 *Frais Solana* ${sol.level}\n\n💎 Priority Fee : *${sol.priorityFee.toLocaleString()} µ◎*`,
+          `◎ *Frais Solana* ${sol.level}\n\n💎 Priority Fee : *${sol.priorityFee.toLocaleString()} µ◎*`,
           { parse_mode: 'Markdown' }
         );
       }
@@ -88,9 +88,9 @@ export function setupMarketCommands(bot) {
 
       await ctx.reply(
         '⛽ *Frais de Transaction*\n\n' +
-          `🔷 *Ethereum* ${eth.level} : *${eth.gasPrice.toFixed(1)} Gwei*\n` +
-          `🟠 *Bitcoin* ${btc.level} : *${btc.fastestFee} sat/vB*\n` +
-          `🟣 *Solana* ${sol.level} : *${sol.priorityFee.toLocaleString()} µ◎*\n\n` +
+          `Ξ *Ethereum* ${eth.level} : *${eth.gasPrice.toFixed(1)} Gwei*\n` +
+          `₿ *Bitcoin* ${btc.level} : *${btc.fastestFee} sat/vB*\n` +
+          `◎ *Solana* ${sol.level} : *${sol.priorityFee.toLocaleString()} µ◎*\n\n` +
           '_Utilise_ `/gas eth|btc|sol` _pour plus de détails_',
         { parse_mode: 'Markdown' }
       );
@@ -112,9 +112,9 @@ export function setupMarketCommands(bot) {
       if (args.length === 0) {
         return ctx.reply(
           '💹 *Prix des Cryptos (EUR)*\n\n' +
-            `🔷 *ETH* : ${formatEUR(prices.eth)}\n` +
-            `🟠 *BTC* : ${formatEUR(prices.btc)}\n` +
-            `🟣 *SOL* : ${formatEUR(prices.sol)}\n` +
+            `Ξ *ETH* : ${formatEUR(prices.eth)}\n` +
+            `₿ *BTC* : ${formatEUR(prices.btc)}\n` +
+            `◎ *SOL* : ${formatEUR(prices.sol)}\n` +
             `💵 *USDC* : ${formatEUR(prices.usdc)}\n` +
             `💵 *USDT* : ${formatEUR(prices.usdt)}`,
           { parse_mode: 'Markdown' }

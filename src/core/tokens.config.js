@@ -24,7 +24,7 @@ export const TOKEN_CONFIGS = {
         mint: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
         decimals: 9,
         type: 'liquid-staking',
-        icon: '🥈',
+        icon: '💧',
         standard: 'SPL',
       },
       USDC: {
@@ -261,15 +261,15 @@ export function getTokenLabel(chain, symbol) {
 // Display icons for native coins (token icons live on the token entries).
 const NATIVE_ICONS = {
   BTC: '₿',
-  ETH: '⟠',
+  ETH: 'Ξ',
   SOL: '◎',
   TRX: '🟥',
-  MATIC: '🟣',
+  MATIC: '⬡',
   AVAX: '🔺',
   LTC: 'Ł',
   BCH: '🅑',
   XMR: 'ɱ',
-  ZEC: 'ⓩ',
+  ZEC: 'Ⓩ',
 };
 
 // Preferred display order for the deposit asset picker (anything not listed

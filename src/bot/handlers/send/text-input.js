@@ -11,10 +11,10 @@ import { handleSendError } from './helpers.js';
 // EVM addresses (0x…) are identical across all EVM networks, so an analyzed
 // 0x address is scanned on each of these and reported per-network.
 const EVM_NETWORKS = [
-  { chain: 'eth', name: 'Ethereum', emoji: '🔷' },
+  { chain: 'eth', name: 'Ethereum', emoji: 'Ξ' },
   { chain: 'base', name: 'Base', emoji: '🟦' },
   { chain: 'op', name: 'Optimism', emoji: '🔴' },
-  { chain: 'matic', name: 'Polygon', emoji: '🟣' },
+  { chain: 'matic', name: 'Polygon', emoji: '⬡' },
   { chain: 'arb', name: 'Arbitrum', emoji: '🔵' },
   { chain: 'avax', name: 'Avalanche', emoji: '🔺' },
 ];

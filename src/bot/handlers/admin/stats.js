@@ -4,6 +4,7 @@ import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { config } from '../../../core/config.js';
 import { logger } from '../../../shared/logger.js';
+import { CHAIN_EMOJIS } from '../../ui/formatters.js';
 
 export function setupAdminStats(bot, storage) {
   // Global stats
@@ -55,18 +56,7 @@ export function setupAdminStats(bot, storage) {
         }
       }
 
-      const chainEmojis = {
-        eth: '🔷',
-        btc: '₿',
-        ltc: '◈',
-        bch: '₿',
-        sol: '◎',
-        arb: '🔴',
-        matic: '🟣',
-        op: '🔵',
-        base: '🟦',
-        avax: '🔺',
-      };
+      const chainEmojis = CHAIN_EMOJIS;
 
       let totalEUR = 0;
       for (const [chain, balance] of Object.entries(globalBalances)) {

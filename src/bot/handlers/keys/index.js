@@ -10,6 +10,7 @@ import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { logger } from '../../../shared/logger.js';
 import { generateAddressQR } from '../../../shared/qr.js';
+import { CHAIN_EMOJIS } from '../../ui/formatters.js';
 import { Markup } from 'telegraf';
 
 export function setupKeysHandlers(bot, storage, walletService) {
@@ -269,7 +270,7 @@ export function setupKeysHandlers(bot, storage, walletService) {
         );
       }
 
-      const chainEmoji = { eth: '🔷', btc: '🟠', sol: '🟣', xmr: '🔒', zec: '🛡️' }[wallet.chain] || '💎';
+      const chainEmoji = CHAIN_EMOJIS[wallet.chain] || '💎';
       const chainSymbol = wallet.chain.toUpperCase();
 
       let text = `${chainEmoji} *Historique — ${wallet.label}*\n`;

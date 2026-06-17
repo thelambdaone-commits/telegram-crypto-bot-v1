@@ -5,7 +5,7 @@ import {
   feeSelectionKeyboard,
 } from '../../keyboards/index.js';
 import { formatEUR, convertToEUR } from '../../../shared/price.js';
-import { formatNumber, formatCryptoAmount } from '../../ui/formatters.js';
+import { formatNumber, formatCryptoAmount, CHAIN_EMOJIS } from '../../ui/formatters.js';
 import { sendWalletKeysFile } from '../wallet/key-file.js';
 
 export function setupWalletCommands(bot, storage, walletService, sessions) {
@@ -25,17 +25,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     let text = '👛 *Tes Wallets*\n\n';
 
     for (const wallet of wallets) {
-      const chainEmoji = {
-        eth: '🔷',
-        btc: '🟠',
-        sol: '🟣',
-        arb: '🔴',
-        matic: '🟣',
-        op: '🔵',
-        base: '🟦',
-        ltc: '🪙',
-        bch: '🟢',
-      }[wallet.chain] || '💎';
+      const chainEmoji = CHAIN_EMOJIS[wallet.chain] || '💎';
       try {
         const balance = await walletService.getBalance(chatId, wallet.id);
         text += `${chainEmoji} *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;
@@ -63,18 +53,18 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       return ctx.reply(
         '🎲 *Génération de Wallet*\n\n' +
           'Utilise cette commande avec le réseau souhaité :\n\n' +
-          '• `/gen eth` — Ethereum 🔷\n' +
-          '• `/gen btc` — Bitcoin 🟠\n' +
-          '• `/gen sol` — Solana 🟣\n' +
-          '• `/gen arb` — Arbitrum 🔴\n' +
-          '• `/gen matic` — Polygon 🟣\n' +
-          '• `/gen op` — Optimism 🔵\n' +
+          '• `/gen eth` — Ethereum Ξ\n' +
+          '• `/gen btc` — Bitcoin ₿\n' +
+          '• `/gen sol` — Solana ◎\n' +
+          '• `/gen arb` — Arbitrum 🔵\n' +
+          '• `/gen matic` — Polygon ⬡\n' +
+          '• `/gen op` — Optimism 🔴\n' +
           '• `/gen base` — Base 🟦\n' +
           '• `/gen avax` — Avalanche 🔺\n' +
-          '• `/gen ltc` — Litecoin 🪙\n' +
-          '• `/gen bch` — Bitcoin Cash 🟢\n' +
-          '• `/gen xmr` — Monero 🔒\n' +
-          '• `/gen zec` — Zcash 🛡️',
+          '• `/gen ltc` — Litecoin Ł\n' +
+          '• `/gen bch` — Bitcoin Cash 🅑\n' +
+          '• `/gen xmr` — Monero ɱ\n' +
+          '• `/gen zec` — Zcash Ⓩ',
         { parse_mode: 'Markdown' }
       );
     }
@@ -91,18 +81,18 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     }
 
     const chainNames = {
-      eth: 'Ethereum 🔷',
-      btc: 'Bitcoin 🟠',
-      sol: 'Solana 🟣',
-      arb: 'Arbitrum 🔴',
-      matic: 'Polygon 🟣',
-      op: 'Optimism 🔵',
+      eth: 'Ethereum Ξ',
+      btc: 'Bitcoin ₿',
+      sol: 'Solana ◎',
+      arb: 'Arbitrum 🔵',
+      matic: 'Polygon ⬡',
+      op: 'Optimism 🔴',
       base: 'Base 🟦',
       avax: 'Avalanche 🔺',
-      ltc: 'Litecoin 🪙',
-      bch: 'Bitcoin Cash 🟢',
-      xmr: 'Monero 🔒',
-      zec: 'Zcash 🛡️',
+      ltc: 'Litecoin Ł',
+      bch: 'Bitcoin Cash 🅑',
+      xmr: 'Monero ɱ',
+      zec: 'Zcash Ⓩ',
     };
     const loadingMsg = await ctx.reply(`⏳ Génération de ton wallet ${chainNames[chain]}...`);
 
@@ -179,8 +169,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       const balanceData = await walletService.getPublicAddressBalance(network, address);
       const conversion = await convertToEUR(network, Number.parseFloat(balanceData.balance));
 
-      const chainEmoji =
-        { eth: '🔷', btc: '🟠', sol: '🟣', matic: '🟣', op: '🔵', base: '🟦', xmr: '🔒', zec: '🛡️' }[network] || '💎';
+      const chainEmoji = CHAIN_EMOJIS[network] || '💎';
 
       await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsg.message_id);
 
@@ -348,17 +337,17 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
 
     let result = '';
     if (unit === 'btc') {
-      result = `🟠 *${formatNumber(amount)} BTC* = *${formatNumber(amount * 100_000_000, 0, 0)} satoshis*`;
+      result = `₿ *${formatNumber(amount)} BTC* = *${formatNumber(amount * 100_000_000, 0, 0)} satoshis*`;
     } else if (unit === 'satoshi' || unit === 'sat') {
-      result = `🟠 *${formatNumber(amount, 0, 0)} satoshis* = *${formatNumber(amount / 100_000_000, 8, 8)} BTC*`;
+      result = `₿ *${formatNumber(amount, 0, 0)} satoshis* = *${formatNumber(amount / 100_000_000, 8, 8)} BTC*`;
     } else if (unit === 'eth') {
-      result = `🔷 *${formatNumber(amount)} ETH* = *${formatNumber(amount * 1_000_000_000, 0, 0)} gwei*`;
+      result = `Ξ *${formatNumber(amount)} ETH* = *${formatNumber(amount * 1_000_000_000, 0, 0)} gwei*`;
     } else if (unit === 'gwei') {
-      result = `🔷 *${formatNumber(amount, 0, 0)} gwei* = *${formatNumber(amount / 1_000_000_000, 9, 9)} ETH*`;
+      result = `Ξ *${formatNumber(amount, 0, 0)} gwei* = *${formatNumber(amount / 1_000_000_000, 9, 9)} ETH*`;
     } else if (unit === 'sol') {
-      result = `🟣 *${formatNumber(amount)} SOL* = *${formatNumber(amount * 1_000_000_000, 0, 0)} lamports*`;
+      result = `◎ *${formatNumber(amount)} SOL* = *${formatNumber(amount * 1_000_000_000, 0, 0)} lamports*`;
     } else if (unit === 'lamport') {
-      result = `🟣 *${formatNumber(amount, 0, 0)} lamports* = *${formatNumber(amount / 1_000_000_000, 9, 9)} SOL*`;
+      result = `◎ *${formatNumber(amount, 0, 0)} lamports* = *${formatNumber(amount / 1_000_000_000, 9, 9)} SOL*`;
     } else {
       return ctx.reply('❌ Unité non reconnue ! (btc, sat, eth, gwei, sol, lamport)');
     }

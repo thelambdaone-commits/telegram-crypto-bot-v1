@@ -136,26 +136,26 @@ export function formatCryptoPricesEUR(prices, date = new Date()) {
   return (
     '💹 Prix crypto\n\n' +
     '🏛️ L1 / Mainnets\n' +
-    `🟠 Bitcoin (BTC) : ${formatEUR(prices.btc)}\n` +
+    `₿ Bitcoin (BTC) : ${formatEUR(prices.btc)}\n` +
     `₿ Wrapped BTC (WBTC) : ${formatEUR(prices.wbtc || 0)}\n` +
-    `🔷 Ethereum (ETH) : ${formatEUR(prices.eth)}\n` +
-    `🟣 Solana (SOL) : ${formatEUR(prices.sol)}\n` +
+    `Ξ Ethereum (ETH) : ${formatEUR(prices.eth)}\n` +
+    `◎ Solana (SOL) : ${formatEUR(prices.sol)}\n` +
     `🔺 Avalanche (AVAX) : ${formatEUR(prices.avax || 0)}\n` +
     `🟥 Tron (TRX) : ${formatEUR(prices.trx || 0)}\n\n` +
     '⚡ L2 / Scaling\n' +
     `🟦 ETH on Base : ${formatEUR(prices.base)}\n` +
-    `🔴 ETH on Arbitrum : ${formatEUR(prices.eth)}\n` +
-    `🔵 Optimism (OP) : ${formatEUR(prices.op || 0)}\n` +
-    `🟣 Polygon (POL) : ${formatEUR(prices.matic || 0)}\n\n` +
+    `🔵 ETH on Arbitrum : ${formatEUR(prices.eth)}\n` +
+    `🔴 Optimism (OP) : ${formatEUR(prices.op || 0)}\n` +
+    `⬡ Polygon (POL) : ${formatEUR(prices.matic || 0)}\n\n` +
     '🏦 Stablecoins\n' +
     `💵 USD Coin (USDC) : ${formatEUR(prices.usdc)}\n` +
     `💵 Tether (USDT) : ${formatEUR(prices.usdt)}\n` +
     `💵 Dai (DAI) : ${formatEUR(prices.dai || 0)}\n\n` +
     '🪙 Legacy / Forks\n' +
-    `◈ Litecoin (LTC) : ${formatEUR(prices.ltc)}\n` +
-    `₿ Bitcoin Cash (BCH) : ${formatEUR(prices.bch)}\n` +
-    `🔒 Monero (XMR) : ${formatEUR(prices.xmr || 0)}\n` +
-    `🛡️ Zcash (ZEC) : ${formatEUR(prices.zec || 0)}\n\n` +
+    `Ł Litecoin (LTC) : ${formatEUR(prices.ltc)}\n` +
+    `🅑 Bitcoin Cash (BCH) : ${formatEUR(prices.bch)}\n` +
+    `ɱ Monero (XMR) : ${formatEUR(prices.xmr || 0)}\n` +
+    `Ⓩ Zcash (ZEC) : ${formatEUR(prices.zec || 0)}\n\n` +
     `🕒 Mis à jour en temps réel le ${formatPriceUpdateDate(date)}`
   );
 }

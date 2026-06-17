@@ -1,21 +1,9 @@
 import { Markup } from 'telegraf';
 import { CALLBACKS } from '../constants/callbacks.js';
+import { CHAIN_EMOJIS } from '../ui/formatters.js';
 
 export function walletListKeyboard(wallets, prefix = 'wallet_') {
-  const chainEmojis = {
-    eth: '🔷',
-    btc: '₿',
-    ltc: '◈',
-    bch: '₿',
-    sol: '◎',
-    arb: '🔴',
-    matic: '🟣',
-    op: '🔵',
-    base: '🟦',
-    avax: '🔺',
-    xmr: '🔒',
-    zec: '🛡️',
-  };
+  const chainEmojis = CHAIN_EMOJIS;
   const buttons = wallets.map((w) => [
     Markup.button.callback(
       `${chainEmojis[w.chain] || '●'} ${w.chain.toUpperCase()} - ${w.label}`,
@@ -54,7 +42,7 @@ export function corruptedWalletKeyboard(walletId) {
 
 export function walletCreationMethodKeyboard(chain) {
   return Markup.inlineKeyboard([
-    [Markup.button.callback('🆕 Générer Nouveau Wallet', `generate_${chain}`)],
+    [Markup.button.callback('🆕 Nouveau', `generate_${chain}`)],
     [Markup.button.callback('🌱 Dériver depuis une seed existante', `derive_seed_${chain}`)],
     [Markup.button.callback('🔑 Importer une Clé Privée', `import_key_${chain}`)],
     [Markup.button.callback('🔐 Importer une Seed Phrase', `import_seed_${chain}`)],
@@ -65,20 +53,20 @@ export function walletCreationMethodKeyboard(chain) {
 export function chainSelectionKeyboard(actionPrefix = 'chain_') {
   return Markup.inlineKeyboard([
     [
-      Markup.button.callback('🔷 Ethereum', `${actionPrefix}eth`),
+      Markup.button.callback('Ξ Ethereum', `${actionPrefix}eth`),
       Markup.button.callback('₿ Bitcoin', `${actionPrefix}btc`),
     ],
     [
-      Markup.button.callback('◈ Litecoin', `${actionPrefix}ltc`),
-      Markup.button.callback('₿ Bitcoin Cash', `${actionPrefix}bch`),
+      Markup.button.callback('Ł Litecoin', `${actionPrefix}ltc`),
+      Markup.button.callback('🅑 Bitcoin Cash', `${actionPrefix}bch`),
     ],
     [
       Markup.button.callback('◎ Solana', `${actionPrefix}sol`),
-      Markup.button.callback('🔴 Arbitrum', `${actionPrefix}arb`),
+      Markup.button.callback('🔵 Arbitrum', `${actionPrefix}arb`),
     ],
     [
-      Markup.button.callback('🟣 Polygon', `${actionPrefix}matic`),
-      Markup.button.callback('🔵 Optimism', `${actionPrefix}op`),
+      Markup.button.callback('⬡ Polygon', `${actionPrefix}matic`),
+      Markup.button.callback('🔴 Optimism', `${actionPrefix}op`),
     ],
     [
       Markup.button.callback('🟦 Base', `${actionPrefix}base`),
@@ -86,9 +74,9 @@ export function chainSelectionKeyboard(actionPrefix = 'chain_') {
     ],
     [
       Markup.button.callback('🟥 Tron', `${actionPrefix}trx`),
-      Markup.button.callback('🔒 Monero', `${actionPrefix}xmr`),
+      Markup.button.callback('ɱ Monero', `${actionPrefix}xmr`),
     ],
-    [Markup.button.callback('🛡️ Zcash', `${actionPrefix}zec`)],
+    [Markup.button.callback('Ⓩ Zcash', `${actionPrefix}zec`)],
     [Markup.button.callback('↩️ Retour', CALLBACKS.BACK_TO_MENU)],
   ]);
 }

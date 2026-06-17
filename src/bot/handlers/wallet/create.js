@@ -100,12 +100,12 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
       const l2Info = {
         matic:
-          '🟣 *Polygon (Layer 2)*\n' +
+          '⬡ *Polygon (Layer 2)*\n' +
           'Frais: tres bon marche (~0.001-0.01 EUR)\n' +
           'Token natif: MATIC (pour payer les frais)\n' +
           'Tokens: USDC, USDT\n\n',
         op:
-          '🔵 *Optimism (Layer 2)*\n' +
+          '🔴 *Optimism (Layer 2)*\n' +
           'Frais: tres bon marche (~0.001-0.01 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
@@ -115,7 +115,7 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
         arb:
-          '🔴 *Arbitrum (Layer 2)*\n' +
+          '🔵 *Arbitrum (Layer 2)*\n' +
           'Frais: tres bon marche (~0.01-0.05 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',

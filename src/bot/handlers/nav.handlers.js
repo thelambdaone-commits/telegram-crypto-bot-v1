@@ -73,8 +73,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     );
   });
 
-  // Hears: ➕ Nouveau Wallet
-  bot.hears(['➕ Nouveau Wallet', '🆕 Nouveau Wallet'], async (ctx) => {
+  // Hears: ➕ Nouveau (anciens libellés conservés pour compat)
+  bot.hears(['➕ Nouveau', '➕ Nouveau Wallet', '🆕 Nouveau Wallet'], async (ctx) => {
     ctx.reply('➕ *Créer un nouveau wallet*\n\nChoisis le réseau :', {
       parse_mode: 'Markdown',
       ...chainSelectionKeyboard('chain_'),
