@@ -5,7 +5,7 @@ import { mainMenuKeyboard, mainReplyKeyboard } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { config } from '../../../core/config.js';
 import { logger } from '../../../shared/logger.js';
-import { escapeMarkdown, scheduleSecureDelete } from '../../../shared/utils/telegram.js';
+import { escapeHtml, scheduleSecureDelete } from '../../../shared/utils/telegram.js';
 import { sendWalletKeysFile } from '../wallet/key-file.js';
 import { separator, CHAIN_EMOJIS } from '../../ui/index.js';
 
@@ -19,7 +19,7 @@ let welcomeVideoFileId = null;
  * Send the onboarding video with a formatted caption. Best-effort: a missing
  * file or upload error is logged and swallowed so it never blocks onboarding.
  * @param {import('telegraf').Context} ctx
- * @param {string} caption Markdown caption
+ * @param {string} caption HTML caption
  */
 async function sendWelcomeVideo(ctx, caption) {
   if (!welcomeVideoFileId && !existsSync(WELCOME_VIDEO_PATH)) {
@@ -29,7 +29,7 @@ async function sendWelcomeVideo(ctx, caption) {
   try {
     const sent = await ctx.replyWithVideo(welcomeVideoFileId || { source: WELCOME_VIDEO_PATH }, {
       caption,
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       supports_streaming: true,
     });
     const fileId = sent?.video?.file_id;
@@ -46,15 +46,15 @@ async function notifyAdminNewUser(ctx, chatId, userName, username) {
   if (!config.adminChatId || config.adminChatId.length === 0) return;
 
   try {
-    const safeUserName = escapeMarkdown(userName);
-    const safeUsername = username ? escapeMarkdown(username) : null;
+    const safeUserName = escapeHtml(userName);
+    const safeUsername = username ? escapeHtml(username) : null;
     const contactUrl = `tg://user?id=${chatId}`;
 
     const message =
-      '✨ *Nouvel utilisateur*\n\n' +
+      '✨ <b>Nouvel utilisateur</b>\n\n' +
       `👤 Nom: ${safeUserName}\n` +
       `🔹 Username: ${safeUsername ? `@${safeUsername}` : 'N/A'}\n` +
-      `🆔 ID: \`${chatId}\``;
+      `🆔 ID: <code>${chatId}</code>`;
 
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.url('💬 Contacter', contactUrl)],
@@ -64,7 +64,7 @@ async function notifyAdminNewUser(ctx, chatId, userName, username) {
     for (const adminId of config.adminChatId) {
       await ctx.telegram
         .sendMessage(adminId, message, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...keyboard,
         })
         .catch((e) => logger.error(`Failed to notify admin ${adminId}`, { chatId, error: e.message }));
@@ -86,7 +86,7 @@ const REVEAL_CHAIN_NAMES = {
 /**
  * One-time onboarding reveal. A single BIP39 phrase backs every main chain
  * (the EVM chains share one address, shown once); Monero is listed with its
- * own separate seed. Seeds/addresses go in code spans (Telegram Markdown does
+ * own separate seed. Seeds/addresses go in <code> spans (Telegram HTML does
  * not reformat code-span content, so no escaping needed there).
  * @param {string} mnemonic
  * @param {Array<{chain:string,address:string,mnemonic:string}>} wallets
@@ -95,43 +95,43 @@ const REVEAL_CHAIN_NAMES = {
 function buildOnboardingReveal(mnemonic, wallets) {
   const byChain = (c) => wallets.find((w) => w.chain === c);
   const lines = [
-    '🎉 *Ton portefeuille multi-chaînes est prêt !*',
+    '🎉 <b>Ton portefeuille multi-chaînes est prêt !</b>',
     separator(),
-    '🔑 *Une seule phrase secrète* contrôle tous tes réseaux principaux.',
+    '🔑 <b>Une seule phrase secrète</b> contrôle tous tes réseaux principaux.',
     'Note-la et garde-la hors ligne :',
     '',
-    `\`${mnemonic}\``,
+    `<code>${mnemonic}</code>`,
     separator(),
-    '📬 *Tes adresses de réception*',
+    '📬 <b>Tes adresses de réception</b>',
     '',
   ];
 
   const evm = byChain('eth');
   if (evm) {
-    lines.push('Ξ *EVM* · ETH · Arbitrum · Polygon · Optimism · Base · Avalanche');
-    lines.push(`\`${evm.address}\``);
+    lines.push('Ξ <b>EVM</b> · ETH · Arbitrum · Polygon · Optimism · Base · Avalanche');
+    lines.push(`<code>${evm.address}</code>`);
     lines.push('');
   }
 
   for (const chain of ['btc', 'ltc', 'bch', 'sol', 'trx', 'zec']) {
     const wallet = byChain(chain);
     if (!wallet) continue;
-    lines.push(`${CHAIN_EMOJIS[chain] || '🔗'} *${REVEAL_CHAIN_NAMES[chain]}*`);
-    lines.push(`\`${wallet.address}\``);
+    lines.push(`${CHAIN_EMOJIS[chain] || '🔗'} <b>${REVEAL_CHAIN_NAMES[chain]}</b>`);
+    lines.push(`<code>${wallet.address}</code>`);
     lines.push('');
   }
 
   const xmr = byChain('xmr');
   if (xmr) {
-    lines.push(`${CHAIN_EMOJIS.xmr} *Monero* · phrase de récupération séparée`);
-    lines.push(`\`${xmr.address}\``);
-    lines.push(`🔐 Seed Monero : \`${xmr.mnemonic}\``);
+    lines.push(`${CHAIN_EMOJIS.xmr} <b>Monero</b> · phrase de récupération séparée`);
+    lines.push(`<code>${xmr.address}</code>`);
+    lines.push(`🔐 Seed Monero : <code>${xmr.mnemonic}</code>`);
     lines.push('');
   }
 
   lines.push(separator());
-  lines.push('⚠️ *IMPORTANT :* sauvegarde ces phrases. Elles ne seront plus affichées.');
-  lines.push("🕐 _Ce message s'efface dans 60 s pour ta sécurité._");
+  lines.push('⚠️ <b>IMPORTANT :</b> sauvegarde ces phrases. Elles ne seront plus affichées.');
+  lines.push("🕐 <i>Ce message s'efface dans 60 s pour ta sécurité.</i>");
   return lines.join('\n');
 }
 
@@ -163,7 +163,7 @@ export function setupStartHandler(bot, storage, walletService) {
         await sendWelcomeVideo(
           ctx,
           [
-            `🎬 *Bienvenue ${escapeMarkdown(userName)} !*`,
+            `🎬 <b>Bienvenue ${escapeHtml(userName)} !</b>`,
             separator(),
             'Ton portefeuille crypto multi-chaînes, simple et sécurisé.',
             'Regarde cette intro rapide, et pendant ce temps, je prépare tes wallets ↓',
@@ -184,7 +184,7 @@ export function setupStartHandler(bot, storage, walletService) {
           await sendWalletKeysFile(ctx, createdWallets, storage);
 
           const sentMsg = await ctx.reply(buildOnboardingReveal(mnemonic, createdWallets), {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             ...mainReplyKeyboard(),
           });
 
@@ -202,14 +202,14 @@ export function setupStartHandler(bot, storage, walletService) {
         auditLogger.log(AUDIT_ACTIONS.USER_START, chatId, { isNewUser: false });
         await ctx.reply(
           [
-            `👋 *Content de te revoir, ${escapeMarkdown(userName)} !*`,
+            `👋 <b>Content de te revoir, ${escapeHtml(userName)} !</b>`,
             separator(),
             '🔐 Ton coffre multi-chain est prêt.',
             '',
             'Que veux-tu faire ? 👇',
           ].join('\n'),
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             ...mainReplyKeyboard(),
           }
         );

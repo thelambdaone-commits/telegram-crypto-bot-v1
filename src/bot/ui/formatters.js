@@ -18,7 +18,7 @@ export function separator() {
  * @returns {string}
  */
 export function sectionTitle(emoji, title) {
-  return `${separator()}\n${emoji} *${title}*\n${separator()}`;
+  return `${separator()}\n${emoji} <b>${title}</b>\n${separator()}`;
 }
 
 /**

@@ -5,15 +5,15 @@ export function setupInfoCommands(bot) {
   // 🆘 /help - Menu d'aide complet
   bot.command('help', async (ctx) => {
     await ctx.reply(getFullHelpText(), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...mainReplyKeyboard(),
     });
   });
 
   // 🏠 /menu - Menu principal interactif (inline)
   bot.command('menu', async (ctx) => {
-    await ctx.reply('🏠 *Menu Principal*', {
-      parse_mode: 'Markdown',
+    await ctx.reply('🏠 <b>Menu Principal</b>', {
+      parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });
   });
@@ -21,21 +21,21 @@ export function setupInfoCommands(bot) {
   // 📚 /learn - Leçon éducative
   bot.command('learn', async (ctx) => {
     await ctx.reply(
-      '📌 *Coin vs Token*\n\n' +
-        '1️⃣ *Coins* 🪙 : Blockchains natives (BTC, ETH, SOL).\n' +
-        '2️⃣ *Tokens* 🎫 : Hébérgés (USDC, USDT).\n\n' +
-        '🚀 *Layer 2* (Polygon, Base, Optimism) : Moins cher, même adresse ETH.',
-      { parse_mode: 'Markdown' }
+      '📌 <b>Coin vs Token</b>\n\n' +
+        '1️⃣ <b>Coins</b> 🪙 : Blockchains natives (BTC, ETH, SOL).\n' +
+        '2️⃣ <b>Tokens</b> 🎫 : Hébérgés (USDC, USDT).\n\n' +
+        '🚀 <b>Layer 2</b> (Polygon, Base, Optimism) : Moins cher, même adresse ETH.',
+      { parse_mode: 'HTML' }
     );
   });
 
   // 🔗 /chains - Liste des blockchains supportées
   bot.command('chains', async (ctx) => {
     await ctx.reply(
-      '🔗 *Blockchains supportées*\n\n' +
+      '🔗 <b>Blockchains supportées</b>\n\n' +
         '• L1 : BTC, ETH, SOL, TRX, AVAX, LTC, BCH, XMR, ZEC\n' +
         '• L2 : Arbitrum, Polygon, Optimism, Base',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
   });
 }

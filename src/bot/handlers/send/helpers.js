@@ -43,28 +43,28 @@ export async function formatTxDetails(data, feeLevel) {
   let totalDisplay;
   if (tokenSymbol) {
     // If it's a token, show separately: Amount TOKEN + Fee NATIVE
-    totalDisplay = `*${data.amount.toFixed(6)} ${displaySymbol} + ${Number(feeAmount).toFixed(8)} ${nativeSymbol}*`;
+    totalDisplay = `<b>${data.amount.toFixed(6)} ${displaySymbol} + ${Number(feeAmount).toFixed(8)} ${nativeSymbol}</b>`;
   } else {
     // If it's native, show unified total
     const total = data.amount + Number.parseFloat(feeAmount);
-    totalDisplay = `*${total.toFixed(6)} ${nativeSymbol}*`;
+    totalDisplay = `<b>${total.toFixed(6)} ${nativeSymbol}</b>`;
   }
 
   const details =
-    "🏁 *Détails de l'envoi*\n\n" +
-    `📮 Vers : \`${truncateAddress(data.toAddress)}\`\n\n` +
-    `${EMOJIS.money} Montant: *${data.amount.toFixed(6)} ${displaySymbol}* (${formatEUR(amountEUR.valueEUR)})\n` +
-    `⛽ Frais: *${Number(feeAmount).toFixed(8)} ${nativeSymbol}* (${formatEUR(feeEUR.valueEUR)})\n` +
+    "🏁 <b>Détails de l'envoi</b>\n\n" +
+    `📮 Vers : <code>${truncateAddress(data.toAddress)}</code>\n\n` +
+    `${EMOJIS.money} Montant: <b>${data.amount.toFixed(6)} ${displaySymbol}</b> (${formatEUR(amountEUR.valueEUR)})\n` +
+    `⛽ Frais: <b>${Number(feeAmount).toFixed(8)} ${nativeSymbol}</b> (${formatEUR(feeEUR.valueEUR)})\n` +
     `💎 Total: ${totalDisplay}`;
 
   if (tokenSymbol && data.selectedChain === 'arb') {
     return (
       details +
-      "\n\n⚠️ *Attention:* Les frais sont payes en ETH native sur Arbitrum.\n\n💡 _Verifie bien l'adresse avant de confirmer._"
+      "\n\n⚠️ <b>Attention:</b> Les frais sont payes en ETH native sur Arbitrum.\n\n💡 <i>Verifie bien l'adresse avant de confirmer.</i>"
     );
   }
 
-  return details + "\n\n💡 _Verifie bien l'adresse avant de confirmer._";
+  return details + "\n\n💡 <i>Verifie bien l'adresse avant de confirmer.</i>";
 }
 
 /**
@@ -95,7 +95,7 @@ export async function handleSendError(ctx, error, mainMenuKeyboard) {
   }
 
   return ctx.editMessageText(message, {
-    parse_mode: 'Markdown',
+    parse_mode: 'HTML',
     ...mainMenuKeyboard(),
   });
 }

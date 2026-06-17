@@ -8,7 +8,7 @@ import {
   chainHasTokens,
   addressAnalyzedKeyboard,
 } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, safeEditMessage } from '../../utils.js';
+import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
 import { formatCryptoAmount } from '../../ui/formatters.js';
@@ -24,16 +24,16 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     const wallets = await storage.getWallets(chatId);
 
     if (wallets.length === 0) {
-      return ctx.editMessageText(`*${MESSAGES.noWallets}*`, {
-        parse_mode: 'Markdown',
+      return ctx.editMessageText(`<b>${escapeHtml(MESSAGES.noWallets)}</b>`, {
+        parse_mode: 'HTML',
         ...mainMenuKeyboard(),
       });
     }
 
     ctx.editMessageText(
-      `${EMOJIS.send} *Envoyer des fonds*\n\nDepuis quel wallet veux-tu envoyer ?`,
+      `${EMOJIS.send} <b>Envoyer des fonds</b>\n\nDepuis quel wallet veux-tu envoyer ?`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletListKeyboard(wallets, 'send_from_'),
       }
     );
@@ -57,8 +57,8 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     // Any chain that has tokens (USDC/USDT/…) offers a token choice; native-only
     // chains (BTC, LTC, XMR, …) go straight to the address step.
     if (chainHasTokens(wallet.chain)) {
-      ctx.editMessageText(`🚀 *Envoi depuis ${wallet.label}*\n\nSélectionne le token à envoyer :`, {
-        parse_mode: 'Markdown',
+      ctx.editMessageText(`🚀 <b>Envoi depuis ${escapeHtml(wallet.label)}</b>\n\nSélectionne le token à envoyer :`, {
+        parse_mode: 'HTML',
         ...tokenSelectionKeyboard(wallet.chain),
       });
     } else {
@@ -68,9 +68,9 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         [Markup.button.callback('❌ Annuler', 'cancel')],
       ]);
       ctx.editMessageText(
-        `🚀 *Envoi depuis ${wallet.label}*\n\nColle l'adresse du destinataire :`,
+        `🚀 <b>Envoi depuis ${escapeHtml(wallet.label)}</b>\n\nColle l'adresse du destinataire :`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...cancelKeyboard,
         }
       );
@@ -97,9 +97,9 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     ]);
 
     ctx.editMessageText(
-      `🚀 *Envoi ${tokenLabel} depuis ${chainSymbol}*\n\nColle l'adresse du destinataire :`,
+      `🚀 <b>Envoi ${escapeHtml(tokenLabel)} depuis ${chainSymbol}</b>\n\nColle l'adresse du destinataire :`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...cancelKeyboard,
       }
     );
@@ -126,19 +126,19 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
     if (matchingWallets.length === 0) {
       return ctx.editMessageText(
-        `⚠️ *Aucun wallet ${chain.toUpperCase()}*\n\n` +
+        `⚠️ <b>Aucun wallet ${chain.toUpperCase()}</b>\n\n` +
           `Tu n'as pas encore de wallet ${chain.toUpperCase()} pour envoyer à cette adresse.\n\n` +
           "Crées-en un d'abord !",
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
+        { parse_mode: 'HTML', ...mainMenuKeyboard() }
       );
     }
 
     sessions.updateData(chatId, { toAddress: address, selectedChain: chain });
 
     ctx.editMessageText(
-      `📬 *Envoyer à :*\n\`${address}\`\n\nDepuis quel wallet ${chain.toUpperCase()} ?`,
+      `📬 <b>Envoyer à :</b>\n<code>${address}</code>\n\nDepuis quel wallet ${chain.toUpperCase()} ?`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletListKeyboard(matchingWallets, 'send_analyzed_from_'),
       }
     );
@@ -155,8 +155,10 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       return safeEditMessage(ctx, '⚠️ Analyse expirée. Réanalyse une adresse.', mainMenuKeyboard());
     }
 
+    // `analyzedMessage` is produced (as HTML) by send/text-input.js;
+    // keep its parse_mode in sync with that producer.
     await safeEditMessage(ctx, data.analyzedMessage, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...addressAnalyzedKeyboard(data.analyzedChain, data.analyzedAddress),
     });
   });
@@ -178,30 +180,30 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       return safeEditMessage(ctx, '⚠️ Adresse non trouvée. Réanalyse une adresse.', mainMenuKeyboard());
     }
 
-    await safeEditMessage(ctx, '🔍 Recherche des transactions...', { parse_mode: 'Markdown' });
+    await safeEditMessage(ctx, '🔍 Recherche des transactions...', { parse_mode: 'HTML' });
     try {
       const txHistory = await walletService.getTransactionHistory(chain, address, 5);
 
       if (!txHistory || txHistory.length === 0) {
         return safeEditMessage(ctx, '📜 Aucune transaction trouvée.', {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...backKeyboard,
         });
       }
 
-      let text = `📜 *${txHistory.length} dernières transactions (${chain.toUpperCase()})*\n\n`;
+      let text = `📜 <b>${txHistory.length} dernières transactions (${chain.toUpperCase()})</b>\n\n`;
       for (const tx of txHistory) {
         const direction = tx.type === 'in' ? '📥' : '📤';
         const date = new Date(tx.timestamp).toLocaleDateString('fr-FR');
-        text += `${direction} *${formatCryptoAmount(tx.amount, chain)}*\n`;
+        text += `${direction} <b>${escapeHtml(formatCryptoAmount(tx.amount, chain))}</b>\n`;
         text += `📅 ${date}\n`;
-        text += `🔗 \`${tx.hash.slice(0, 12)}...${tx.hash.slice(-8)}\`\n\n`;
+        text += `🔗 <code>${tx.hash.slice(0, 12)}...${tx.hash.slice(-8)}</code>\n\n`;
       }
 
-      await safeEditMessage(ctx, text, { parse_mode: 'Markdown', ...backKeyboard });
+      await safeEditMessage(ctx, text, { parse_mode: 'HTML', ...backKeyboard });
     } catch (error) {
-      await safeEditMessage(ctx, `❌ Impossible de récupérer l'historique : ${error.message}`, {
-        parse_mode: 'Markdown',
+      await safeEditMessage(ctx, `❌ Impossible de récupérer l'historique : ${escapeHtml(error.message)}`, {
+        parse_mode: 'HTML',
         ...backKeyboard,
       });
     }
@@ -258,8 +260,8 @@ export function setupSendActions(bot, storage, walletService, sessions) {
       if (amount <= 0) {
         const symbol = tokenSymbol || data.selectedChain.toUpperCase();
         return ctx.editMessageText(
-          `💸 Solde insuffisant pour couvrir les frais.\n\nFrais estimés : ${estimatedFee} ${symbol}`,
-          { parse_mode: 'Markdown', ...mainMenuKeyboard() }
+          `💸 Solde insuffisant pour couvrir les frais.\n\nFrais estimés : ${escapeHtml(String(estimatedFee))} ${escapeHtml(symbol)}`,
+          { parse_mode: 'HTML', ...mainMenuKeyboard() }
         );
       }
 
@@ -280,13 +282,13 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         : await convertToEUR(data.selectedChain, amount);
 
       ctx.editMessageText(
-        '✨ *Montant sélectionné*\n\n' +
+        '✨ <b>Montant sélectionné</b>\n\n' +
           `${type === 'all' ? '💯 Tout envoyer' : '50% du solde'}\n` +
-          `💰 Montant : *${amount.toFixed(8)} ${displaySymbol}*\n` +
-          `💶 Valeur : ${formatEUR(amountEUR.valueEUR)}\n\n` +
+          `💰 Montant : <b>${amount.toFixed(8)} ${escapeHtml(displaySymbol)}</b>\n` +
+          `💶 Valeur : ${escapeHtml(formatEUR(amountEUR.valueEUR))}\n\n` +
           'Choisis la vitesse de transaction :',
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...feeSelectionKeyboard('slow'),
         }
       );
@@ -309,8 +311,8 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     ]);
 
     ctx.editMessageText(
-      '⌨️ *Saisie du montant*\n\n' + `Combien souhaites-tu envoyer (${label}) ?`,
-      { parse_mode: 'Markdown', ...cancelKeyboard }
+      '⌨️ <b>Saisie du montant</b>\n\n' + `Combien souhaites-tu envoyer (${escapeHtml(label)}) ?`,
+      { parse_mode: 'HTML', ...cancelKeyboard }
     );
     sessions.setState(chatId, 'ENTER_AMOUNT');
   });
@@ -329,7 +331,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
     sessions.setState(chatId, 'CONFIRM_SEND');
     ctx.editMessageText(text, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...confirmationKeyboard(),
     });
   });
@@ -352,8 +354,8 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         token: tokenSymbol,
       });
 
-      await ctx.editMessageText(`${EMOJIS.loading} *Transaction en cours...*`, {
-        parse_mode: 'Markdown',
+      await ctx.editMessageText(`${EMOJIS.loading} <b>Transaction en cours...</b>`, {
+        parse_mode: 'HTML',
       });
 
       const result = await walletService.sendTransaction(
@@ -409,10 +411,10 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
       const symbol = result.symbol || data.selectedChain.toUpperCase();
       await ctx.editMessageText(
-        `${EMOJIS.success} *Bravo ! Transaction envoyée*\n\n` +
-          `💰 Montant: ${data.amount} ${symbol}\n` +
-          `🔗 [Voir sur l'explorateur](${hashUrl})`,
-        { parse_mode: 'Markdown', disable_web_page_preview: true, ...mainMenuKeyboard() }
+        `${EMOJIS.success} <b>Bravo ! Transaction envoyée</b>\n\n` +
+          `💰 Montant: ${data.amount} ${escapeHtml(symbol)}\n` +
+          `🔗 <a href="${hashUrl}">Voir sur l'explorateur</a>`,
+        { parse_mode: 'HTML', disable_web_page_preview: true, ...mainMenuKeyboard() }
       );
 
       sessions.clearData(chatId);

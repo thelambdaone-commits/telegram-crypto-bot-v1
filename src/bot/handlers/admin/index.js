@@ -12,8 +12,8 @@ export function setupAdminHandlers(bot, storage, sessions, walletService) {
   bot.command('admin', async (ctx) => {
     if (!adminGuard(ctx)) return;
 
-    ctx.reply('👑 *Panel Administrateur*\n\n_Accès superuser actif_', {
-      parse_mode: 'Markdown',
+    ctx.reply('👑 <b>Panel Administrateur</b>\n\n<i>Accès superuser actif</i>', {
+      parse_mode: 'HTML',
       ...adminExtendedKeyboard(),
     });
   });
@@ -24,8 +24,8 @@ export function setupAdminHandlers(bot, storage, sessions, walletService) {
     if (!adminGuard(ctx)) return;
     sessions.clearState(ctx.chat.id);
 
-    ctx.editMessageText('👑 *Panel Administrateur*\n\n_Accès superuser actif_', {
-      parse_mode: 'Markdown',
+    ctx.editMessageText('👑 <b>Panel Administrateur</b>\n\n<i>Accès superuser actif</i>', {
+      parse_mode: 'HTML',
       ...adminExtendedKeyboard(),
     });
   });

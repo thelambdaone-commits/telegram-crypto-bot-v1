@@ -31,7 +31,7 @@ async function buildChainSection(walletService, chain, address) {
   const conversion = await convertToEUR(chain, balanceNum);
   let valueEUR = conversion.valueEUR || 0;
 
-  let text = `💰 *${balanceData.balance} ${nativeSymbol}*`;
+  let text = `💰 <b>${balanceData.balance} ${nativeSymbol}</b>`;
   text += valueEUR > 0 ? ` — ${formatEUR(valueEUR)}\n` : '\n';
 
   const tokens = await walletService.getPublicAddressTokens(chain, address);
@@ -44,12 +44,12 @@ async function buildChainSection(walletService, chain, address) {
     valueEUR += tokenValue;
 
     const amountStr = token.amount.toFixed(token.decimals <= 6 ? 2 : 6);
-    text += `   ${token.icon || '🪙'} *${token.symbol}:* ${amountStr}`;
+    text += `   ${token.icon || '🪙'} <b>${token.symbol}:</b> ${amountStr}`;
     text += tokenValue > 0 ? ` (${formatEUR(tokenValue)})\n` : '\n';
 
     if (!token.isKnown) {
       const tokenUrl = getTokenExplorerUrl(chain, token.mint);
-      if (tokenUrl) text += `      └ [🔗 Voir](${tokenUrl})\n`;
+      if (tokenUrl) text += `      └ <a href="${tokenUrl}">🔗 Voir</a>\n`;
     }
   }
 
@@ -77,16 +77,16 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
 
       if (detected !== validationChain) {
         return ctx.reply(
-          `⚠️ *Adresse invalide*\n\nL'adresse saisie n'est pas une adresse ${validationChain.toUpperCase()} valide.`,
-          { parse_mode: 'Markdown' }
+          `⚠️ <b>Adresse invalide</b>\n\nL'adresse saisie n'est pas une adresse ${validationChain.toUpperCase()} valide.`,
+          { parse_mode: 'HTML' }
         );
       }
 
       sessions.setData(chatId, { ...data, toAddress: text });
       sessions.setState(chatId, 'SELECT_AMOUNT_TYPE');
 
-      return ctx.reply('👉 *Vérification réussie*\n\nComment souhaites-tu saisir le montant ?', {
-        parse_mode: 'Markdown',
+      return ctx.reply('👉 <b>Vérification réussie</b>\n\nComment souhaites-tu saisir le montant ?', {
+        parse_mode: 'HTML',
         ...amountTypeKeyboard(),
       });
     }
@@ -135,12 +135,12 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
           : await convertToEUR(data.selectedChain, amount);
 
         ctx.reply(
-          '✅ *Montant validé*\n\n' +
-            `💰 Montant : *${amount.toFixed(8)} ${displaySymbol}*\n` +
+          '✅ <b>Montant validé</b>\n\n' +
+            `💰 Montant : <b>${amount.toFixed(8)} ${displaySymbol}</b>\n` +
             `💶 Valeur : ${formatEUR(amountEUR.valueEUR)}\n\n` +
             'Choisis la vitesse de transaction :',
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             ...feeSelectionKeyboard('slow'),
           }
         );
@@ -195,31 +195,31 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
         let message;
         if (isEvm) {
           message =
-            "🔍 *Analyse d'adresse EVM*\n\n" +
-            `📬 \`${text}\`\n` +
-            '_Même adresse scannée sur tous les réseaux EVM._\n';
+            "🔍 <b>Analyse d'adresse EVM</b>\n\n" +
+            `📬 <code>${text}</code>\n` +
+            '<i>Même adresse scannée sur tous les réseaux EVM.</i>\n';
 
           let total = 0;
           for (const net of EVM_NETWORKS) {
-            message += `\n${net.emoji} *${net.name}*\n`;
+            message += `\n${net.emoji} <b>${net.name}</b>\n`;
             try {
               const section = await buildChainSection(walletService, net.chain, text);
               message += section.text;
               total += section.valueEUR;
             } catch (e) {
-              message += '   ⚠️ _Réseau indisponible_\n';
+              message += '   ⚠️ <i>Réseau indisponible</i>\n';
               logger.warn('EVM network scan failed', { chain: net.chain, error: e.message });
             }
           }
-          message += `\n💶 *Valeur totale (EVM):* ${formatEUR(total)}`;
+          message += `\n💶 <b>Valeur totale (EVM):</b> ${formatEUR(total)}`;
         } else {
           const section = await buildChainSection(walletService, chain, text);
           message =
-            "🔍 *Analyse d'adresse*\n\n" +
-            `⛓ Réseau : *${chain.toUpperCase()}*\n` +
-            `📬 \`${text}\`\n\n` +
+            "🔍 <b>Analyse d'adresse</b>\n\n" +
+            `⛓ Réseau : <b>${chain.toUpperCase()}</b>\n` +
+            `📬 <code>${text}</code>\n\n` +
             section.text +
-            `\n💶 *Valeur totale :* ${formatEUR(section.valueEUR)}`;
+            `\n💶 <b>Valeur totale :</b> ${formatEUR(section.valueEUR)}`;
         }
 
         // Keep the rendered analysis so the history view can restore it on "Retour".
@@ -231,7 +231,7 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
 
         const { addressAnalyzedKeyboard } = await import('../../keyboards/index.js');
         ctx.reply(message, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...addressAnalyzedKeyboard(chain, text),
         });
         sessions.setState(chatId, 'IDLE');

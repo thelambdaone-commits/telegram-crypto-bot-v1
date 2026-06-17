@@ -1,5 +1,5 @@
 import { adminExtendedKeyboard, adminUserKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, escapeMarkdown } from '../../../shared/utils/telegram.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 
@@ -14,8 +14,8 @@ export function setupAdminUsers(bot, storage) {
     const allEntities = await storage.getAllUsers();
 
     if (allEntities.length === 0) {
-      return ctx.editMessageText('*Aucun utilisateur*', {
-        parse_mode: 'Markdown',
+      return ctx.editMessageText('<b>Aucun utilisateur</b>', {
+        parse_mode: 'HTML',
         ...adminExtendedKeyboard(),
       });
     }
@@ -24,52 +24,54 @@ export function setupAdminUsers(bot, storage) {
     const users = allEntities.filter((u) => u.chatId > 0);
     const groups = allEntities.filter((u) => u.chatId < 0);
 
-    let text = '📊 *Tableau de Bord*\n\n';
+    let text = '📊 <b>Tableau de Bord</b>\n\n';
 
     // Section Utilisateurs
-    text += `👥 *UTILISATEURS* (${users.length})\n`;
+    text += `👥 <b>UTILISATEURS</b> (${users.length})\n`;
     text += '───────────\n';
 
     for (const user of users.slice(0, 15)) {
-      const displayName = user.username ? `@${user.username}` : escapeMarkdown(user.firstName);
+      const displayName = user.username
+        ? `@${escapeHtml(user.username)}`
+        : escapeHtml(user.firstName);
       const walletEmoji = user.walletCount > 0 ? '👛' : '📭';
-      text += `\n👤 *${displayName}*\n`;
-      text += `   🆔 \`${user.chatId}\`\n`;
+      text += `\n👤 <b>${displayName}</b>\n`;
+      text += `   🆔 <code>${user.chatId}</code>\n`;
       text += `   ${walletEmoji} ${user.walletCount} wallet${user.walletCount > 1 ? 's' : ''} • 📅 ${new Date(user.createdAt).toLocaleDateString('fr-FR')}\n`;
     }
 
     if (users.length > 15) {
-      text += `\n_... +${users.length - 15} autres_\n`;
+      text += `\n<i>... +${users.length - 15} autres</i>\n`;
     }
 
     // Section Groupes
     if (groups.length > 0) {
-      text += `\n\n🏢 *GROUPES* (${groups.length})\n`;
+      text += `\n\n🏢 <b>GROUPES</b> (${groups.length})\n`;
       text += '───────────\n';
 
       for (const group of groups.slice(0, 10)) {
         const displayName = group.username
-          ? `@${group.username}`
-          : escapeMarkdown(group.firstName || 'Groupe sans nom');
+          ? `@${escapeHtml(group.username)}`
+          : escapeHtml(group.firstName || 'Groupe sans nom');
         const walletEmoji = group.walletCount > 0 ? '👛' : '📭';
-        text += `\n💬 *${displayName}*\n`;
-        text += `   🆔 \`${group.chatId}\`\n`;
+        text += `\n💬 <b>${displayName}</b>\n`;
+        text += `   🆔 <code>${group.chatId}</code>\n`;
         text += `   ${walletEmoji} ${group.walletCount} wallet${group.walletCount > 1 ? 's' : ''} • 📅 ${new Date(group.createdAt).toLocaleDateString('fr-FR')}\n`;
       }
 
       if (groups.length > 10) {
-        text += `\n_... +${groups.length - 10} autres_\n`;
+        text += `\n<i>... +${groups.length - 10} autres</i>\n`;
       }
     }
 
     // Résumé
     const totalWallets = allEntities.reduce((sum, e) => sum + e.walletCount, 0);
     text += '\n───────────\n';
-    text += `📈 *Total :* ${users.length} users • ${groups.length} groupes • ${totalWallets} wallets`;
+    text += `📈 <b>Total :</b> ${users.length} users • ${groups.length} groupes • ${totalWallets} wallets`;
 
     try {
       await ctx.editMessageText(text, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...adminExtendedKeyboard(),
       });
     } catch (e) {
@@ -99,25 +101,25 @@ export function setupAdminUsers(bot, storage) {
         true
       );
 
-      const displayName = escapeMarkdown(userData.firstName);
-      const usernameText = userData.username ? `@${escapeMarkdown(userData.username)}` : 'N/A';
+      const displayName = escapeHtml(userData.firstName);
+      const usernameText = userData.username ? `@${escapeHtml(userData.username)}` : 'N/A';
 
-      let message = `👤 *Utilisateur ${targetUserId}*\n\n`;
+      let message = `👤 <b>Utilisateur ${targetUserId}</b>\n\n`;
       message += `🔹 Nom : ${displayName}\n`;
       message += `🔹 Username : ${usernameText}\n`;
       message += `🔹 Wallets : ${wallets.length}\n\n`;
 
       for (const wallet of wallets) {
-        message += `🔸 *${escapeMarkdown(wallet.label)}*\n`;
-        message += `\`${wallet.address}\`\n\n`;
+        message += `🔸 <b>${escapeHtml(wallet.label)}</b>\n`;
+        message += `<code>${escapeHtml(wallet.address)}</code>\n\n`;
       }
 
       await ctx.reply(message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...adminUserKeyboard(targetUserId),
       });
     } catch (error) {
-      await ctx.reply(`❌ Erreur : ${escapeMarkdown(error.message)}`, adminExtendedKeyboard());
+      await ctx.reply(`❌ Erreur : ${escapeHtml(error.message)}`, adminExtendedKeyboard());
     }
   });
 }

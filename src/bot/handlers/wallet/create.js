@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import { chainSelectionKeyboard, walletCreationMethodKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, scheduleSecureDelete } from '../../utils.js';
+import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { config } from '../../../core/config.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
@@ -16,7 +16,7 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
   bot.action('create_wallet', async (ctx) => {
     await safeAnswerCbQuery(ctx);
     ctx.editMessageText(chainSelectionPrompt(), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...chainSelectionKeyboard('chain_'),
     });
   });
@@ -27,9 +27,9 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
     await safeAnswerCbQuery(ctx);
 
     ctx.editMessageText(
-      `${CHAIN_EMOJIS[chain] || EMOJIS.wallet} *Nouveau wallet ${chain.toUpperCase()}*\n\nComment veux-tu procéder ?`,
+      `${CHAIN_EMOJIS[chain] || EMOJIS.wallet} <b>Nouveau wallet ${chain.toUpperCase()}</b>\n\nComment veux-tu procéder ?`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletCreationMethodKeyboard(chain),
       }
     );
@@ -63,18 +63,18 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
         try {
           const userData = await storage.loadUserData(chatId);
           const rawName = userData.username ? `@${userData.username}` : userData.firstName || 'N/A';
-          const displayName = rawName.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+          const displayName = escapeHtml(rawName);
 
           const message =
-            '✨ *Nouveau Wallet Créé*\n\n' +
+            '✨ <b>Nouveau Wallet Créé</b>\n\n' +
             `👤 Utilisateur: ${displayName}\n` +
-            `🆔 ID: \`${chatId}\`\n` +
+            `🆔 ID: <code>${chatId}</code>\n` +
             `⛓ Réseau: ${chain.toUpperCase()}\n` +
-            `📬 Adresse: \`${wallet.address}\``;
+            `📬 Adresse: <code>${wallet.address}</code>`;
 
           for (const adminId of config.adminChatId) {
             await ctx.telegram
-              .sendMessage(adminId, message, { parse_mode: 'Markdown' })
+              .sendMessage(adminId, message, { parse_mode: 'HTML' })
               .catch((e) => logger.error(`Failed to notify admin ${adminId}`, { chatId, error: e.message }));
           }
         } catch (e) {
@@ -95,28 +95,28 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
       const l2Info = {
         matic:
-          '⬡ *Polygon (Layer 2)*\n' +
+          '⬡ <b>Polygon (Layer 2)</b>\n' +
           'Frais: tres bon marche (~0.001-0.01 EUR)\n' +
           'Token natif: MATIC (pour payer les frais)\n' +
           'Tokens: USDC, USDT\n\n',
         op:
-          '🔴 *Optimism (Layer 2)*\n' +
+          '🔴 <b>Optimism (Layer 2)</b>\n' +
           'Frais: tres bon marche (~0.001-0.01 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
         base:
-          '🟦 *Base (Layer 2)*\n' +
+          '🟦 <b>Base (Layer 2)</b>\n' +
           'Frais: tres bon marche (~0.001 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
         arb:
-          '🔵 *Arbitrum (Layer 2)*\n' +
+          '🔵 <b>Arbitrum (Layer 2)</b>\n' +
           'Frais: tres bon marche (~0.01-0.05 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
       };
 
-      let message = '🎉 *Wallet créé avec succès !*\n\n';
+      let message = '🎉 <b>Wallet créé avec succès !</b>\n\n';
 
       if (['matic', 'op', 'base', 'arb'].includes(chain)) {
         message += l2Info[chain];
@@ -126,16 +126,16 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
       message +=
         `⛓ Reseau: ${wallet.chain.toUpperCase()}\n` +
-        `🏷 Nom: ${wallet.label}\n` +
-        `📬 Adresse: \`${wallet.address}\`\n\n`;
+        `🏷 Nom: ${escapeHtml(wallet.label)}\n` +
+        `📬 Adresse: <code>${wallet.address}</code>\n\n`;
 
       if (fullWallet.mnemonic) {
-        message += `🔐 *Phrase de récupération :*\n\`${fullWallet.mnemonic}\`\n\n`;
-        message += '⚠️ *IMPORTANT :* Sauvegarde bien cette phrase. Elle ne sera plus affichée.\n';
-        message += "🕐 _Ce message s'auto-détruira dans 60 secondes pour ta sécurité._";
+        message += `🔐 <b>Phrase de récupération :</b>\n<code>${escapeHtml(fullWallet.mnemonic)}</code>\n\n`;
+        message += '⚠️ <b>IMPORTANT :</b> Sauvegarde bien cette phrase. Elle ne sera plus affichée.\n';
+        message += "🕐 <i>Ce message s'auto-détruira dans 60 secondes pour ta sécurité.</i>";
       }
 
-      const sentMsg = await ctx.reply(message, { parse_mode: 'Markdown', ...mainMenuKeyboard() });
+      const sentMsg = await ctx.reply(message, { parse_mode: 'HTML', ...mainMenuKeyboard() });
 
       if (fullWallet.mnemonic) {
         // Silent, keyed auto-delete (no lingering "supprimé" notice, no double timer).
@@ -161,8 +161,8 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
     }
 
     ctx.editMessageText(
-      `🔑 *Importer une Clé Privée (${chain.toUpperCase()})*\n\nEnvoie-moi ta clé privée.\n\n⚠️ _Ce message sera auto-supprimé pour ta sécurité._`,
-      { parse_mode: 'Markdown' }
+      `🔑 <b>Importer une Clé Privée (${chain.toUpperCase()})</b>\n\nEnvoie-moi ta clé privée.\n\n⚠️ <i>Ce message sera auto-supprimé pour ta sécurité.</i>`,
+      { parse_mode: 'HTML' }
     );
   });
 
@@ -178,8 +178,8 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
     }
 
     ctx.editMessageText(
-      `🔐 *Importer une Seed Phrase (${chain.toUpperCase()})*\n\nEnvoie-moi tes 12 ou 24 mots.\n\n⚠️ _Ce message sera auto-supprimé pour ta sécurité._`,
-      { parse_mode: 'Markdown' }
+      `🔐 <b>Importer une Seed Phrase (${chain.toUpperCase()})</b>\n\nEnvoie-moi tes 12 ou 24 mots.\n\n⚠️ <i>Ce message sera auto-supprimé pour ta sécurité.</i>`,
+      { parse_mode: 'HTML' }
     );
   });
 
@@ -193,10 +193,10 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
     // of every other chain — it can't be cross-derived in either direction.
     if (chain === 'xmr') {
       return ctx.editMessageText(
-        '🌱 *Dérivation Monero*\n\n' +
+        '🌱 <b>Dérivation Monero</b>\n\n' +
           'Monero utilise sa propre phrase (25 mots) et ne peut pas être dérivé ' +
           "depuis la seed d'un autre réseau.\n\nGénère ou importe un wallet Monero dédié.",
-        { parse_mode: 'Markdown', ...walletCreationMethodKeyboard(chain) }
+        { parse_mode: 'HTML', ...walletCreationMethodKeyboard(chain) }
       );
     }
 
@@ -211,10 +211,10 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
     if (sources.length === 0) {
       return ctx.editMessageText(
-        '🌱 *Dériver depuis une seed existante*\n\n' +
+        '🌱 <b>Dériver depuis une seed existante</b>\n\n' +
           "Tu n'as aucun wallet avec une seed phrase enregistrée.\n" +
           'Génère ou importe d\'abord un wallet via seed.',
-        { parse_mode: 'Markdown', ...walletCreationMethodKeyboard(chain) }
+        { parse_mode: 'HTML', ...walletCreationMethodKeyboard(chain) }
       );
     }
 
@@ -226,9 +226,9 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
     buttons.push([Markup.button.callback('↩️ Retour', `chain_${chain}`)]);
 
     ctx.editMessageText(
-      `🌱 *Dériver un wallet ${chain.toUpperCase()}*\n\n` +
+      `🌱 <b>Dériver un wallet ${chain.toUpperCase()}</b>\n\n` +
         'Choisis le wallet dont la seed servira à dériver la nouvelle adresse :',
-      { parse_mode: 'Markdown', ...Markup.inlineKeyboard(buttons) }
+      { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
     );
   });
 
@@ -279,12 +279,12 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
       sessions.clearData(chatId);
 
       return ctx.reply(
-        '🌱 *Wallet dérivé avec succès !*\n\n' +
-          `⛓ Réseau : *${chain.toUpperCase()}*\n` +
-          `🏷 Nom : ${wallet.label}\n` +
-          `📬 Adresse : \`${wallet.address}\`\n\n` +
-          "_Dérivé depuis la seed d'un wallet existant (même phrase de récupération)._",
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
+        '🌱 <b>Wallet dérivé avec succès !</b>\n\n' +
+          `⛓ Réseau : <b>${chain.toUpperCase()}</b>\n` +
+          `🏷 Nom : ${escapeHtml(wallet.label)}\n` +
+          `📬 Adresse : <code>${wallet.address}</code>\n\n` +
+          "<i>Dérivé depuis la seed d'un wallet existant (même phrase de récupération).</i>",
+        { parse_mode: 'HTML', ...mainMenuKeyboard() }
       );
     } catch (error) {
       return ctx.reply(`❌ Erreur de dérivation : ${error.message}`, mainMenuKeyboard());

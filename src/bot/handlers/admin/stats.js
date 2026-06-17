@@ -1,5 +1,5 @@
 import { adminExtendedKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
@@ -61,19 +61,19 @@ export function setupAdminStats(bot, storage, walletService) {
         }
       }
 
-      let text = '📊 *Statistiques Globales*\n\n';
-      text += `👥 Utilisateurs : *${stats.userCount}*\n`;
-      text += `👛 Wallets : *${stats.totalWallets}*\n`;
-      text += `🔄 Transactions : *${stats.totalTransactions}*\n\n`;
+      let text = '📊 <b>Statistiques Globales</b>\n\n';
+      text += `👥 Utilisateurs : <b>${stats.userCount}</b>\n`;
+      text += `👛 Wallets : <b>${stats.totalWallets}</b>\n`;
+      text += `🔄 Transactions : <b>${stats.totalTransactions}</b>\n\n`;
 
-      text += '⛓ *Par blockchain :*\n';
+      text += '⛓ <b>Par blockchain :</b>\n';
       Object.entries(stats.walletsByChain || {})
         .sort((a, b) => b[1] - a[1])
         .forEach(([chain, count]) => {
           text += `${chainEmojis[chain] || '●'} ${chain.toUpperCase()} : ${count}\n`;
         });
 
-      text += '\n💰 *Solde global :*\n';
+      text += '\n💰 <b>Solde global :</b>\n';
       Object.entries(globalBalances)
         .sort((a, b) => b[1] - a[1])
         .forEach(([chain, balance]) => {
@@ -86,15 +86,15 @@ export function setupAdminStats(bot, storage, walletService) {
           text += '\n';
         });
 
-      text += `\n💎 *Total Global : ${formatEUR(totalEUR)}*\n`;
+      text += `\n💎 <b>Total Global : ${formatEUR(totalEUR)}</b>\n`;
 
       if (failedFetches > 0) {
-        text += `\n⚠️ _${failedFetches} user(s) non récupéré(s) (API timeout)_`;
+        text += `\n⚠️ <i>${failedFetches} user(s) non récupéré(s) (API timeout)</i>`;
       }
 
       try {
         await ctx.editMessageText(text, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...adminExtendedKeyboard(),
         });
       } catch (e) {
@@ -105,8 +105,8 @@ export function setupAdminStats(bot, storage, walletService) {
       }
     } catch (error) {
       try {
-        await ctx.editMessageText(`❌ Erreur stats : ${error.message}`, {
-          parse_mode: 'Markdown',
+        await ctx.editMessageText(`❌ Erreur stats : ${escapeHtml(error.message)}`, {
+          parse_mode: 'HTML',
           ...adminExtendedKeyboard(),
         });
       } catch (e) {}

@@ -9,7 +9,7 @@
  * All asset/network metadata is derived from the single TOKEN_CONFIGS source.
  */
 import { Markup } from 'telegraf';
-import { safeAnswerCbQuery } from '../../utils.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../utils.js';
 import { CALLBACKS } from '../../constants/callbacks.js';
 import {
   getDepositAssets,
@@ -102,21 +102,22 @@ function confirmKeyboard(symbol, net, multiNetwork) {
 // ── Texts (French) ───────────────────────────────────────────────────────────
 
 const HOME_TEXT =
-  '📥 *Recevoir des fonds*\n' +
+  '📥 <b>Recevoir des fonds</b>\n' +
   '───────────\n' +
-  '💵 *Stablecoins* (USDT/USDC)\n' +
+  '💵 <b>Stablecoins</b> (USDT/USDC)\n' +
   "Choisis l'actif, puis le réseau de l'expéditeur.\n\n" +
-  '🪙 *Cryptos natives*\n' +
+  '🪙 <b>Cryptos natives</b>\n' +
   'Choisis la crypto, puis son réseau.\n\n' +
   '👇 Sélectionne un actif :\n' +
   '🟢 frais bas · 🔴 frais élevés';
 
 function networkPickText(symbol) {
+  const sym = escapeHtml(symbol);
   return (
-    `${iconFor(symbol)} *${symbol}*\n\n` +
-    `Où veux-tu recevoir ces *${symbol}* ?\n` +
+    `${iconFor(symbol)} <b>${sym}</b>\n\n` +
+    `Où veux-tu recevoir ces <b>${sym}</b> ?\n` +
     '🟢 frais bas · 🔴 frais élevés\n\n' +
-    '⚠️ *Important*\n' +
+    '⚠️ <b>Important</b>\n' +
     "Choisis exactement le réseau utilisé par l'expéditeur.\n" +
     'Un mauvais réseau → perte définitive des fonds.'
   );
@@ -125,32 +126,34 @@ function networkPickText(symbol) {
 function confirmText(symbol, net) {
   const fee = FEE_HINT[net.chain];
   const feeLine = fee ? `\nFrais : ${fee.emoji} ${fee.label}` : '';
+  const sym = escapeHtml(symbol);
   return (
-    '⚠️ *Vérifie bien*\n\n' +
-    `Actif : ${iconFor(symbol)} *${symbol}*\n` +
-    `Réseau : *${netLabel(net)}*${feeLine}\n\n` +
-    `Je comprends que seuls les *${symbol}* envoyés via *${net.chainName}* seront reçus.\n` +
+    '⚠️ <b>Vérifie bien</b>\n\n' +
+    `Actif : ${iconFor(symbol)} <b>${sym}</b>\n` +
+    `Réseau : <b>${escapeHtml(netLabel(net))}</b>${feeLine}\n\n` +
+    `Je comprends que seuls les <b>${sym}</b> envoyés via <b>${escapeHtml(net.chainName)}</b> seront reçus.\n` +
     'Tout envoi depuis un autre réseau entraînera une perte définitive des fonds.'
   );
 }
 
 function addressText(symbol, net, address) {
+  const sym = escapeHtml(symbol);
   return (
-    `💰 *Dépôt de ${symbol}*\n\n` +
-    `Actif : ${iconFor(symbol)} *${symbol}*\n` +
-    `Réseau : *${netLabel(net)}*\n` +
+    `💰 <b>Dépôt de ${sym}</b>\n\n` +
+    `Actif : ${iconFor(symbol)} <b>${sym}</b>\n` +
+    `Réseau : <b>${escapeHtml(netLabel(net))}</b>\n` +
     '━━━━━━━━━━━━━━━\n' +
-    `Adresse :\n\`${address}\`\n` +
+    `Adresse :\n<code>${address}</code>\n` +
     '━━━━━━━━━━━━━━━\n' +
-    `⚠️ N'envoie que des *${symbol}* via le réseau *${net.chainName}*.\n` +
+    `⚠️ N'envoie que des <b>${sym}</b> via le réseau <b>${escapeHtml(net.chainName)}</b>.\n` +
     'Les fonds envoyés depuis un autre réseau ne pourront pas être récupérés.'
   );
 }
 
 function noWalletText(symbol, net) {
   return (
-    `Tu n'as pas encore de wallet compatible avec *${net.chainName}* ` +
-    `pour recevoir des *${symbol}*.\n\nCrée d'abord un wallet sur ce réseau.`
+    `Tu n'as pas encore de wallet compatible avec <b>${escapeHtml(net.chainName)}</b> ` +
+    `pour recevoir des <b>${escapeHtml(symbol)}</b>.\n\nCrée d'abord un wallet sur ce réseau.`
   );
 }
 
@@ -161,20 +164,20 @@ function noWalletText(symbol, net) {
 async function renderHome(ctx) {
   const kb = assetsKeyboard();
   try {
-    await ctx.editMessageText(HOME_TEXT, { parse_mode: 'Markdown', ...kb });
+    await ctx.editMessageText(HOME_TEXT, { parse_mode: 'HTML', ...kb });
   } catch (e) {
     try {
       await ctx.deleteMessage();
     } catch (_) {
       // already gone
     }
-    await ctx.reply(HOME_TEXT, { parse_mode: 'Markdown', ...kb });
+    await ctx.reply(HOME_TEXT, { parse_mode: 'HTML', ...kb });
   }
 }
 
 async function showConfirmation(ctx, symbol, net, multiNetwork) {
   await ctx.editMessageText(confirmText(symbol, net), {
-    parse_mode: 'Markdown',
+    parse_mode: 'HTML',
     ...confirmKeyboard(symbol, net, multiNetwork),
   });
 }
@@ -188,13 +191,13 @@ export function setupDepositHandlers(bot, storage) {
   });
 
   const openReceive = async (ctx) => {
-    await ctx.reply(HOME_TEXT, { parse_mode: 'Markdown', ...assetsKeyboard() });
+    await ctx.reply(HOME_TEXT, { parse_mode: 'HTML', ...assetsKeyboard() });
   };
   bot.command('recevoir', openReceive);
   bot.command('receive', openReceive); // English alias
 
   bot.hears('📥 Recevoir', async (ctx) => {
-    await ctx.reply(HOME_TEXT, { parse_mode: 'Markdown', ...assetsKeyboard() });
+    await ctx.reply(HOME_TEXT, { parse_mode: 'HTML', ...assetsKeyboard() });
   });
 
   // Asset chosen → pick network (or skip straight to confirmation if single).
@@ -209,7 +212,7 @@ export function setupDepositHandlers(bot, storage) {
       return showConfirmation(ctx, symbol, networks[0], false);
     }
     await ctx.editMessageText(networkPickText(symbol), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...networksKeyboard(symbol, networks),
     });
   });
@@ -240,7 +243,7 @@ export function setupDepositHandlers(bot, storage) {
     const wallet = await resolveDepositWallet(storage, ctx.chat.id, chain);
     if (!wallet) {
       return ctx.editMessageText(noWalletText(symbol, net), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('➕ Nouveau', CALLBACKS.CREATE_WALLET)],
           [Markup.button.callback('↩️ Retour', CALLBACKS.DEPOSIT)],
@@ -280,12 +283,12 @@ export function setupDepositHandlers(bot, storage) {
       const buffer = await generateAddressQR(wallet.address, chain, qrOptions);
       await ctx.replyWithPhoto(
         { source: buffer },
-        { caption: addressText(symbol, net, wallet.address), parse_mode: 'Markdown', ...backKb }
+        { caption: addressText(symbol, net, wallet.address), parse_mode: 'HTML', ...backKb }
       );
     } catch (e) {
       logger.logError(e, { context: 'deposit.showAddress', chain, symbol });
       await ctx.reply(addressText(symbol, net, wallet.address), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...backKb,
       });
     }

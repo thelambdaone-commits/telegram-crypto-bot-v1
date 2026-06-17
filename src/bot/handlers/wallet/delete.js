@@ -1,5 +1,5 @@
 import { deleteConfirmKeyboard, mainMenuKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery } from '../../utils.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 
 export function setupWalletDelete(bot, storage) {
@@ -17,12 +17,12 @@ export function setupWalletDelete(bot, storage) {
     }
 
     ctx.editMessageText(
-      '🗑️ *Supprimer ce wallet ?*\n\n' +
-        `*${wallet.label}*\n` +
-        `\`${wallet.address}\`\n\n` +
-        "⚠️ _Assure-toi d'avoir sauvegardé tes clés avant de confirmer._",
+      '🗑️ <b>Supprimer ce wallet ?</b>\n\n' +
+        `<b>${escapeHtml(wallet.label)}</b>\n` +
+        `<code>${wallet.address}</code>\n\n` +
+        "⚠️ <i>Assure-toi d'avoir sauvegardé tes clés avant de confirmer.</i>",
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...deleteConfirmKeyboard(walletId),
       }
     );

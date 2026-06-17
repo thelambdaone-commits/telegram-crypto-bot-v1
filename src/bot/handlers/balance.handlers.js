@@ -16,11 +16,11 @@ export function setupBalanceHandlers(bot, storage, walletService) {
         .catch((e) => logger.warn('balance.editMessageText failed', { chatId, error: e.message }));
     }
 
-    const text = '💰 *Soldes de tes Wallets*' + await buildBalancesText(walletService, storage, chatId);
+    const text = '💰 <b>Soldes de tes Wallets</b>' + await buildBalancesText(walletService, storage, chatId);
 
     ctx
       .editMessageText(text, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...mainMenuKeyboard(),
       })
       .catch((e) => logger.warn('balance.editMessageText failed', { chatId, error: e.message }));
@@ -44,8 +44,8 @@ export function setupBalanceHandlers(bot, storage, walletService) {
 
   bot.hears('💰 Mes Wallets', async (ctx) => {
     const wallets = await storage.getWallets(ctx.chat.id);
-    ctx.reply('👛 *Tes Wallets*', {
-      parse_mode: 'Markdown',
+    ctx.reply('👛 <b>Tes Wallets</b>', {
+      parse_mode: 'HTML',
       ...walletListKeyboard(wallets, 'wallet_'),
     });
   });
@@ -74,8 +74,8 @@ export function setupBalanceHandlers(bot, storage, walletService) {
       return ctx.reply("❌ Tu n'as pas encore de wallet.");
     }
 
-    const text = '💰 *Soldes de tes Wallets*' + await buildBalancesText(walletService, storage, chatId);
-    await ctx.reply(text, { parse_mode: 'Markdown' });
+    const text = '💰 <b>Soldes de tes Wallets</b>' + await buildBalancesText(walletService, storage, chatId);
+    await ctx.reply(text, { parse_mode: 'HTML' });
   });
 
   bot.action('refresh_prices', async (ctx) => {

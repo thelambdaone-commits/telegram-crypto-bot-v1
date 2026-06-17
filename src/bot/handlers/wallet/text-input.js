@@ -1,6 +1,7 @@
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { EMOJIS } from '../../messages/index.js';
+import { escapeHtml } from '../../utils.js';
 
 export function setupWalletTextInput(bot, storage, walletService, sessions) {
   bot.on('text', async (ctx, next) => {
@@ -38,12 +39,12 @@ export function setupWalletTextInput(bot, storage, walletService, sessions) {
       await ctx.telegram.deleteMessage(chatId, loadingMsg.message_id);
 
       return ctx.reply(
-        '✅ *Wallet Importé avec succès !*\n\n' +
-          `⛓ Réseau : *${chain.toUpperCase()}*\n` +
-          `🏷 Nom : ${wallet.label}\n` +
-          `📬 Adresse : \`${wallet.address}\`\n\n` +
-          '_Ton wallet est maintenant prêt à être utilisé._',
-        { parse_mode: 'Markdown', ...mainMenuKeyboard() }
+        '✅ <b>Wallet Importé avec succès !</b>\n\n' +
+          `⛓ Réseau : <b>${chain.toUpperCase()}</b>\n` +
+          `🏷 Nom : ${escapeHtml(wallet.label)}\n` +
+          `📬 Adresse : <code>${wallet.address}</code>\n\n` +
+          '<i>Ton wallet est maintenant prêt à être utilisé.</i>',
+        { parse_mode: 'HTML', ...mainMenuKeyboard() }
       );
     } catch (error) {
       return ctx.reply(

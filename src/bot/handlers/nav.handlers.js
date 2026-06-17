@@ -15,8 +15,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Action: back_to_menu
   bot.action('back_to_menu', async (ctx) => {
     await ctx.answerCbQuery().catch((err) => logger.debug('back_to_menu answerCbQuery failed', { error: err.message }));
-    await safeEditMessage(ctx, '🏠 *Menu Principal*', {
-      parse_mode: 'Markdown',
+    await safeEditMessage(ctx, '🏠 <b>Menu Principal</b>', {
+      parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });
   });
@@ -26,8 +26,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     const chatId = ctx.chat.id;
     sessions.clearState(chatId);
     await ctx.answerCbQuery('Opération annulée').catch((err) => logger.debug('cancel answerCbQuery failed', { error: err.message }));
-    await safeEditMessage(ctx, '❌ *Opération annulée*', {
-      parse_mode: 'Markdown',
+    await safeEditMessage(ctx, '❌ <b>Opération annulée</b>', {
+      parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });
   });
@@ -46,7 +46,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   bot.action('help_menu', async (ctx) => {
     await ctx.answerCbQuery().catch((err) => logger.debug('help_menu answerCbQuery failed', { error: err.message }));
     await safeEditMessage(ctx, getFullHelpText(), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });
   });
@@ -55,8 +55,8 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   bot.hears(['💸 Envoyer', '📡 Envoyer', '📤 Envoyer'], async (ctx) => {
     const wallets = await storage.getWallets(ctx.chat.id);
     if (wallets.length === 0) return ctx.reply("❌ Tu n'as pas encore de wallet.");
-    ctx.reply('📡 *Envoyer des fonds*\n\nDepuis quel wallet ?', {
-      parse_mode: 'Markdown',
+    ctx.reply('📡 <b>Envoyer des fonds</b>\n\nDepuis quel wallet ?', {
+      parse_mode: 'HTML',
       ...walletListKeyboard(wallets, 'send_from_'),
     });
   });
@@ -65,9 +65,9 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   bot.hears(['🔍 Analyser', '🔎 Analyser'], async (ctx) => {
     sessions.setState(ctx.chat.id, 'ENTER_ADDRESS_ANALYZE');
     ctx.reply(
-      "🔎 *Analyse d'adresse*\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX) pour voir son solde et tous ses tokens.",
+      "🔎 <b>Analyse d'adresse</b>\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX) pour voir son solde et tous ses tokens.",
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...cancelKeyboard(),
       }
     );
@@ -76,7 +76,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Hears: ➕ Nouveau (anciens libellés conservés pour compat)
   bot.hears(['➕ Nouveau', '➕ Nouveau Wallet', '🆕 Nouveau Wallet'], async (ctx) => {
     ctx.reply(chainSelectionPrompt(), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...chainSelectionKeyboard('chain_'),
     });
   });
@@ -84,7 +84,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Hears: help buttons
   bot.hears(['❓ Aide', '🆘 Help', '🆘 Aide'], async (ctx) => {
     await ctx.reply(getFullHelpText(), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });
   });

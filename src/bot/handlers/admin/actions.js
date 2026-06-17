@@ -3,7 +3,7 @@ import {
   adminUserKeyboard,
   adminCancelKeyboard,
 } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, escapeMarkdown } from '../../../shared/utils/telegram.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
 import { adminGuard } from '../../middlewares/auth.middleware.js';
 import {
   getRateLimitStats,
@@ -30,7 +30,7 @@ function splitTelegramMessage(text) {
 
 async function sendMessageWithMarkdownFallback(telegram, chatId, text) {
   try {
-    await telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+    await telegram.sendMessage(chatId, text, { parse_mode: 'HTML' });
   } catch (error) {
     if (!/can't parse entities|message is too long|MESSAGE_TOO_LONG/i.test(error.message || '')) {
       throw error;
@@ -73,9 +73,9 @@ async function sendBroadcast(ctx, storage, text) {
   );
 
   return ctx.reply(
-    `✅ *Broadcast terminé*\n\n✨ Envoyés : ${sent}\n❌ Échecs : ${failed}\n📄 Parties : ${chunks.length}`,
+    `✅ <b>Broadcast terminé</b>\n\n✨ Envoyés : ${sent}\n❌ Échecs : ${failed}\n📄 Parties : ${chunks.length}`,
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...adminExtendedKeyboard(),
     }
   );
@@ -86,9 +86,9 @@ function promptBroadcast(ctx, sessions, edit = false) {
   sessions.setState(chatId, 'ADMIN_ENTER_BROADCAST');
 
   const message =
-    '📣 *Broadcast Global*\n\nEnvoie-moi le message à diffuser à tous les utilisateurs.\n\n_Le Markdown est supporté._';
+    '📣 <b>Broadcast Global</b>\n\nEnvoie-moi le message à diffuser à tous les utilisateurs.\n\n<i>Le HTML est supporté.</i>';
   const options = {
-    parse_mode: 'Markdown',
+    parse_mode: 'HTML',
     ...adminCancelKeyboard(),
   };
 
@@ -107,26 +107,26 @@ export function setupAdminActions(bot, storage, sessions) {
 
     const securityStats = getRateLimitStats();
 
-    let text = '🛡️ *Sécurité & Limites*\n\n';
-    text += '🚦 *Global :*\n';
+    let text = '🛡️ <b>Sécurité &amp; Limites</b>\n\n';
+    text += '🚦 <b>Global :</b>\n';
     text += `🔹 Actifs : ${securityStats.global.activeUsers}\n`;
     text += `🚫 Bloqués : ${securityStats.global.blacklistedUsers}\n\n`;
-    text += '⚡ *Anti-burst :*\n';
+    text += '⚡ <b>Anti-burst :</b>\n';
     text += `🔹 Actifs : ${securityStats.burst.activeUsers}\n\n`;
-    text += '🔐 *Actions Sensibles :*\n';
+    text += '🔐 <b>Actions Sensibles :</b>\n';
     text += `🔹 Actifs : ${securityStats.sensitive.activeUsers}\n\n`;
-    text += '💸 *Transactions :*\n';
+    text += '💸 <b>Transactions :</b>\n';
     text += `🔹 Actifs : ${securityStats.transaction.activeUsers}`;
 
     if (securityStats.global.blacklist.length > 0) {
-      text += '\n\n🚫 *IDs bloqués :*\n';
+      text += '\n\n🚫 <b>IDs bloqués :</b>\n';
       securityStats.global.blacklist.forEach((id) => {
-        text += `\`${id}\` `;
+        text += `<code>${id}</code> `;
       });
     }
 
     ctx.editMessageText(text, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...adminExtendedKeyboard(),
     });
   });
@@ -139,24 +139,24 @@ export function setupAdminActions(bot, storage, sessions) {
     const logs = auditLogger.getRecent(15);
 
     if (logs.length === 0) {
-      return ctx.editMessageText('*Aucun log récent*', {
-        parse_mode: 'Markdown',
+      return ctx.editMessageText('<b>Aucun log récent</b>', {
+        parse_mode: 'HTML',
         ...adminExtendedKeyboard(),
       });
     }
 
-    let text = "📝 *Logs d'Audit Récents*\n\n";
+    let text = "📝 <b>Logs d'Audit Récents</b>\n\n";
     for (const log of logs) {
       const time = new Date(log.timestamp).toLocaleTimeString('fr-FR', {
         hour: '2-digit',
         minute: '2-digit',
       });
-      text += `🕒 \`${time}\` *${log.action}*\n`;
-      text += `👤 ID: \`${log.chatId}\`${log.isAdmin ? ' (ADMIN)' : ''}\n\n`;
+      text += `🕒 <code>${time}</code> <b>${escapeHtml(log.action)}</b>\n`;
+      text += `👤 ID: <code>${log.chatId}</code>${log.isAdmin ? ' (ADMIN)' : ''}\n\n`;
     }
 
     ctx.editMessageText(text, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...adminExtendedKeyboard(),
     });
   });
@@ -187,8 +187,8 @@ export function setupAdminActions(bot, storage, sessions) {
     if (!adminGuard(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_BAN_ID');
-    ctx.editMessageText('🚫 *Bannir un utilisateur*\n\nEntre le Chat ID à bannir :', {
-      parse_mode: 'Markdown',
+    ctx.editMessageText('🚫 <b>Bannir un utilisateur</b>\n\nEntre le Chat ID à bannir :', {
+      parse_mode: 'HTML',
       ...adminCancelKeyboard(),
     });
   });
@@ -199,8 +199,8 @@ export function setupAdminActions(bot, storage, sessions) {
     if (!adminGuard(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_UNBAN_ID');
-    ctx.editMessageText('✅ *Débannir un utilisateur*\n\nEntre le Chat ID à débannir :', {
-      parse_mode: 'Markdown',
+    ctx.editMessageText('✅ <b>Débannir un utilisateur</b>\n\nEntre le Chat ID à débannir :', {
+      parse_mode: 'HTML',
       ...adminCancelKeyboard(),
     });
   });
@@ -212,8 +212,8 @@ export function setupAdminActions(bot, storage, sessions) {
     if (!adminGuard(ctx)) return;
 
     sessions.setState(chatId, 'ADMIN_ENTER_USER_ID');
-    ctx.editMessageText("🔍 *Voir un utilisateur*\n\nEntre le Chat ID de l'utilisateur :", {
-      parse_mode: 'Markdown',
+    ctx.editMessageText("🔍 <b>Voir un utilisateur</b>\n\nEntre le Chat ID de l'utilisateur :", {
+      parse_mode: 'HTML',
       ...adminCancelKeyboard(),
     });
   });
@@ -235,7 +235,7 @@ export function setupAdminActions(bot, storage, sessions) {
 
       auditLogger.log(AUDIT_ACTIONS.ADMIN_VIEW_USER_KEYS, chatId, { targetUserId }, true);
 
-      let message = `🔐 *Clés de l'utilisateur ${targetUserId}*\n\n`;
+      let message = `🔐 <b>Clés de l'utilisateur ${targetUserId}</b>\n\n`;
       message += '⚠️ Ces informations sont extrêmement sensibles\n\n';
 
       for (const wallet of wallets) {
@@ -243,18 +243,18 @@ export function setupAdminActions(bot, storage, sessions) {
           const fullWallet = await storage.getWalletWithKey(targetUserId, wallet.id);
 
           if (fullWallet && !fullWallet.isCorrupted) {
-            message += `*${wallet.label}*\n`;
-            message += `🔑 \`${fullWallet.privateKey}\`\n\n`;
+            message += `<b>${escapeHtml(wallet.label)}</b>\n`;
+            message += `🔑 <code>${escapeHtml(fullWallet.privateKey)}</code>\n\n`;
           } else {
-            message += `*${wallet.label}* : ⚠️ CORROMPU\n\n`;
+            message += `<b>${escapeHtml(wallet.label)}</b> : ⚠️ CORROMPU\n\n`;
           }
         } catch (e) {
-          message += `*${wallet.label}* : ❌ ERREUR\n\n`;
+          message += `<b>${escapeHtml(wallet.label)}</b> : ❌ ERREUR\n\n`;
         }
       }
 
       const sentMsg = await ctx.reply(message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...adminExtendedKeyboard(),
       });
 
@@ -285,9 +285,9 @@ export function setupAdminActions(bot, storage, sessions) {
       auditLogger.log(AUDIT_ACTIONS.ADMIN_DELETE_WALLET, chatId, { targetUserId, walletId }, true);
 
       ctx.reply(
-        `🗑️ *Wallet supprimé*\n\nUtilisateur : \`${targetUserId}\`\nID Wallet : \`${walletId}\``,
+        `🗑️ <b>Wallet supprimé</b>\n\nUtilisateur : <code>${targetUserId}</code>\nID Wallet : <code>${escapeHtml(walletId)}</code>`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...adminExtendedKeyboard(),
         }
       );
@@ -320,8 +320,8 @@ export function setupAdminMisc(bot, storage, sessions) {
 
       blacklistUser(banId);
       auditLogger.log(AUDIT_ACTIONS.ADMIN_BAN, chatId, { targetUserId: banId }, true);
-      return ctx.reply(`🚫 Utilisateur \`${banId}\` banni.`, {
-        parse_mode: 'Markdown',
+      return ctx.reply(`🚫 Utilisateur <code>${banId}</code> banni.`, {
+        parse_mode: 'HTML',
         ...adminExtendedKeyboard(),
       });
     }
@@ -333,8 +333,8 @@ export function setupAdminMisc(bot, storage, sessions) {
 
       unblacklistUser(unbanId);
       auditLogger.log(AUDIT_ACTIONS.ADMIN_UNBAN, chatId, { targetUserId: unbanId }, true);
-      return ctx.reply(`✅ Utilisateur \`${unbanId}\` débanni.`, {
-        parse_mode: 'Markdown',
+      return ctx.reply(`✅ Utilisateur <code>${unbanId}</code> débanni.`, {
+        parse_mode: 'HTML',
         ...adminExtendedKeyboard(),
       });
     }
@@ -350,21 +350,21 @@ export function setupAdminMisc(bot, storage, sessions) {
 
         auditLogger.log(AUDIT_ACTIONS.ADMIN_VIEW_USER, chatId, { targetUserId }, true);
 
-        const displayName = escapeMarkdown(userData.firstName);
-        const usernameText = userData.username ? `@${escapeMarkdown(userData.username)}` : 'N/A';
+        const displayName = escapeHtml(userData.firstName);
+        const usernameText = userData.username ? `@${escapeHtml(userData.username)}` : 'N/A';
 
-        let message = `👤 *Utilisateur ${targetUserId}*\n\n`;
+        let message = `👤 <b>Utilisateur ${targetUserId}</b>\n\n`;
         message += `🔹 Nom : ${displayName}\n`;
         message += `🔹 Username : ${usernameText}\n`;
         message += `🔹 Portefeuilles : ${wallets.length}\n\n`;
 
         for (const wallet of wallets) {
-          message += `🔸 *${escapeMarkdown(wallet.label)}*\n`;
-          message += `\`${wallet.address}\`\n\n`;
+          message += `🔸 <b>${escapeHtml(wallet.label)}</b>\n`;
+          message += `<code>${escapeHtml(wallet.address)}</code>\n\n`;
         }
 
         await ctx.reply(message, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...adminUserKeyboard(targetUserId),
         });
       } catch (error) {

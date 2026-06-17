@@ -64,10 +64,10 @@ export async function recordDailyVolume(storage, chatId, amount, chain) {
 
 export function formatDailyLimitMessage(check, symbol) {
   return (
-    '🚧 *Circuit breaker activé*\n\n' +
-    `Limite journalière ${check.chain.toUpperCase()}: *${check.limit} ${symbol}*\n` +
-    `Volume actuel: *${check.current.toFixed(6)} ${symbol}*\n` +
-    `Tentative: *${(check.next - check.current).toFixed(6)} ${symbol}*\n\n` +
+    '🚧 <b>Circuit breaker activé</b>\n\n' +
+    `Limite journalière ${check.chain.toUpperCase()}: <b>${check.limit} ${symbol}</b>\n` +
+    `Volume actuel: <b>${check.current.toFixed(6)} ${symbol}</b>\n` +
+    `Tentative: <b>${(check.next - check.current).toFixed(6)} ${symbol}</b>\n\n` +
     'Réessaie demain ou contacte un administrateur.'
   );
 }
@@ -92,11 +92,11 @@ function shouldNotify(chatId, now = Date.now()) {
 function notifyAdminsAutoBlacklist(ctx, chatId) {
   logger.warn('User auto-blacklisted (flood detected)', { chatId });
   const text =
-    '🚨 *Auto-blacklist*\n\n' +
-    `Utilisateur \`${chatId}\` bloqué automatiquement (flood détecté).\n` +
+    '🚨 <b>Auto-blacklist</b>\n\n' +
+    `Utilisateur <code>${chatId}</code> bloqué automatiquement (flood détecté).\n` +
     'Débanne-le via le panel /admin si nécessaire.';
   for (const adminId of config.adminChatId) {
-    ctx.telegram?.sendMessage(adminId, text, { parse_mode: 'Markdown' }).catch(() => {});
+    ctx.telegram?.sendMessage(adminId, text, { parse_mode: 'HTML' }).catch(() => {});
   }
 }
 

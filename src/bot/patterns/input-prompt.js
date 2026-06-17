@@ -121,9 +121,9 @@ export async function inputPrompt(ctx, options) {
   ]);
 
   if (ctx.callbackQuery?.message) {
-    await ctx.editMessageText(message, { parse_mode: 'Markdown', ...keyboard });
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
   } else {
-    await ctx.reply(message, { parse_mode: 'Markdown', ...keyboard });
+    await ctx.reply(message, { parse_mode: 'HTML', ...keyboard });
   }
 
   return promise;

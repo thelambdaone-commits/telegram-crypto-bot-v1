@@ -104,14 +104,17 @@ export async function setupHandlers(bot, storage) {
   setupCommands(bot, storage, walletService, sessions);
 
   bot.command('id', (ctx) => {
-    ctx.reply(`🆔 *Ton ChatID* : \`${ctx.chat.id}\`\n👤 *Ton UserID* : \`${ctx.from.id}\``, {
-      parse_mode: 'Markdown',
-    });
+    ctx.reply(
+      `🆔 <b>Ton ChatID</b> : <code>${ctx.chat.id}</code>\n👤 <b>Ton UserID</b> : <code>${ctx.from.id}</code>`,
+      {
+        parse_mode: 'HTML',
+      }
+    );
   });
 
   bot.hears('👑 Admin', async (ctx) => {
     if (!adminGuard(ctx)) return;
-    ctx.reply('👑 *Panel Admin*', adminExtendedKeyboard());
+    ctx.reply('👑 <b>Panel Admin</b>', { parse_mode: 'HTML', ...adminExtendedKeyboard() });
   });
 
   return { sessions, walletService, depositMonitor };

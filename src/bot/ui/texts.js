@@ -11,41 +11,41 @@ import { sectionTitle, separator } from './formatters.js';
  */
 export function getFullHelpText() {
   return `
-🎮 *Aide du Bot*
+🎮 <b>Aide du Bot</b>
 
 ${sectionTitle('🔐', 'WALLETS')}
-\`/wallet\` — 👛 Affiche tes wallets
-\`/gen <réseau>\` — 🆕 Générer un wallet (\`/gen\` pour la liste)
-\`/receive\` — 📥 Adresse + QR (par actif/réseau)
-\`/bal <réseau> <adresse>\` — 💰 Vérifier un solde
+<code>/wallet</code> — 👛 Affiche tes wallets
+<code>/gen &lt;réseau&gt;</code> — 🆕 Générer un wallet (<code>/gen</code> pour la liste)
+<code>/receive</code> — 📥 Adresse + QR (par actif/réseau)
+<code>/bal &lt;réseau&gt; &lt;adresse&gt;</code> — 💰 Vérifier un solde
 
 ${sectionTitle('💸', 'TRANSACTIONS')}
-\`/send <réseau> <adresse> <montant>\` — 📤 Envoyer des cryptos
-\`/tx <réseau> <adresse> [limite]\` — 📜 Historique des transactions
+<code>/send &lt;réseau&gt; &lt;adresse&gt; &lt;montant&gt;</code> — 📤 Envoyer des cryptos
+<code>/tx &lt;réseau&gt; &lt;adresse&gt; [limite]</code> — 📜 Historique des transactions
 
 ${sectionTitle('📊', 'INFOS MARCHÉ')}
-\`/price\` — 💹 Prix en EUR
-\`/gas [eth|btc|sol]\` — ⛽ Frais de transaction
-\`/graph <token> [7|30|90|365]\` — 📈 Graphique (défaut 365j)
+<code>/price</code> — 💹 Prix en EUR
+<code>/gas [eth|btc|sol]</code> — ⛽ Frais de transaction
+<code>/graph &lt;token&gt; [7|30|90|365]</code> — 📈 Graphique (défaut 365j)
 
 ${sectionTitle('🔢', "CONVERSION D'UNITÉS")}
-\`/unit <montant> <unité>\` — Convertir les unités crypto
+<code>/unit &lt;montant&gt; &lt;unité&gt;</code> — Convertir les unités crypto
 BTC ↔ satoshi · ETH ↔ gwei/wei · SOL ↔ lamport
 XMR ↔ piconero · ZEC ↔ zatoshi · TRX ↔ sun
 
-_Ex : /unit 1 btc → 100 000 000 satoshis_
+<i>Ex : /unit 1 btc → 100 000 000 satoshis</i>
 
 ${sectionTitle('📚', 'ÉDUCATION')}
-\`/learn\` — 📖 Coin vs Token
+<code>/learn</code> — 📖 Coin vs Token
 
 ${sectionTitle('🆘', 'GÉNÉRAL')}
-\`/start\` — 🚀 Démarrer
-\`/menu\` — 🏠 Menu principal
-\`/chains\` — 🔗 Blockchains supportées
-\`/id\` — 🆔 Ton ChatID / UserID
-\`/help\` — ❓ Cette aide
+<code>/start</code> — 🚀 Démarrer
+<code>/menu</code> — 🏠 Menu principal
+<code>/chains</code> — 🔗 Blockchains supportées
+<code>/id</code> — 🆔 Ton ChatID / UserID
+<code>/help</code> — ❓ Cette aide
 
-💡 *Astuce :* Utilise les boutons du menu pour naviguer plus facilement
+💡 <b>Astuce :</b> Utilise les boutons du menu pour naviguer plus facilement
   `.trim();
 }
 
@@ -57,11 +57,11 @@ ${sectionTitle('🆘', 'GÉNÉRAL')}
  */
 export function chainSelectionPrompt() {
   return [
-    '🌐 *Choisis ton réseau*',
+    '🌐 <b>Choisis ton réseau</b>',
     separator(),
     '🔑 Chaque réseau possède sa propre adresse.',
-    "💵 Les stablecoins *USDT* / *USDC* arrivent sur le réseau de l'adresse choisie.",
+    "💵 Les stablecoins <b>USDT</b> / <b>USDC</b> arrivent sur le réseau de l'adresse choisie.",
     '',
-    '⚠️ Un envoi depuis un *mauvais réseau* entraîne une *perte définitive* des fonds.',
+    '⚠️ Un envoi depuis un <b>mauvais réseau</b> entraîne une <b>perte définitive</b> des fonds.',
   ].join('\n');
 }

@@ -1,7 +1,7 @@
 import { logger } from '../shared/logger.js';
 import { config } from './config.js';
 import { formatEUR, convertToEUR } from '../shared/price.js';
-import { escapeMarkdown } from '../shared/utils/telegram.js';
+import { escapeHtml } from '../shared/utils/telegram.js';
 
 const DEFAULT_MONITOR_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_MONITOR_CONCURRENCY = 4;
@@ -131,7 +131,7 @@ export class DepositMonitor {
 
     try {
       const userData = await this.storage.loadUserData(chatId);
-      const displayName = escapeMarkdown(
+      const displayName = escapeHtml(
         userData.username ? `@${userData.username}` : userData.firstName
       );
       const conversion = await convertToEUR(wallet.chain, amount);
@@ -140,12 +140,12 @@ export class DepositMonitor {
       const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
       const message =
-        '💰 *Depot Detecte*\n\n' +
+        '💰 <b>Depot Detecte</b>\n\n' +
         `👤 Utilisateur: ${displayName}\n` +
-        `🆔 Chat ID: \`${chatId}\`\n` +
-        `💼 Wallet: ${escapeMarkdown(wallet.label)}\n` +
+        `🆔 Chat ID: <code>${chatId}</code>\n` +
+        `💼 Wallet: ${escapeHtml(wallet.label)}\n` +
         `⛓ Blockchain: ${wallet.chain.toUpperCase()}\n` +
-        `📬 Adresse: \`${wallet.address}\`\n` +
+        `📬 Adresse: <code>${wallet.address}</code>\n` +
         `💵 Montant: ${amount.toFixed(8)} ${wallet.chain.toUpperCase()}\n` +
         `💶 Valeur: ${formatEUR(conversion.valueEUR)}\n` +
         `📊 Nouveau solde: ${wallet.balance} ${wallet.chain.toUpperCase()}\n` +
@@ -153,7 +153,7 @@ export class DepositMonitor {
 
       for (const adminId of config.adminChatId) {
         await this.bot.telegram
-          .sendMessage(adminId, message, { parse_mode: 'Markdown' })
+          .sendMessage(adminId, message, { parse_mode: 'HTML' })
           .catch((e) =>
             logger.warn('Deposit monitor admin notification failed', {
               adminId,

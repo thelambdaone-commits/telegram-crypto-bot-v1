@@ -59,9 +59,9 @@ export async function confirmFlow(ctx, options) {
   ]);
 
   if (ctx.callbackQuery?.message) {
-    await ctx.editMessageText(message, { parse_mode: 'Markdown', ...keyboard });
+    await ctx.editMessageText(message, { parse_mode: 'HTML', ...keyboard });
   } else {
-    await ctx.reply(message, { parse_mode: 'Markdown', ...keyboard });
+    await ctx.reply(message, { parse_mode: 'HTML', ...keyboard });
   }
 
   const record = {

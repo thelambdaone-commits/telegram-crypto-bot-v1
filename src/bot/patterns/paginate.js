@@ -91,7 +91,7 @@ export function createPaginator(bot, options = {}) {
 
     try {
       await ctx.editMessageText(text, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard(buttons),
       });
     } catch {
@@ -117,9 +117,9 @@ export function createPaginator(bot, options = {}) {
     if (items.length === 0) {
       text += emptyMessage;
       if (msg) {
-        await ctx.editMessageText(text, { parse_mode: 'Markdown' }).catch(() => {});
+        await ctx.editMessageText(text, { parse_mode: 'HTML' }).catch(() => {});
       } else {
-        await ctx.reply(text, { parse_mode: 'Markdown' }).catch(() => {});
+        await ctx.reply(text, { parse_mode: 'HTML' }).catch(() => {});
       }
       return;
     }
@@ -146,13 +146,13 @@ export function createPaginator(bot, options = {}) {
     let messageId;
     if (msg) {
       await ctx.editMessageText(text, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard(buttons),
       });
       messageId = msg.message_id;
     } else {
       const sent = await ctx.reply(text, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...Markup.inlineKeyboard(buttons),
       });
       messageId = sent.message_id;

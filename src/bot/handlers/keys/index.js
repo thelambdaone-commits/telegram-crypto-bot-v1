@@ -5,7 +5,7 @@ import {
   corruptedWalletKeyboard,
 } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
-import { safeAnswerCbQuery, scheduleSecureDelete } from '../../utils.js';
+import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../utils.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { logger } from '../../../shared/logger.js';
@@ -22,16 +22,16 @@ export function setupKeysHandlers(bot, storage, walletService) {
     const wallets = await storage.getWallets(chatId);
 
     if (wallets.length === 0) {
-      return ctx.editMessageText(`*${MESSAGES.noWallets}*`, {
-        parse_mode: 'Markdown',
+      return ctx.editMessageText(`<b>${escapeHtml(MESSAGES.noWallets)}</b>`, {
+        parse_mode: 'HTML',
         ...mainMenuKeyboard(),
       });
     }
 
     ctx.editMessageText(
-      `${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`,
+      `${EMOJIS.lock} <b>Sauvegarder tes clés</b>\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ <i>Ne partage jamais ces clés avec personne.</i>`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletListKeyboard(wallets, 'keys_'),
       }
     );
@@ -42,16 +42,16 @@ export function setupKeysHandlers(bot, storage, walletService) {
     const wallets = await storage.getWallets(chatId);
 
     if (wallets.length === 0) {
-      return ctx.reply(`*${MESSAGES.noWallets}*`, {
-        parse_mode: 'Markdown',
+      return ctx.reply(`<b>${escapeHtml(MESSAGES.noWallets)}</b>`, {
+        parse_mode: 'HTML',
         ...mainMenuKeyboard(),
       });
     }
 
     ctx.reply(
-      `${EMOJIS.lock} *Sauvegarder tes clés*\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ _Ne partage jamais ces clés avec personne._`,
+      `${EMOJIS.lock} <b>Sauvegarder tes clés</b>\n\nSélectionne un wallet pour voir ses informations secrètes.\n\n⚠️ <i>Ne partage jamais ces clés avec personne.</i>`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletListKeyboard(wallets, 'keys_'),
       }
     );
@@ -71,9 +71,9 @@ export function setupKeysHandlers(bot, storage, walletService) {
     }
 
     ctx.editMessageText(
-      `📑 *${wallet.label}*\n\nAdresse :\n\`${wallet.address}\`\n\nQue souhaites-tu afficher ?`,
+      `📑 <b>${escapeHtml(wallet.label)}</b>\n\nAdresse :\n<code>${wallet.address}</code>\n\nQue souhaites-tu afficher ?`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletActionsKeyboard(walletId),
       }
     );
@@ -89,8 +89,8 @@ export function setupKeysHandlers(bot, storage, walletService) {
     const wallet = wallets.find((w) => w.id === walletId);
 
     if (wallet) {
-      ctx.reply(`\`${wallet.address}\`\n\n_Appuie sur l'adresse pour la copier si besoin._`, {
-        parse_mode: 'Markdown',
+      ctx.reply(`<code>${wallet.address}</code>\n\n<i>Appuie sur l'adresse pour la copier si besoin.</i>`, {
+        parse_mode: 'HTML',
       });
     }
   });
@@ -113,8 +113,8 @@ export function setupKeysHandlers(bot, storage, walletService) {
       await ctx.replyWithPhoto(
         { source: buffer },
         {
-          caption: `📷 *${wallet.label}*\n${wallet.chain.toUpperCase()}\n\`${wallet.address}\``,
-          parse_mode: 'Markdown',
+          caption: `📷 <b>${escapeHtml(wallet.label)}</b>\n${wallet.chain.toUpperCase()}\n<code>${wallet.address}</code>`,
+          parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
             [Markup.button.callback('↩️ Retour', `qr_back_${walletId}`)],
           ]),
@@ -159,8 +159,8 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       if (wallet.isCorrupted) {
         return ctx.editMessageText(
-          '⚠️ *Wallet corrompu*\n\nLa clé de chiffrement a changé. Les données ne peuvent plus être récupérées.\n\n_Supprime ce wallet et recrées-en un._',
-          { parse_mode: 'Markdown', ...corruptedWalletKeyboard(walletId) }
+          '⚠️ <b>Wallet corrompu</b>\n\nLa clé de chiffrement a changé. Les données ne peuvent plus être récupérées.\n\n<i>Supprime ce wallet et recrées-en un.</i>',
+          { parse_mode: 'HTML', ...corruptedWalletKeyboard(walletId) }
         );
       }
 
@@ -168,7 +168,7 @@ export function setupKeysHandlers(bot, storage, walletService) {
         return ctx.editMessageText(
           'ℹ️ Pas de seed phrase pour ce wallet (importé via clé privée).',
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             ...mainMenuKeyboard(),
           }
         );
@@ -177,12 +177,12 @@ export function setupKeysHandlers(bot, storage, walletService) {
       auditLogger.log(AUDIT_ACTIONS.VIEW_SEED, chatId, { walletId, chain: wallet.chain });
 
       const message =
-        '🔐 *Phrase de Récupération*\n\n' +
-        `\`${wallet.mnemonic}\`\n\n` +
-        '⚠️ *IMPORTANT :* Garde cette phrase secrète ! Elle donne accès à tes fonds.\n\n' +
+        '🔐 <b>Phrase de Récupération</b>\n\n' +
+        `<code>${escapeHtml(wallet.mnemonic)}</code>\n\n` +
+        '⚠️ <b>IMPORTANT :</b> Garde cette phrase secrète ! Elle donne accès à tes fonds.\n\n' +
         '🕐 Ce message sera supprimé dans 30 secondes.';
 
-      const sentMsg = await ctx.reply(message, { parse_mode: 'Markdown', ...mainMenuKeyboard() });
+      const sentMsg = await ctx.reply(message, { parse_mode: 'HTML', ...mainMenuKeyboard() });
 
       scheduleSecureDelete(ctx, `seed_${chatId}`, sentMsg.message_id, 30000);
     } catch (error) {
@@ -214,20 +214,20 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       if (wallet.isCorrupted) {
         return ctx.editMessageText(
-          '⚠️ *Wallet corrompu*\n\nLa clé de chiffrement a changé. Les données ne peuvent plus être récupérées.\n\n_Supprime ce wallet et recrées-en un._',
-          { parse_mode: 'Markdown', ...corruptedWalletKeyboard(walletId) }
+          '⚠️ <b>Wallet corrompu</b>\n\nLa clé de chiffrement a changé. Les données ne peuvent plus être récupérées.\n\n<i>Supprime ce wallet et recrées-en un.</i>',
+          { parse_mode: 'HTML', ...corruptedWalletKeyboard(walletId) }
         );
       }
 
       auditLogger.log(AUDIT_ACTIONS.VIEW_PRIVKEY, chatId, { walletId, chain: wallet.chain });
 
       const message =
-        '🔑 *Clé Privée*\n\n' +
-        `\`${wallet.privateKey}\`\n\n` +
-        '⚠️ *ATTENTION :* Cette clé donne un accès TOTAL à tes fonds ! Ne la partage jamais.\n\n' +
+        '🔑 <b>Clé Privée</b>\n\n' +
+        `<code>${escapeHtml(wallet.privateKey)}</code>\n\n` +
+        '⚠️ <b>ATTENTION :</b> Cette clé donne un accès TOTAL à tes fonds ! Ne la partage jamais.\n\n' +
         '🕐 Ce message sera supprimé dans 30 secondes.';
 
-      const sentMsg = await ctx.reply(message, { parse_mode: 'Markdown', ...mainMenuKeyboard() });
+      const sentMsg = await ctx.reply(message, { parse_mode: 'HTML', ...mainMenuKeyboard() });
 
       scheduleSecureDelete(ctx, `privkey_${chatId}`, sentMsg.message_id, 30000);
     } catch (error) {
@@ -252,9 +252,9 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       // Show loading message
       await ctx.editMessageText(
-        `📜 *Chargement de l'historique...*\n\n⏳ Récupération des transactions pour ${wallet.label}...`,
+        `📜 <b>Chargement de l'historique...</b>\n\n⏳ Récupération des transactions pour ${escapeHtml(wallet.label)}...`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
         }
       );
 
@@ -262,9 +262,9 @@ export function setupKeysHandlers(bot, storage, walletService) {
 
       if (!txHistory || txHistory.length === 0) {
         return ctx.editMessageText(
-          `📜 *Historique de ${wallet.label}*\n\n` + 'Aucune transaction trouvée pour ce wallet.',
+          `📜 <b>Historique de ${escapeHtml(wallet.label)}</b>\n\n` + 'Aucune transaction trouvée pour ce wallet.',
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             ...walletActionsKeyboard(walletId),
           }
         );
@@ -273,8 +273,8 @@ export function setupKeysHandlers(bot, storage, walletService) {
       const chainEmoji = CHAIN_EMOJIS[wallet.chain] || '💎';
       const chainSymbol = wallet.chain.toUpperCase();
 
-      let text = `${chainEmoji} *Historique — ${wallet.label}*\n`;
-      text += `\`${truncateAddress(wallet.address)}\`\n\n`;
+      let text = `${chainEmoji} <b>Historique — ${escapeHtml(wallet.label)}</b>\n`;
+      text += `<code>${truncateAddress(wallet.address)}</code>\n\n`;
 
       for (const tx of txHistory) {
         // Direction emoji and label
@@ -294,23 +294,23 @@ export function setupKeysHandlers(bot, storage, walletService) {
         const shortHash = truncateAddress(tx.hash, 10, 8);
 
         // One line per info - clean format
-        text += `${directionEmoji} *${directionLabel}* · ${amountDisplay}\n`;
+        text += `${directionEmoji} <b>${directionLabel}</b> · ${escapeHtml(amountDisplay)}\n`;
         text += `🕑 ${dateStr} ${timeStr}\n`;
-        text += `🔗 \`${shortHash}\`\n\n`;
+        text += `🔗 <code>${shortHash}</code>\n\n`;
       }
 
-      text += `_${txHistory.length} transaction(s)_`;
+      text += `<i>${txHistory.length} transaction(s)</i>`;
 
       await ctx.editMessageText(text, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...walletActionsKeyboard(walletId),
       });
     } catch (error) {
       logger.logError(error, { context: 'wallet_history', chatId, walletId });
       return ctx.editMessageText(
-        `❌ *Erreur*\n\nImpossible de récupérer l'historique : ${error.message}`,
+        `❌ <b>Erreur</b>\n\nImpossible de récupérer l'historique : ${escapeHtml(error.message)}`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           ...walletActionsKeyboard(walletId),
         }
       );

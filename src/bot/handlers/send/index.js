@@ -15,9 +15,9 @@ export function setupSendHandlers(bot, storage, walletService, sessions) {
 
     sessions.setState(chatId, 'ENTER_ADDRESS_ANALYZE');
     ctx.editMessageText(
-      "🔍 *Analyse d'adresse*\n\n" +
+      "🔍 <b>Analyse d'adresse</b>\n\n" +
         'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX) pour voir son solde et tous ses tokens.',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
   });
 
@@ -42,11 +42,11 @@ export function setupSendHandlers(bot, storage, walletService, sessions) {
 
       const label = type === 'native' ? data.selectedChain.toUpperCase() : 'Euros';
       const prompt =
-        '💰 *Saisie du montant*\n\n' +
-        `Ton solde : *${balanceData.balance} ${data.selectedChain.toUpperCase()}*\n\n` +
-        `Entre le montant en *${label}* ou utilise les raccourcis :`;
+        '💰 <b>Saisie du montant</b>\n\n' +
+        `Ton solde : <b>${balanceData.balance} ${data.selectedChain.toUpperCase()}</b>\n\n` +
+        `Entre le montant en <b>${label}</b> ou utilise les raccourcis :`;
 
-      ctx.editMessageText(prompt, { parse_mode: 'Markdown', ...quickAmountKeyboard() });
+      ctx.editMessageText(prompt, { parse_mode: 'HTML', ...quickAmountKeyboard() });
       sessions.setState(chatId, 'SELECT_QUICK_AMOUNT');
     } catch (error) {
       ctx.editMessageText(`❌ Erreur: ${error.message}`, mainMenuKeyboard());
