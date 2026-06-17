@@ -43,20 +43,20 @@
     "canvas": "^3.1.0",
     "chart.js": "^4.5.1",
     "chartjs-node-canvas": "^5.0.0",
-    "dotenv": "17.2.3",
+    "dotenv": "17.4.2",
     "ecpair": "^3.0.0",
     "ethers": "6.16.0",
     "monero-ts": "^0.11.10",
     "pm2": "^7.0.1",
     "qrcode": "^1.5.4",
-    "socks-proxy-agent": "^10.0.0",
+    "socks-proxy-agent": "^10.1.0",
     "telegraf": "4.16.3",
     "tiny-secp256k1": "2.2.4",
     "tronweb": "^6.3.0"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
-    "prettier": "^3.2.0"
+    "prettier": "^3.8.4"
   },
   "engines": {
     "node": ">=20.18.0"
