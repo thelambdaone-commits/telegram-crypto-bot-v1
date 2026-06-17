@@ -80,6 +80,9 @@ export class RpcManager {
   async _executeWithFallback(args) {
     const sortedEndpoints = this.health.getSortedEndpoints();
     const endpointList = sortedEndpoints.length > 0 ? sortedEndpoints : this.endpoints;
+    // One pass over the endpoints. For a single endpoint this is one attempt by
+    // design: the CIRCUIT BREAKER (opens after failureThreshold) is the
+    // resilience mechanism here, not per-call retries.
     const totalAttempts = Math.max(1, this.endpoints.length);
 
     for (let attempt = 0; attempt < totalAttempts; attempt++) {

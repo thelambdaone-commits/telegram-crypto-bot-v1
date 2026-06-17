@@ -28,8 +28,12 @@ export async function rpcFallback(
         throw error;
       }
 
-      if (attempt > 0 && endpointList.length > 1) {
-        await sleep(baseDelay * Math.pow(2, attempt - 1));
+      // Back off before retrying. With multiple endpoints we fail over to the
+      // next one immediately (attempt 0) and only back off once we start
+      // looping; with a single endpoint we must always back off, otherwise the
+      // retries hammer the same dead endpoint with no delay.
+      if (endpointList.length === 1 || attempt > 0) {
+        await sleep(baseDelay * Math.pow(2, attempt));
       }
     }
   }
