@@ -267,8 +267,15 @@ export class LitecoinChain extends BaseProvider {
 
   async sendTransaction(privateKey, toAddress, amount, feeLevel = 'average') {
     const keyPair = ECPair.fromWIF(privateKey, this.network);
-    const utxos = await this.getUtxos(keyPair.publicKey.toString());
-    const fees = await this.estimateFees(keyPair.publicKey.toString(), toAddress, amount);
+    // The real P2WPKH (ltc1…) address — NOT the hex public key. Used for UTXO
+    // lookup, fee estimation and the change output (a wrong change address loses
+    // funds / makes the tx invalid).
+    const { address: fromAddress } = bitcoin.payments.p2wpkh({
+      pubkey: keyPair.publicKey,
+      network: this.network,
+    });
+    const utxos = await this.getUtxos(fromAddress);
+    const fees = await this.estimateFees(fromAddress, toAddress, amount);
 
     const feeRate = fees[feeLevel]?.fee || fees.average.fee;
 
@@ -296,7 +303,7 @@ export class LitecoinChain extends BaseProvider {
     const totalInput = utxos.reduce((sum, utxo) => sum + utxo.value, 0);
     if (totalInput > amountSats + feeSats) {
       psbt.addOutput({
-        address: keyPair.publicKey.toString(),
+        address: fromAddress,
         value: totalInput - amountSats - feeSats,
       });
     }
@@ -321,7 +328,7 @@ export class LitecoinChain extends BaseProvider {
 
     return {
       hash: txId,
-      from: keyPair.publicKey.toString(),
+      from: fromAddress,
       to: toAddress,
       amount: amount.toString(),
       symbol: 'LTC',
