@@ -92,7 +92,7 @@ export async function setupHandlers(bot, storage) {
   });
 
   // Modular Handlers
-  setupStartHandler(bot, storage, walletService);
+  setupStartHandler(bot, storage, walletService, sessions);
   setupWalletHandlers(bot, storage, walletService, sessions);
   setupKeysHandlers(bot, storage, walletService);
   setupDepositHandlers(bot, storage);

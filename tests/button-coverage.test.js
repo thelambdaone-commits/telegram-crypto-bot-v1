@@ -96,7 +96,7 @@ function makeBot() {
 function registerAll() {
   const { bot, commands, hears, actions } = makeBot();
   const s = makeStub();
-  setupStartHandler(bot, s, s);
+  setupStartHandler(bot, s, s, s);
   setupWalletHandlers(bot, s, s, s);
   setupKeysHandlers(bot, s, s);
   setupDepositHandlers(bot, s);
