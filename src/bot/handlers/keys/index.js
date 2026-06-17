@@ -109,7 +109,11 @@ export function setupKeysHandlers(bot, storage, walletService) {
     }
 
     try {
-      const buffer = await generateAddressQR(wallet.address, wallet.chain);
+      // Same look as the receive flow: no text label, network pastille badge.
+      const buffer = await generateAddressQR(wallet.address, wallet.chain, {
+        label: '',
+        pastilleSymbol: wallet.chain,
+      });
       await ctx.replyWithPhoto(
         { source: buffer },
         {

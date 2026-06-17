@@ -157,10 +157,17 @@ export async function generateAddressQR(address, chain, options = {}) {
 
   // Center badge: coin logo + small network name, on a white plate so it reads
   // cleanly over the QR and the user can't confuse two same-logo EVM networks.
-  const logo = await loadLogo(options.logoSymbol || LOGO_SYMBOL[chain]);
-  const pastilleLogo = options.pastilleSymbol
-    ? await loadLogo(LOGO_SYMBOL[options.pastilleSymbol] || options.pastilleSymbol)
+  const mainLogoSymbol = options.logoSymbol || LOGO_SYMBOL[chain];
+  const pastilleSymbolResolved = options.pastilleSymbol
+    ? LOGO_SYMBOL[options.pastilleSymbol] || options.pastilleSymbol
     : null;
+  const logo = await loadLogo(mainLogoSymbol);
+  // Skip a pastille that would just duplicate the main logo (e.g. a native
+  // wallet QR where coin === network) — only draw it when it adds info.
+  const pastilleLogo =
+    pastilleSymbolResolved && pastilleSymbolResolved !== mainLogoSymbol
+      ? await loadLogo(pastilleSymbolResolved)
+      : null;
   // An explicit empty label hides the text (token deposits rely on the
   // pastille); otherwise fall back to the network name.
   const label =
