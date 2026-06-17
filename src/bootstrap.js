@@ -30,6 +30,7 @@ export class App {
 
     this._setupRequestIdMiddleware();
     this._setupErrorHandler();
+    this._setupProcessGuards();
 
     const handlerResult = await setupHandlers(this.bot, this.storage);
     this.sessions = handlerResult.sessions;
@@ -78,6 +79,22 @@ export class App {
         username: ctx.from?.username,
       });
       ctx.reply('Une erreur est survenue. Reessayez.').catch(() => {});
+    });
+  }
+
+  // Last-resort net for detached promise rejections (fire-and-forget
+  // ctx.reply / ctx.editMessageText that bot.catch never sees). Benign Telegram
+  // send/edit errors are ignored; anything else is logged with context instead
+  // of becoming a silent unhandledRejection.
+  _setupProcessGuards() {
+    const BENIGN =
+      /message is not modified|query is too old|message can't be edited|message to (edit|delete) not found|bot was blocked|user is deactivated|chat not found|MESSAGE_ID_INVALID|forbidden/i;
+    process.on('unhandledRejection', (reason) => {
+      const message = reason?.message || String(reason);
+      if (BENIGN.test(message)) return;
+      logger.logError(reason instanceof Error ? reason : new Error(message), {
+        context: 'unhandledRejection',
+      });
     });
   }
 
