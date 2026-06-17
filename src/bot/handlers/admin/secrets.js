@@ -3,6 +3,7 @@ import { adminGuard } from '../../middlewares/auth.middleware.js';
 import { adminCancelKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../../shared/utils/telegram.js';
 import { logger } from '../../../shared/logger.js';
+import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 
 export function setupAdminSecrets(bot, storage, sessions) {
   // View Secrets List
@@ -77,6 +78,7 @@ export function setupAdminSecrets(bot, storage, sessions) {
 
     const key = ctx.match[1];
     const deleted = await storage.secrets.delete(key);
+    auditLogger.log(AUDIT_ACTIONS.ADMIN_SECRET_DELETE, ctx.chat.id, { key, deleted }, true);
 
     if (deleted) {
       await ctx.reply(`✅ Secret <b>${escapeHtml(key)}</b> supprimé.`, { parse_mode: 'HTML' });
@@ -133,6 +135,8 @@ export function setupAdminSecrets(bot, storage, sessions) {
       
       try {
         await storage.secrets.set(key, text);
+        // Log the change (key only — never the secret value) for traceability.
+        auditLogger.log(AUDIT_ACTIONS.ADMIN_SECRET_SET, chatId, { key }, true);
         sessions.clearState(chatId);
         
         await ctx.reply(`✅ Secret <b>${escapeHtml(key)}</b> enregistré et chiffré.`, {
