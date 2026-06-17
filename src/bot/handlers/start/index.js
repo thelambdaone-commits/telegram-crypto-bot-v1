@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import { Markup } from 'telegraf';
 import { mainMenuKeyboard, mainReplyKeyboard } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
@@ -6,6 +8,36 @@ import { logger } from '../../../shared/logger.js';
 import { escapeMarkdown, scheduleSecureDelete } from '../../../shared/utils/telegram.js';
 import { sendWalletKeysFile } from '../wallet/key-file.js';
 import { separator, CHAIN_EMOJIS } from '../../ui/index.js';
+
+// Welcome video shown once, on a brand-new user's first /start. Resolved from
+// the project root. The Telegram file_id is cached after the first upload so we
+// never re-upload the ~38 MB file again (subsequent new users reuse the id).
+const WELCOME_VIDEO_PATH = fileURLToPath(new URL('../../../../videoplayback.mp4', import.meta.url));
+let welcomeVideoFileId = null;
+
+/**
+ * Send the onboarding video with a formatted caption. Best-effort: a missing
+ * file or upload error is logged and swallowed so it never blocks onboarding.
+ * @param {import('telegraf').Context} ctx
+ * @param {string} caption Markdown caption
+ */
+async function sendWelcomeVideo(ctx, caption) {
+  if (!welcomeVideoFileId && !existsSync(WELCOME_VIDEO_PATH)) {
+    logger.warn('[START] Welcome video file missing', { path: WELCOME_VIDEO_PATH });
+    return;
+  }
+  try {
+    const sent = await ctx.replyWithVideo(welcomeVideoFileId || { source: WELCOME_VIDEO_PATH }, {
+      caption,
+      parse_mode: 'Markdown',
+      supports_streaming: true,
+    });
+    const fileId = sent?.video?.file_id;
+    if (fileId && !welcomeVideoFileId) welcomeVideoFileId = fileId;
+  } catch (error) {
+    logger.warn('[START] Welcome video not sent', { error: error.message });
+  }
+}
 
 /**
  * Notify admin group about new user
@@ -42,8 +74,69 @@ async function notifyAdminNewUser(ctx, chatId, userName, username) {
   }
 }
 
+const REVEAL_CHAIN_NAMES = {
+  btc: 'Bitcoin',
+  ltc: 'Litecoin',
+  bch: 'Bitcoin Cash',
+  sol: 'Solana',
+  trx: 'Tron',
+  zec: 'Zcash',
+};
+
 /**
- * Setup start handler - Auto-generates 3 wallets for new users
+ * One-time onboarding reveal. A single BIP39 phrase backs every main chain
+ * (the EVM chains share one address, shown once); Monero is listed with its
+ * own separate seed. Seeds/addresses go in code spans (Telegram Markdown does
+ * not reformat code-span content, so no escaping needed there).
+ * @param {string} mnemonic
+ * @param {Array<{chain:string,address:string,mnemonic:string}>} wallets
+ * @returns {string}
+ */
+function buildOnboardingReveal(mnemonic, wallets) {
+  const byChain = (c) => wallets.find((w) => w.chain === c);
+  const lines = [
+    '🎉 *Ton portefeuille multi-chaînes est prêt !*',
+    separator(),
+    '🔑 *Une seule phrase secrète* contrôle tous tes réseaux principaux.',
+    'Note-la et garde-la hors ligne :',
+    '',
+    `\`${mnemonic}\``,
+    separator(),
+    '📬 *Tes adresses de réception*',
+    '',
+  ];
+
+  const evm = byChain('eth');
+  if (evm) {
+    lines.push('Ξ *EVM* · ETH · Arbitrum · Polygon · Optimism · Base · Avalanche');
+    lines.push(`\`${evm.address}\``);
+    lines.push('');
+  }
+
+  for (const chain of ['btc', 'ltc', 'bch', 'sol', 'trx', 'zec']) {
+    const wallet = byChain(chain);
+    if (!wallet) continue;
+    lines.push(`${CHAIN_EMOJIS[chain] || '🔗'} *${REVEAL_CHAIN_NAMES[chain]}*`);
+    lines.push(`\`${wallet.address}\``);
+    lines.push('');
+  }
+
+  const xmr = byChain('xmr');
+  if (xmr) {
+    lines.push(`${CHAIN_EMOJIS.xmr} *Monero* · phrase de récupération séparée`);
+    lines.push(`\`${xmr.address}\``);
+    lines.push(`🔐 Seed Monero : \`${xmr.mnemonic}\``);
+    lines.push('');
+  }
+
+  lines.push(separator());
+  lines.push('⚠️ *IMPORTANT :* sauvegarde ces phrases. Elles ne seront plus affichées.');
+  lines.push("🕐 _Ce message s'efface dans 60 s pour ta sécurité._");
+  return lines.join('\n');
+}
+
+/**
+ * Setup start handler - provisions a full multi-chain wallet set for new users
  */
 export function setupStartHandler(bot, storage, walletService) {
   bot.start(async (ctx) => {
@@ -65,50 +158,32 @@ export function setupStartHandler(bot, storage, walletService) {
         // Notify admin group
         await notifyAdminNewUser(ctx, chatId, userName, username);
 
-        // New user - auto-generate 3 wallets
-        await ctx.reply(
-          `👋 Bienvenue ${userName} !\n\n🔐 Je crée tes 3 wallets sécurisés (Ξ ETH · ₿ BTC · ◎ SOL)…`
+        // New user - greet with the onboarding video, then provision one BIP39
+        // seed across every supported chain.
+        await sendWelcomeVideo(
+          ctx,
+          [
+            `🎬 *Bienvenue ${escapeMarkdown(userName)} !*`,
+            separator(),
+            'Ton portefeuille crypto multi-chaînes, simple et sécurisé.',
+            'Regarde cette intro rapide — je prépare tes wallets pendant ce temps 👇',
+          ].join('\n')
         );
 
         try {
-          const chains = ['eth', 'btc', 'sol'];
-          const createdWallets = [];
+          const { mnemonic, wallets: createdWallets } =
+            await walletService.createInitialWallets(chatId);
 
-          for (const chain of chains) {
-            const wallet = await walletService.createWallet(chatId, chain);
-            const fullWallet = await storage.getWalletWithKey(chatId, wallet.id);
-            createdWallets.push(fullWallet);
-
+          for (const wallet of createdWallets) {
             auditLogger.log(AUDIT_ACTIONS.CREATE_WALLET, chatId, {
-              chain,
-              walletId: wallet.id,
+              chain: wallet.chain,
               address: wallet.address,
             });
           }
 
           await sendWalletKeysFile(ctx, createdWallets, storage);
 
-          let message = `🎉 *Tes 3 wallets sont prêts !*\n${separator()}\n\n`;
-
-          for (const wallet of createdWallets) {
-            const chainName = { eth: 'Ethereum', btc: 'Bitcoin', sol: 'Solana', xmr: 'Monero', zec: 'Zcash' }[wallet.chain];
-            const emoji = CHAIN_EMOJIS[wallet.chain] || '🔗';
-            const escapedMnemonic = wallet.mnemonic ? escapeMarkdown(wallet.mnemonic) : null;
-
-            message += `${emoji} *${chainName}*\n`;
-            message += `📬 \`${wallet.address}\`\n`;
-            if (escapedMnemonic) {
-              message += `🔐 \`${escapedMnemonic}\`\n`;
-            }
-            message += '\n';
-          }
-
-          message += `${separator()}\n`;
-          message +=
-            '⚠️ *IMPORTANT :* Sauvegarde ces phrases de récupération. Elles ne seront plus affichées.\n';
-          message += '🕐 _Ce message s\'efface dans 60 s pour ta sécurité._';
-
-          const sentMsg = await ctx.reply(message, {
+          const sentMsg = await ctx.reply(buildOnboardingReveal(mnemonic, createdWallets), {
             parse_mode: 'Markdown',
             ...mainReplyKeyboard(),
           });

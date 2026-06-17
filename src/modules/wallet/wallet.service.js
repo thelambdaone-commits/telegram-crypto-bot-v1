@@ -12,6 +12,26 @@ import { MoneroChain } from '../../providers/monero.js';
 import { ZcashChain } from '../../providers/zcash.js';
 import { TronChain } from '../../providers/tron.js';
 import { TransactionError, ERROR_CODES } from '../../shared/errors.js';
+import { logger } from '../../shared/logger.js';
+import * as bip39 from 'bip39';
+
+// Chains derivable from a SINGLE BIP39 seed. The six EVM chains share one
+// address (same derivation), but each is registered so the user gets a usable
+// wallet on every network. Ordered for display (EVM first, grouped).
+const FIRST_WALLET_CHAINS = [
+  'eth',
+  'arb',
+  'matic',
+  'op',
+  'base',
+  'avax',
+  'btc',
+  'ltc',
+  'bch',
+  'sol',
+  'trx',
+  'zec',
+];
 
 export class WalletService {
   constructor(storage, config) {
@@ -81,6 +101,65 @@ export class WalletService {
       address: savedWallet.address,
       label: savedWallet.label,
     };
+  }
+
+  /**
+   * First-contact provisioning. Generates ONE BIP39 seed and derives a wallet
+   * on every BIP39-compatible chain (the six EVM chains share a single
+   * address), then adds a Monero wallet — Monero uses its own 25-word seed and
+   * cannot share the BIP39 phrase. Pure local key derivation, no RPC, so
+   * creating the full set stays fast.
+   *
+   * @param {string|number} chatId
+   * @returns {Promise<{ mnemonic: string, wallets: Array<{chain:string,address:string,privateKey:string,mnemonic:string,label:string,shared:boolean}> }>}
+   */
+  async createInitialWallets(chatId) {
+    const mnemonic = bip39.generateMnemonic();
+    const wallets = [];
+
+    for (const chain of FIRST_WALLET_CHAINS) {
+      const chainHandler = this.chains[chain];
+      if (!chainHandler) continue;
+
+      const walletData = await chainHandler.importFromSeed(mnemonic);
+      walletData.chain = chain;
+      walletData.label = await this.getNextWalletLabel(chatId, chain);
+      const saved = await this.storage.addWallet(chatId, walletData);
+
+      wallets.push({
+        chain,
+        address: saved.address,
+        privateKey: walletData.privateKey,
+        mnemonic,
+        label: saved.label,
+        shared: true,
+      });
+    }
+
+    // Monero uses an independent 25-word seed (not BIP39). Isolated so a
+    // Monero module hiccup can never block onboarding of the BIP39 chains.
+    try {
+      const xmrData = await this.chains.xmr.createWallet();
+      xmrData.chain = 'xmr';
+      xmrData.label = await this.getNextWalletLabel(chatId, 'xmr');
+      const saved = await this.storage.addWallet(chatId, xmrData);
+
+      wallets.push({
+        chain: 'xmr',
+        address: saved.address,
+        privateKey: xmrData.privateKey,
+        mnemonic: xmrData.mnemonic,
+        label: saved.label,
+        shared: false,
+      });
+    } catch (error) {
+      logger.warn('[INIT] Monero wallet skipped during onboarding', {
+        chatId,
+        error: error.message,
+      });
+    }
+
+    return { mnemonic, wallets };
   }
 
   /**
