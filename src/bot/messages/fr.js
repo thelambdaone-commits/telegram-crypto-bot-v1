@@ -75,7 +75,7 @@ export const fr = {
   },
 
   prices: {
-    title: '💹 Prix crypto',
+    title: '💹 Prix en euros',
     l1: '🏛️ L1 / Mainnets',
     l2: '⚡ L2 / Scaling',
     stablecoins: '🏦 Stablecoins',

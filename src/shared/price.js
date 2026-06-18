@@ -120,7 +120,7 @@ export function formatPriceUpdateDate(date = new Date()) {
 
 export function formatCryptoPricesEUR(prices, date = new Date()) {
   return (
-    '💹 Prix crypto\n\n' +
+    '💹 Prix en euros\n\n' +
     '🏛️ L1 / Mainnets\n' +
     `₿ Bitcoin (BTC) : ${formatEUR(prices.btc)}\n` +
     `₿ Wrapped BTC (WBTC) : ${formatEUR(prices.wbtc || 0)}\n` +

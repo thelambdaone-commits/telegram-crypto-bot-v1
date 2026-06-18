@@ -69,7 +69,7 @@ test('TON is quotable (ticker/network) without a wallet provider', async () => {
 
   const q = await svc.getQuote('ton', 'xmr', 50);
   assert.equal(captured.args.tickerFrom, 'ton');
-  assert.equal(captured.args.networkFrom, 'TON');
+  assert.equal(captured.args.networkFrom, 'Mainnet'); // native Toncoin
   assert.equal(q.fromSymbol, 'TON');
 
   const ton = svc.listChains().find((c) => c.chain === 'ton');
@@ -82,12 +82,12 @@ test('TON stablecoins are quotable as (ticker, network) jetton pairs', async () 
   assert.ok(svc.isSupported('usdt_ton'));
   assert.ok(svc.isSupported('usdc_ton'));
   assert.equal(TROCADOR_COINS.usdt_ton.ticker, 'usdt');
-  assert.equal(TROCADOR_COINS.usdt_ton.network, 'TON');
+  assert.equal(TROCADOR_COINS.usdt_ton.network, 'Toncoin'); // jetton label, not native 'Mainnet'
 
   const captured = {};
   await new ExchangeService(mockAggregator(captured)).getQuote('usdt_ton', 'btc', 100);
   assert.equal(captured.args.tickerFrom, 'usdt');
-  assert.equal(captured.args.networkFrom, 'TON');
+  assert.equal(captured.args.networkFrom, 'Toncoin');
 
   const list = svc.listChains();
   const usdt = list.find((c) => c.chain === 'usdt_ton');
@@ -107,9 +107,9 @@ test('wallet tokens are now covered: USDT quotable on many networks', async () =
   const captured = {};
   await new ExchangeService(mockAggregator(captured)).getQuote('usdt_eth', 'usdc_trx', 100);
   assert.equal(captured.args.tickerFrom, 'usdt');
-  assert.equal(captured.args.networkFrom, 'ETH');
+  assert.equal(captured.args.networkFrom, 'ERC20'); // USDT on Ethereum = ERC20
   assert.equal(captured.args.tickerTo, 'usdc');
-  assert.equal(captured.args.networkTo, 'Mainnet'); // Tron label
+  assert.equal(captured.args.networkTo, 'TRC20'); // USDC on Tron = TRC20
 });
 
 test('every wallet token in TOKEN_CONFIGS has an exchange entry', () => {
@@ -131,7 +131,7 @@ test('anonPayUrl builds a keyless AnonPay link with the right pair + address', (
   assert.equal(q.get('ticker_from'), 'btc');
   assert.equal(q.get('network_from'), 'Mainnet');
   assert.equal(q.get('ticker_to'), 'usdt');
-  assert.equal(q.get('network_to'), 'ETH');
+  assert.equal(q.get('network_to'), 'ERC20');
   assert.equal(q.get('address'), addr);
 });
 
