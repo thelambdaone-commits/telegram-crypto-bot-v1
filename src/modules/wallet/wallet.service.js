@@ -11,6 +11,7 @@ import { AvalancheChain } from '../../providers/avalanche.js';
 import { MoneroChain } from '../../providers/monero.js';
 import { ZcashChain } from '../../providers/zcash.js';
 import { TronChain } from '../../providers/tron.js';
+import { TonChain } from '../../providers/ton.js';
 import { TransactionError, ERROR_CODES } from '../../shared/errors.js';
 import { logger } from '../../shared/logger.js';
 import * as bip39 from 'bip39';
@@ -31,6 +32,7 @@ const FIRST_WALLET_CHAINS = [
   'sol',
   'trx',
   'zec',
+  'ton',
 ];
 
 export class WalletService {
@@ -50,6 +52,7 @@ export class WalletService {
       xmr: new MoneroChain(config.rpc.xmrDaemon, config.rpc.xmrWalletRpc, config.rpc.xmrWalletAuth),
       zec: new ZcashChain(config.rpc.zecApi, config.rpc.zecRpc, config.rpc.zecRpcAuth),
       trx: new TronChain(config.rpc.trx, config.rpc.tronApiKey),
+      ton: new TonChain(config.rpc.ton, config.rpc.tonApiKey),
     };
   }
 

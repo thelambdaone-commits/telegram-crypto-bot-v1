@@ -323,6 +323,11 @@ export const TOKEN_CONFIGS = {
     native: 'ZEC',
     tokens: {},
   },
+  ton: {
+    name: 'TON',
+    native: 'TON',
+    tokens: {},
+  },
 };
 
 export const ERC20_ABI = [

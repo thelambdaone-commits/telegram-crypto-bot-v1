@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Telegram multi-chain crypto wallet manager bot (Telegraf). Supports Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche (C-Chain), Bitcoin, Litecoin, Bitcoin Cash, Solana, Monero, and Zcash. Core features: wallet create/import/derive-from-seed, send funds, public-address analysis (multi-EVM scan with balances/tokens/history), EUR prices (CoinGecko), QR codes, and an admin panel. ESM only (`"type": "module"`), Node `>=20.18.0`. User-facing strings are in **French** — match that when editing UI text.
+Telegram multi-chain crypto wallet manager bot (Telegraf). Supports Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche (C-Chain), Bitcoin, Litecoin, Bitcoin Cash, Solana, Tron, TON, Monero, and Zcash (14 chains; the canonical list and metadata live in `src/shared/chains.js` `CHAIN_REGISTRY`, and the runtime registry is `WalletService.chains`). Core features: wallet create/import/derive-from-seed, send funds, public-address analysis (multi-EVM scan with balances/tokens/history), EUR prices (CoinGecko), QR codes, and an admin panel. ESM only (`"type": "module"`), Node `>=20.18.0`. User-facing strings are in **French** — match that when editing UI text.
 
 ## Commands
 
@@ -39,9 +39,17 @@ Telegram → Telegraf → middlewares (auth, rate-limit, profile sync)
 
 - **`src/index.js` → `src/bootstrap.js`** — `App` class wires everything: creates `Telegraf`, `StorageService`, `SessionManager`, `DepositMonitor`, registers middlewares, and calls `setupHandlers`. Also refuses to boot if an unencrypted `sessions.json` exists.
 - **`src/bot/handlers/index.js`** — `setupHandlers(bot, storage)` is the composition root. It constructs the shared `WalletService` and `SessionManager`, then calls each feature's `setupXHandlers(...)`. **Dependency injection is positional** — handlers receive `(bot, storage, walletService, sessions)`. Handler groups: start, wallet, keys, send, admin, balance, navigation, plus the slash commands.
-- **`src/providers/`** — one class per chain, all extending `BaseProvider` (`base.provider.js`) with the contract: `createWallet`, `importFromKey`, `importFromSeed`, `getBalance`, `estimateFees`, `sendTransaction`, `getTransactionHistory`, `validateAddress`. EVM chains (eth, arb, matic, op, base) share `evm-base.js`. `WalletService` (`src/modules/wallet/wallet.service.js`) maps chain keys (`eth`, `btc`, `sol`, `xmr`, …) to provider instances — **register a new chain here**.
+- **`src/providers/`** — one class per chain, all extending `BaseProvider` (`base.provider.js`) with the contract: `createWallet`, `importFromKey`, `importFromSeed`, `getBalance`, `estimateFees`, `sendTransaction`, `getTransactionHistory`, `validateAddress`. EVM chains (eth, arb, matic, op, base, avax) share `evm-base.js`. `WalletService` (`src/modules/wallet/wallet.service.js`) maps chain keys (`eth`, `btc`, `sol`, `trx`, `xmr`, …) to provider instances — **register a new chain here**. One BIP39 seed derives all non-Monero chains; the first-wallet derivation set is `FIRST_WALLET_CHAINS` near the top of `wallet.service.js`.
 - **`src/core/storage.js`** — `StorageService`: per-`chatId` encrypted file (`<chatId>.enc`) under `DATA_PATH`. Each user's data is encrypted with a key derived from `MASTER_ENCRYPTION_KEY` + chatId (`deriveUserKey`). Private keys and mnemonics are always stored encrypted; never return them in plaintext to Telegram.
 - **`src/core/session/`** — `SessionManager` combines an in-memory store with an encrypted file store (`sessions.enc`) for restart recovery. Multi-step flows (send, import, address analysis) keep state here, keyed by user.
+
+### Swap / Exchange (`src/modules/swap/`)
+
+Two **separate** features live here — keep them distinct:
+
+1. **On-chain swap (dormant).** `swap.service.js` — `getQuote()` works keylessly via the KyberSwap `/routes` API (`aggregators/kyber.aggregator.js`), EVM-only, same-chain. `executeSwap()` (approve → build → `sendRaw`) is **hard-gated behind `config.swapEnabled`** (`SWAP_ENABLED`, default `false`). Tested in `tests/swap.service.test.js`. There is **no `swap` handler / no `/swap` command** — `swap.keyboards.js` is an orphan, and the service is not wired to Telegram.
+
+2. **No-KYC cross-chain exchange (LIVE, quote-only).** `exchange.service.js` + `aggregators/trocador.aggregator.js` — CakeWallet-style. `ExchangeService.getQuote(fromChain, toChain, amount)` returns the best no-KYC rate (received amount + provider) across Trocador's partners; cross-chain (BTC↔XMR, ETH↔SOL, …). **Quote-only: no funds ever move, no address asked.** Needs `TROCADOR_API_KEY` (required even for quotes; via env or the `SecretVault`); without it the button shows a "non configuré" message. Wired through the **🔄 Échanger** button on the main menu → `setupExchangeHandlers` (`src/bot/handlers/exchange/`). The coin↔(ticker,network) map is `TROCADOR_COINS` in `exchange.service.js` — the **only** place to fix a network label if a pair returns "indisponible". `TON` is quotable here without a wallet provider (it carries its own `symbol`/`emoji` in that map). Tested in `tests/exchange.service.test.js` (mocked aggregator).
 
 ## Conventions
 

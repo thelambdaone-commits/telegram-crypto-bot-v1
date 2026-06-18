@@ -55,6 +55,15 @@ export const config = {
   // swap transaction is ever signed/sent unless this is explicitly enabled.
   swapEnabled: process.env.SWAP_ENABLED === 'true',
 
+  // No-KYC cross-chain exchange (Trocador aggregator, CakeWallet-style).
+  // Quote-only for now: getQuote needs the API key, but NO funds are ever moved.
+  exchange: {
+    trocadorApiKey: vault.get('trocadorApiKey') || process.env.TROCADOR_API_KEY || '',
+    trocadorBaseUrl: process.env.TROCADOR_API_URL || 'https://trocador.app/api',
+    // Optional affiliate referral code, appended to keyless AnonPay links.
+    trocadorRef: vault.get('trocadorRef') || process.env.TROCADOR_REF || '',
+  },
+
   rpc: {
     eth: vault.get('ethRpc') || process.env.ETH_RPC_URL || 'https://eth.llamarpc.com',
     sol: vault.get('solRpc') || process.env.SOL_RPC_URL,
@@ -75,6 +84,8 @@ export const config = {
     zecRpcAuth: vault.get('zecRpcAuth') || process.env.ZEC_RPC_AUTH || '',
     trx: vault.get('tronRpc') || process.env.TRON_API_URL || 'https://api.trongrid.io',
     tronApiKey: vault.get('tronApiKey') || process.env.TRON_API_KEY || '',
+    ton: vault.get('tonRpc') || process.env.TON_RPC_URL || 'https://toncenter.com/api/v2/jsonRPC',
+    tonApiKey: vault.get('tonApiKey') || process.env.TON_API_KEY || '',
   },
 };
 

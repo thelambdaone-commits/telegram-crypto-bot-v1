@@ -18,12 +18,13 @@ npm start
 
 | Module | Description |
 | ------ |-------------|
-| 🪙 Multi-chain | Ethereum, Polygon, Solana, Bitcoin, Litecoin, BCH, Arbitrum, Optimism, Base, Avalanche, Monero, Zcash, Tron |
+| 🪙 Multi-chain | Ethereum, Polygon, Solana, Bitcoin, Litecoin, BCH, Arbitrum, Optimism, Base, Avalanche, Monero, Zcash, Tron, **TON** (14 chaînes) |
 | 📷 QR Code | QR d'adresse avec logo de la crypto et nom du réseau au centre |
 | 💳 Wallets | Creation, import (cle privee / seed) et derivation depuis une seed existante |
 | 💸 Transferts | Estimation dynamique des frais, envoi de tokens (USDC/USDT) |
+| 🔄 Échange sans KYC | Échange cross-chain **keyless** (Trocador AnonPay) : depuis le menu ou un wallet, devis + frais affichés, adresse de réception pré-remplie. Repli SimpleSwap. `/swaps` `/list` |
 | 🔍 Analyse | Detection auto d'adresse + scan multi-EVM (solde, tokens, historique, valeur EUR) |
-| 💵 Prix EUR | CoinGecko integre (`/price`, `/gas`, `/graph`) |
+| 💵 Prix EUR | CoinGecko integre (`/price`, `/gas`, `/graph`) — tous les coins/tokens pricés |
 | 🔐 Privacy | Monero & Zcash via Tor (optionnel) |
 | 👮 Admin | Panel, logs audit, rate limiting, stockage chiffre, secrets RPC |
 
@@ -88,6 +89,9 @@ Editez ensuite `.env` avec vos valeurs reelles.
 | `DAILY_LIMIT_SOL` | — | Limite journaliere en SOL (circuit breaker) |
 | `DAILY_LIMIT_ETH` | — | Limite journaliere en ETH (circuit breaker) |
 | `DAILY_LIMIT_USD` | — | Limite journaliere en USD (circuit breaker) |
+| `TON_API_KEY` | — | Clé TonCenter (optionnelle — le wallet TON marche sans, juste rate-limité) |
+| `TROCADOR_API_KEY` | — | Optionnelle : active le devis exact dans le bot. L'échange AnonPay marche **sans** (keyless) |
+| `TROCADOR_REF` | — | Code de parrainage Trocador (commissions, optionnel) |
  
 <details>
 <summary><b>RPC & Endpoints</b> (cliquer pour déplier)</summary>
@@ -103,6 +107,7 @@ Editez ensuite `.env` avec vos valeurs reelles.
 | `OPTIMISM_RPC_URL` | `https://mainnet.optimism.io` |
 | `BASE_RPC_URL` | `https://mainnet.base.org` |
 | `AVAX_RPC_URL` | `https://api.avax.network/ext/bc/C/rpc` |
+| `TON_RPC_URL` | `https://toncenter.com/api/v2/jsonRPC` |
 
 </details>
 
@@ -167,6 +172,7 @@ npm run ci
 | `/bal <reseau> <adresse>`, `/tx <reseau> <adresse>` | Solde / historique d'une adresse |
 | `/send <reseau> <adresse> <montant>` | Envoyer des fonds |
 | `/price`, `/gas`, `/graph <token> <periode>`, `/unit` | Infos marche |
+| `/swaps`, `/list` | Échange sans KYC / liste des coins & tokens supportés |
 | `/menu`, `/help`, `/chains`, `/learn` | Navigation et aide |
 
 ## 🔒 Securite

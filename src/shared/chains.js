@@ -28,6 +28,7 @@ export const CHAIN_REGISTRY = {
   xmr: { name: 'Monero', emoji: 'ɱ', logo: 'xmr', native: 'XMR', evm: false, coingecko: 'monero' },
   zec: { name: 'Zcash', emoji: 'Ⓩ', logo: 'zec', native: 'ZEC', evm: false, coingecko: 'zcash' },
   trx: { name: 'Tron', emoji: '🟥', logo: 'trx', native: 'TRX', evm: false, coingecko: 'tron' },
+  ton: { name: 'TON', emoji: '💎', logo: 'ton', native: 'TON', evm: false, coingecko: 'the-open-network' },
 };
 
 // ── Derived lists/maps (do not hand-edit — change CHAIN_REGISTRY) ─────────────

@@ -181,7 +181,7 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
       if (!chain) {
         logger.warn('Invalid address provided for analysis', { address: text, chatId });
         return ctx.reply(
-          '⚠️ Adresse non reconnue (ETH, BTC, LTC, BCH, SOL, XMR, ZEC, Arbitrum, Polygon, Optimism, Base, Avalanche acceptés).'
+          '⚠️ Adresse non reconnue (ETH, BTC, LTC, BCH, SOL, XMR, ZEC, TON, Arbitrum, Polygon, Optimism, Base, Avalanche acceptés).'
         );
       }
 

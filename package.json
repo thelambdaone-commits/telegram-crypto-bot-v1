@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Telegram Multi-Chain Wallet Manager Bot",
+  "description": "Telegram multi-chain crypto wallet bot (14 chains incl. TON) with a keyless, no-KYC cross-chain exchange",
   "scripts": {
     "precheck": "node scripts/precheck.js",
     "check:exports": "node scripts/check-exports.js",
@@ -24,7 +24,12 @@
     "bot",
     "ethereum",
     "bitcoin",
-    "solana"
+    "solana",
+    "ton",
+    "monero",
+    "no-kyc",
+    "exchange",
+    "cross-chain"
   ],
   "author": "thelambdaone-commits",
   "license": "MIT",
@@ -35,6 +40,9 @@
   "dependencies": {
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "1.98.4",
+    "@ton/core": "^0.63.1",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^16.3.0",
     "bip32": "^5.0.1",
     "bip39": "3.1.0",
     "bitcoinjs-lib": "7.0.1",

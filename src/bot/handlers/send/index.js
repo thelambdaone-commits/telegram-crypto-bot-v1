@@ -16,7 +16,7 @@ export function setupSendHandlers(bot, storage, walletService, sessions) {
     sessions.setState(chatId, 'ENTER_ADDRESS_ANALYZE');
     ctx.editMessageText(
       "🔍 <b>Analyse d'adresse</b>\n\n" +
-        'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX) pour voir son solde et tous ses tokens.',
+        'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, TON) pour voir son solde et tous ses tokens.',
       { parse_mode: 'HTML' }
     );
   });

@@ -12,6 +12,7 @@ const ADDRESS_EXPLORERS = {
   xmr:   (addr) => `https://xmrchain.net/address/${addr}`,
   zec:   (addr) => `https://zcashblockexplorer.com/address/${addr}`,
   trx:   (addr) => `https://tronscan.org/#/address/${addr}`,
+  ton:   (addr) => `https://tonviewer.com/${addr}`,
 };
 
 const EXPLORER_NAMES = {
@@ -28,6 +29,7 @@ const EXPLORER_NAMES = {
   xmr:   'XMRchain',
   zec:   'Zcash Block Explorer',
   trx:   'Tronscan',
+  ton:   'Tonviewer',
 };
 
 const TOKEN_EXPLORERS = {

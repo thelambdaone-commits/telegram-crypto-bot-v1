@@ -17,6 +17,7 @@ import { setupWalletHandlers } from '../src/bot/handlers/wallet/index.js';
 import { setupKeysHandlers } from '../src/bot/handlers/keys/index.js';
 import { setupDepositHandlers } from '../src/bot/handlers/deposit/index.js';
 import { setupSendHandlers } from '../src/bot/handlers/send/index.js';
+import { setupExchangeHandlers } from '../src/bot/handlers/exchange/index.js';
 import { setupAdminHandlers } from '../src/bot/handlers/admin/index.js';
 import { setupCommands } from '../src/bot/handlers/commands/index.js';
 import { setupBalanceHandlers } from '../src/bot/handlers/balance.handlers.js';
@@ -101,6 +102,7 @@ function registerAll() {
   setupKeysHandlers(bot, s, s);
   setupDepositHandlers(bot, s);
   setupSendHandlers(bot, s, s, s);
+  setupExchangeHandlers(bot, s, s, s);
   setupAdminHandlers(bot, s, s, s);
   setupBalanceHandlers(bot, s, s);
   setupNavigationHandlers(bot, s, s, s);

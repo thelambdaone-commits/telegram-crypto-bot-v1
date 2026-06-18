@@ -65,7 +65,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   bot.hears(['🔍 Analyser', '🔎 Analyser'], async (ctx) => {
     sessions.setState(ctx.chat.id, 'ENTER_ADDRESS_ANALYZE');
     ctx.reply(
-      "🔎 <b>Analyse d'adresse</b>\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX) pour voir son solde et tous ses tokens.",
+      "🔎 <b>Analyse d'adresse</b>\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, TON) pour voir son solde et tous ses tokens.",
       {
         parse_mode: 'HTML',
         ...cancelKeyboard(),

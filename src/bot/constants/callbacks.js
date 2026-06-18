@@ -36,6 +36,9 @@ export const CALLBACKS = {
   PRICES_EUR: 'prices_eur',
   HELP_MENU: 'help_menu',
 
+  // Exchange (no-KYC cross-chain, quote-only)
+  EXCHANGE: 'exchange',
+
   // Admin
   ADMIN_PANEL: 'admin_panel',
   ADMIN_STATS: 'admin_stats',
@@ -54,6 +57,10 @@ export const dynamicCallback = {
   walletAction: (walletId, action) => `${action}_${walletId}`,
   walletPrefix: (walletId, prefix = 'wallet_') => `${prefix}${walletId}`,
   generateChain: (chain) => `generate_${chain}`,
+  exchangeFromSym: (sym) => `exch_fs_${sym}`,
+  exchangeToSym: (sym) => `exch_ts_${sym}`,
+  exchangeFrom: (chain) => `exch_from_${chain}`,
+  exchangeTo: (chain) => `exch_to_${chain}`,
   importKeyChain: (chain) => `import_key_${chain}`,
   importSeedChain: (chain) => `import_seed_${chain}`,
   chainSelect: (chain, prefix = 'chain_') => `${prefix}${chain}`,
@@ -79,4 +86,9 @@ export const CALLBACK_REGEX = {
   TOKEN_SELECT: /^token_(.+)_(.+)$/,
   SEND_TO_ANALYZED: /^send_to_analyzed_(.+)$/,
   ADMIN_USER_KEYS: /^admin_user_keys_(\d+)$/,
+  EXCHANGE_WALLET: /^exch_w_(.+)$/,
+  EXCHANGE_FROM_SYM: /^exch_fs_(.+)$/,
+  EXCHANGE_TO_SYM: /^exch_ts_(.+)$/,
+  EXCHANGE_FROM: /^exch_from_(.+)$/,
+  EXCHANGE_TO: /^exch_to_(.+)$/,
 };

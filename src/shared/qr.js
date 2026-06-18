@@ -9,9 +9,13 @@ import { createCanvas, loadImage } from 'canvas';
 import QRCode from 'qrcode';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import { logger } from './logger.js';
 import { LOGO_SYMBOL, NETWORK_LABEL } from './chains.js';
+
+// Logos for coins missing from the CDN icon set (e.g. ton, msol) are bundled here.
+const LOCAL_LOGO_DIR = fileURLToPath(new URL('../../assets/coin-logos/', import.meta.url));
 
 // LOGO_SYMBOL (EVM L2s reuse the ETH logo) and NETWORK_LABEL are derived from
 // the single CHAIN_REGISTRY — imported at the top of this file.
@@ -27,6 +31,18 @@ const LOGO_CACHE_DIR = join(tmpdir(), 'crypto-bot-qr-logos');
 const logoImageCache = new Map();
 
 async function fetchLogoBuffer(sym) {
+  // Symbols come from internal config, but harden anyway: a logo symbol is only
+  // ever alphanumeric, so anything else can't reach the filesystem or the CDN
+  // (blocks path traversal / SSRF if a caller ever passes untrusted input).
+  if (!/^[a-z0-9]+$/i.test(sym)) throw new Error('invalid logo symbol');
+
+  // 1. Bundled asset first — covers coins absent from the CDN (ton, msol, …).
+  try {
+    return await fs.readFile(join(LOCAL_LOGO_DIR, `${sym}.png`));
+  } catch {
+    // Not bundled — fall through to cache/CDN.
+  }
+
   const cachePath = join(LOGO_CACHE_DIR, `${sym}.png`);
   try {
     return await fs.readFile(cachePath);

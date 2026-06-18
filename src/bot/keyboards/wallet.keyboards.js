@@ -29,6 +29,7 @@ export function walletActionsKeyboard(walletId) {
       Markup.button.callback('📜 Historique', `wallet_history_${walletId}`),
       Markup.button.callback('🗑 Supprimer', `delete_wallet_${walletId}`),
     ],
+    [Markup.button.callback('🔄 Échanger', `exch_w_${walletId}`)],
     [Markup.button.callback('↩️ Retour', CALLBACKS.VIEW_KEYS)],
   ]);
 }
@@ -83,7 +84,10 @@ export function chainSelectionKeyboard(actionPrefix = 'chain_') {
       Markup.button.callback('🟥 Tron', `${actionPrefix}trx`),
       Markup.button.callback('ɱ Monero', `${actionPrefix}xmr`),
     ],
-    [Markup.button.callback('Ⓩ Zcash', `${actionPrefix}zec`)],
+    [
+      Markup.button.callback('Ⓩ Zcash', `${actionPrefix}zec`),
+      Markup.button.callback('💎 TON', `${actionPrefix}ton`),
+    ],
     [Markup.button.callback('↩️ Retour', CALLBACKS.BACK_TO_MENU)],
   ]);
 }

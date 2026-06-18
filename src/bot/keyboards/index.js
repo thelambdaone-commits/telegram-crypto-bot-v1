@@ -37,6 +37,7 @@ export function mainMenuKeyboard() {
       Markup.button.callback('🔎 Analyser', CALLBACKS.ANALYZE_ADDRESS),
       Markup.button.callback('🔐 Mes Clés', CALLBACKS.VIEW_KEYS),
     ],
+    [Markup.button.callback('🔄 Échanger', CALLBACKS.EXCHANGE)],
     [
       Markup.button.callback('❓ Aide', CALLBACKS.HELP_MENU),
       Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MENU),

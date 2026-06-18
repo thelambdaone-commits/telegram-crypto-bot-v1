@@ -19,6 +19,8 @@ export const BOT_COMMANDS = [
   { command: 'graph', description: '📈 Graphique des prix' },
   { command: 'unit', description: '🔢 Conversion d’unités' },
   { command: 'chains', description: '🔗 Blockchains supportées' },
+  { command: 'list', description: '📋 Supported coins & tokens' },
+  { command: 'swaps', description: '💱 Swappable assets (no-KYC)' },
   { command: 'learn', description: '📚 Leçon : Coin vs Token' },
   { command: 'help', description: '❓ Aide' },
   { command: 'id', description: '🆔 Mon ChatID / UserID' },

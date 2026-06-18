@@ -1,0 +1,77 @@
+/**
+ * TonChain — offline tests (no network): single-seed derivation determinism,
+ * address format, key import, validation, fee shape. Network methods
+ * (getBalance/sendTransaction/history) require a live RPC and are not covered.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import * as bip39 from 'bip39';
+import { TonChain } from '../src/providers/ton.js';
+
+const ton = new TonChain('https://toncenter.com/api/v2/jsonRPC', '');
+const SEED = 'test test test test test test test test test test test junk';
+
+test('importFromSeed derives a deterministic UQ address from a BIP39 seed', async () => {
+  const a = await ton.importFromSeed(SEED);
+  const b = await ton.importFromSeed(SEED);
+  assert.equal(a.address, b.address, 'derivation must be deterministic');
+  assert.match(a.address, /^[EU]Q[A-Za-z0-9_-]{46}$/, 'friendly TON address');
+  assert.equal(a.mnemonic, SEED);
+  assert.match(a.privateKey, /^[0-9a-f]{64}$/, 'stored key is the 32-byte ed25519 seed (hex)');
+  assert.ok(ton.validateAddress(a.address));
+});
+
+test('importFromSeed rejects an invalid mnemonic', async () => {
+  await assert.rejects(() => ton.importFromSeed('not a real seed phrase'), /Invalid seed/i);
+});
+
+test('createWallet yields a fresh, valid, self-consistent wallet', async () => {
+  const w = await ton.createWallet();
+  assert.ok(bip39.validateMnemonic(w.mnemonic), 'createWallet emits a valid BIP39 mnemonic');
+  assert.ok(ton.validateAddress(w.address));
+  // Re-deriving from the emitted mnemonic must reproduce the same address.
+  const again = await ton.importFromSeed(w.mnemonic);
+  assert.equal(again.address, w.address);
+});
+
+test('importFromKey accepts the stored hex seed and round-trips to the same address', async () => {
+  const seeded = await ton.importFromSeed(SEED);
+  const imported = await ton.importFromKey(seeded.privateKey);
+  assert.equal(imported.address, seeded.address);
+  assert.equal(imported.privateKey, seeded.privateKey);
+});
+
+test('importFromKey accepts a TON 24-word mnemonic', async () => {
+  const words = Array(24).fill('abandon'); // 24 tokens → TON mnemonic path
+  const res = await ton.importFromKey(words.join(' '));
+  assert.ok(ton.validateAddress(res.address));
+  assert.match(res.privateKey, /^[0-9a-f]{64}$/);
+});
+
+test('importFromKey rejects junk', async () => {
+  await assert.rejects(() => ton.importFromKey('xyz'), /invalide/i);
+});
+
+test('validateAddress accepts UQ/EQ and rejects garbage', () => {
+  assert.ok(ton.validateAddress('UQBouzAvVDVggDLOpH4GpFEyijOZnWmW5P5GDdmscYgau6zi'));
+  assert.equal(ton.validateAddress('not_an_address'), false);
+  assert.equal(ton.validateAddress(''), false);
+  assert.equal(ton.validateAddress(null), false);
+});
+
+test('validateAddress rejects testnet-encoded addresses (mainnet bot)', async () => {
+  const { address } = await ton.importFromSeed(SEED);
+  const { Address } = await import('@ton/core');
+  const testnet = Address.parse(address).toString({ bounceable: false, testOnly: true });
+  assert.notEqual(testnet, address, 'testnet encoding should differ');
+  assert.equal(ton.validateAddress(testnet), false, 'testnet address must be rejected');
+  assert.ok(ton.validateAddress(address), 'mainnet still accepted');
+});
+
+test('estimateFees returns slow/average/fast with an estimatedFee buffer', async () => {
+  const f = await ton.estimateFees();
+  for (const level of ['slow', 'average', 'fast']) {
+    assert.ok(f[level], `missing ${level}`);
+    assert.ok(Number.parseFloat(f[level].estimatedFee) > 0, `${level}.estimatedFee must be > 0`);
+  }
+});

@@ -15,18 +15,18 @@ import {
 
 const EXPECTED_EMOJIS = {
   eth: 'Ξ', btc: '₿', ltc: 'Ł', bch: '🅑', sol: '◎', arb: '🔵', matic: '⬡',
-  op: '🔴', base: '🟦', avax: '🔺', trx: '🟥', xmr: 'ɱ', zec: 'Ⓩ',
+  op: '🔴', base: '🟦', avax: '🔺', trx: '🟥', xmr: 'ɱ', zec: 'Ⓩ', ton: '💎',
 };
 
 const EXPECTED_LOGO = {
   eth: 'eth', arb: 'eth', op: 'eth', base: 'eth', btc: 'btc', ltc: 'ltc',
-  bch: 'bch', sol: 'sol', matic: 'matic', avax: 'avax', xmr: 'xmr', zec: 'zec', trx: 'trx',
+  bch: 'bch', sol: 'sol', matic: 'matic', avax: 'avax', xmr: 'xmr', zec: 'zec', trx: 'trx', ton: 'ton',
 };
 
 const EXPECTED_LABEL = {
   eth: 'Ethereum', arb: 'Arbitrum', op: 'Optimism', base: 'Base', matic: 'Polygon',
   avax: 'Avalanche', btc: 'Bitcoin', ltc: 'Litecoin', bch: 'Bitcoin Cash', sol: 'Solana',
-  xmr: 'Monero', zec: 'Zcash', trx: 'Tron',
+  xmr: 'Monero', zec: 'Zcash', trx: 'Tron', ton: 'TON',
 };
 
 const sortKeys = (o) => Object.fromEntries(Object.entries(o).sort());
@@ -46,7 +46,7 @@ test('NETWORK_LABEL derived map matches the historical values', () => {
 test('SUPPORTED_CHAINS unchanged set; EVM_CHAINS are the 6 EVM chains', () => {
   assert.deepEqual(
     [...SUPPORTED_CHAINS].sort(),
-    ['arb', 'avax', 'base', 'bch', 'btc', 'eth', 'ltc', 'matic', 'op', 'sol', 'trx', 'xmr', 'zec']
+    ['arb', 'avax', 'base', 'bch', 'btc', 'eth', 'ltc', 'matic', 'op', 'sol', 'ton', 'trx', 'xmr', 'zec']
   );
   assert.deepEqual([...EVM_CHAINS].sort(), ['arb', 'avax', 'base', 'eth', 'matic', 'op']);
 });

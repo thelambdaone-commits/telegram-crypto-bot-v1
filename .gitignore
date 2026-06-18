@@ -38,6 +38,9 @@ scratch/
 .DS_Store
 Thumbs.db
 
+# Claude Code: keep shared skills (.claude/skills/), ignore machine-local settings
+.claude/settings.local.json
+
 # IDE
 .idea/
 .vscode/

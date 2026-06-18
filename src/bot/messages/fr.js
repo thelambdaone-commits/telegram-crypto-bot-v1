@@ -4,7 +4,7 @@ export const fr = {
     tryAgain: '🔄 Réessaie dans quelques instants.',
     network: 'Erreur réseau. Réessaie dans quelques instants.',
     timeout: '⏱️ Délai dépassé. Réessaie.',
-    notFound: 'Introuvable.',
+    notFound: '👻 Introuvable.',
     noWallets: '🔍 Aucun wallet pour le moment.',
     noBalance: '💸 Aucun solde disponible.',
     address: "⚠️ Cette adresse n'est pas valide.",
@@ -19,7 +19,7 @@ export const fr = {
   },
 
   start: {
-    welcome: (name) => `👋 Salut ${name} ! Bienvenue sur ton wallet crypto sécurisé !`,
+    welcome: (name) => `👋 Salut ${name} ! 🪼 Bienvenue sur ton wallet crypto sécurisé !`,
   },
 
   wallet: {
@@ -53,7 +53,7 @@ export const fr = {
     invalidAddress: "⚠️ Cette adresse n'est pas valide.",
     noAddress: 'Aucune adresse saisie.',
     addressAnalysis: "🔍 Analyse d'adresse",
-    addressAnalysisPrompt: 'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, XMR, ZEC) pour voir son solde et tous ses tokens.',
+    addressAnalysisPrompt: 'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, XMR, ZEC, TON) pour voir son solde et tous ses tokens.',
   },
 
   admin: {
@@ -100,6 +100,34 @@ export const fr = {
       '🆕 Nouveau Wallet - Créer un wallet',
       '🔐 Mes Clés - Voir tes clés privées',
       '📊 Cours EUR - Prix en euros',
+      '🔄 Échanger - Simuler un échange cross-chain sans KYC',
     ],
+  },
+
+  exchange: {
+    pickFrom: '🔄 <b>Échanger sans KYC</b>\n\n1️⃣ Choisis la crypto à <b>donner</b> 👇',
+    pickTo: (sym) =>
+      `🔄 <b>Échanger sans KYC</b>\n\nTu donnes : <b>${sym}</b>\n\n2️⃣ Choisis la crypto à <b>recevoir</b> 👇`,
+    pickFromNet: (sym) => `🌐 Sur quel réseau sont tes <b>${sym}</b> à donner ?`,
+    pickToNet: (sym) => `🌐 Sur quel réseau veux-tu recevoir tes <b>${sym}</b> ?`,
+    ready: (fromSym, toSym) =>
+      '✅ <b>Échange prêt</b>\n' +
+      '━━━━━━━━━━━━━━━\n' +
+      `Tu donnes :  <b>${fromSym}</b>\n` +
+      `Tu reçois :  <b>${toSym}</b>\n` +
+      '━━━━━━━━━━━━━━━\n\n' +
+      `📥 Ton adresse de réception <b>${toSym}</b> est déjà pré-remplie.\n` +
+      `👉 Ouvre le lien, saisis le montant, puis envoie tes <b>${fromSym}</b> à l'adresse de dépôt affichée.\n\n` +
+      '🔒 Sans KYC · meilleur taux automatique · le bot ne touche jamais tes fonds.',
+    openButton: '🔒 Ouvrir l’échange',
+    noWallet: (chainName) =>
+      `👻 Pas encore de wallet <b>${chainName}</b> pour recevoir.\n\nCrée-en un (➕ Nouveau), puis relance l'échange.`,
+    fromWallet: (sym) =>
+      `🔄 <b>Échanger depuis ce wallet</b>\n\nTu donnes : <b>${sym}</b>\n\n2️⃣ Choisis la crypto à <b>recevoir</b> 👇`,
+    quoteExact: (fromSym, amt, toSym, provider) =>
+      `💱 Taux : 1 ${fromSym} ≈ <b>${amt} ${toSym}</b> <i>(via ${provider})</i>`,
+    quoteMarket: (fromSym, amt, toSym) =>
+      `💱 ≈ 1 ${fromSym} ≈ <b>${amt} ${toSym}</b> <i>(taux marché, hors frais)</i>`,
+    netFee: (amt, sym) => `⛽ Frais réseau d'envoi ≈ <b>${amt} ${sym}</b>`,
   },
 };

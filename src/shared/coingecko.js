@@ -82,4 +82,7 @@ export const COIN_IDS = {
   xmr: 'monero',
   zec: 'zcash',
   trx: 'tron',
+  ton: 'the-open-network',
+  arb: 'arbitrum',
+  msol: 'msol',
 };

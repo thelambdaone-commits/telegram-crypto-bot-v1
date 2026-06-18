@@ -6,6 +6,7 @@ import { setupWalletHandlers } from './wallet/index.js';
 import { setupKeysHandlers } from './keys/index.js';
 import { setupDepositHandlers } from './deposit/index.js';
 import { setupSendHandlers } from './send/index.js';
+import { setupExchangeHandlers } from './exchange/index.js';
 import { setupAdminHandlers } from './admin/index.js';
 import { setupCommands } from './commands/index.js';
 import { setupBalanceHandlers } from './balance.handlers.js';
@@ -97,6 +98,7 @@ export async function setupHandlers(bot, storage) {
   setupKeysHandlers(bot, storage, walletService);
   setupDepositHandlers(bot, storage);
   setupSendHandlers(bot, storage, walletService, sessions);
+  setupExchangeHandlers(bot, storage, walletService, sessions);
   setupAdminHandlers(bot, storage, sessions, walletService);
   setupBalanceHandlers(bot, storage, walletService);
   setupNavigationHandlers(bot, storage, walletService, sessions);

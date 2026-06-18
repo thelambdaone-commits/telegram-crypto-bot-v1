@@ -35,6 +35,10 @@ XMR ↔ piconero · ZEC ↔ zatoshi · TRX ↔ sun
 
 <i>Ex : /unit 1 btc → 100 000 000 satoshis</i>
 
+${sectionTitle('💱', 'EXCHANGE')}
+<code>/list</code> — 📋 Supported coins &amp; tokens
+<code>/swaps</code> — 💱 Swap any asset, no-KYC
+
 ${sectionTitle('📚', 'ÉDUCATION')}
 <code>/learn</code> — 📖 Coin vs Token
 

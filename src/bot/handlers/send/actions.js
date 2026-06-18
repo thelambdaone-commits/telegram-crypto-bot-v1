@@ -405,6 +405,8 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         hashUrl = `https://xmrchain.net/tx/${result.hash}`;
       } else if (chain === 'zec') {
         hashUrl = `https://zcashblockexplorer.com/tx/${result.hash}`;
+      } else if (chain === 'ton') {
+        hashUrl = `https://tonviewer.com/transaction/${result.hash}`;
       } else {
         hashUrl = `https://blockchain.com/btc/tx/${result.hash}`;
       }

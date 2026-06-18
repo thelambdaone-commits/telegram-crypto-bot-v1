@@ -53,6 +53,12 @@ export function detectChain(address) {
     return 'xmr';
   }
 
+  // TON: friendly address, 48 chars base64url starting with E/U + Q (UQ…/EQ…).
+  // Checked before Solana: TON's '_'/'-' and 48-char length don't fit base58.
+  if (/^[EU]Q[A-Za-z0-9_-]{46}$/.test(address)) {
+    return 'ton';
+  }
+
   // Solana: Base58, 32-44 chars
   if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) {
     return 'sol';
