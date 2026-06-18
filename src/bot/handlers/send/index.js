@@ -1,7 +1,7 @@
 import { setupSendActions } from './actions.js';
 import { setupSendTextInput } from './text-input.js';
 import { safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
-import { mainMenuKeyboard, quickAmountKeyboard } from '../../keyboards/index.js';
+import { mainMenuKeyboard, quickAmountKeyboard, cancelKeyboard } from '../../keyboards/index.js';
 import { CALLBACKS, CALLBACK_REGEX } from '../../constants/callbacks.js';
 
 /**
@@ -17,7 +17,7 @@ export function setupSendHandlers(bot, storage, walletService, sessions) {
     ctx.editMessageText(
       "🔍 <b>Analyse d'adresse</b>\n\n" +
         'Envoie-moi une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, TON) pour voir son solde et tous ses tokens.',
-      { parse_mode: 'HTML' }
+      { parse_mode: 'HTML', ...cancelKeyboard() }
     );
   });
 

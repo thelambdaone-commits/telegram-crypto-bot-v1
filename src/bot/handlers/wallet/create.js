@@ -1,5 +1,9 @@
 import { Markup } from 'telegraf';
-import { chainSelectionKeyboard, walletCreationMethodKeyboard } from '../../keyboards/index.js';
+import {
+  chainSelectionKeyboard,
+  walletCreationMethodKeyboard,
+  cancelKeyboard,
+} from '../../keyboards/index.js';
 import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { config } from '../../../core/config.js';
@@ -162,7 +166,7 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
     ctx.editMessageText(
       `🔑 <b>Importer une Clé Privée (${chain.toUpperCase()})</b>\n\nEnvoie-moi ta clé privée.\n\n⚠️ <i>Ce message sera auto-supprimé pour ta sécurité.</i>`,
-      { parse_mode: 'HTML' }
+      { parse_mode: 'HTML', ...cancelKeyboard() }
     );
   });
 
@@ -179,7 +183,7 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
 
     ctx.editMessageText(
       `🔐 <b>Importer une Seed Phrase (${chain.toUpperCase()})</b>\n\nEnvoie-moi tes 12 ou 24 mots.\n\n⚠️ <i>Ce message sera auto-supprimé pour ta sécurité.</i>`,
-      { parse_mode: 'HTML' }
+      { parse_mode: 'HTML', ...cancelKeyboard() }
     );
   });
 
