@@ -3,6 +3,7 @@
  */
 import {
   mainMenuKeyboard,
+  moreMenuKeyboard,
   walletListKeyboard,
   cancelKeyboard,
   chainSelectionKeyboard,
@@ -18,6 +19,15 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
     await safeEditMessage(ctx, '🏠 <b>Menu Principal</b>', {
       parse_mode: 'HTML',
       ...mainMenuKeyboard(),
+    });
+  });
+
+  // Action: more_menu — secondary actions behind "☰ Plus"
+  bot.action('more_menu', async (ctx) => {
+    await ctx.answerCbQuery().catch((err) => logger.debug('more_menu answerCbQuery failed', { error: err.message }));
+    await safeEditMessage(ctx, '☰ <b>Plus d’options</b>', {
+      parse_mode: 'HTML',
+      ...moreMenuKeyboard(),
     });
   });
 

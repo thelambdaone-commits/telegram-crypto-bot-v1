@@ -28,6 +28,7 @@ import { BOT_COMMANDS } from '../src/bot/bot-commands.js';
 import {
   mainReplyKeyboard,
   mainMenuKeyboard,
+  moreMenuKeyboard,
   cancelKeyboard,
   adminExtendedKeyboard,
   adminUserKeyboard,
@@ -156,6 +157,7 @@ const ADDR = '0x0000000000000000000000000000000000000000';
 function allInlineKeyboards() {
   return [
     ['mainMenuKeyboard', mainMenuKeyboard()],
+    ['moreMenuKeyboard', moreMenuKeyboard()],
     ['cancelKeyboard', cancelKeyboard()],
     ['adminExtendedKeyboard', adminExtendedKeyboard()],
     ['adminUserKeyboard', adminUserKeyboard(123456)],

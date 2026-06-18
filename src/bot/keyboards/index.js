@@ -18,8 +18,8 @@ export function mainReplyKeyboard() {
 }
 
 export function mainMenuKeyboard() {
-  // Balanced 2-column layout, grouped by intent (Telegram ergonomics):
-  // wallets · move funds · info · tools · footer.
+  // Only the principal, everyday actions — secondary tools live behind "☰ Plus"
+  // so /start /menu stays uncluttered.
   return Markup.inlineKeyboard([
     [
       Markup.button.callback('💰 Mes Wallets', CALLBACKS.LIST_WALLETS),
@@ -34,12 +34,26 @@ export function mainMenuKeyboard() {
       Markup.button.callback('📊 Cours', CALLBACKS.PRICES_EUR),
     ],
     [
+      Markup.button.callback('☰ Plus', CALLBACKS.MORE_MENU),
+      Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MENU),
+    ],
+  ]);
+}
+
+// Secondary / less-frequent actions, reached via "☰ Plus" from the main menu.
+export function moreMenuKeyboard() {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback('🔄 Échanger', CALLBACKS.EXCHANGE),
+      Markup.button.callback('💳 Facture', CALLBACKS.INVOICE_START),
+    ],
+    [
       Markup.button.callback('🔎 Analyser', CALLBACKS.ANALYZE_ADDRESS),
       Markup.button.callback('🔐 Mes Clés', CALLBACKS.VIEW_KEYS),
     ],
     [
       Markup.button.callback('❓ Aide', CALLBACKS.HELP_MENU),
-      Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MENU),
+      Markup.button.callback('↩️ Retour', CALLBACKS.BACK_TO_MENU),
     ],
   ]);
 }

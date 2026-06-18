@@ -1,4 +1,5 @@
-import { walletListKeyboard } from '../../keyboards/index.js';
+import { walletListKeyboard, mainMenuKeyboard } from '../../keyboards/index.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../../shared/utils/telegram.js';
 import { generateAddressQR } from '../../../shared/qr.js';
 import { CHAIN_REGISTRY } from '../../../shared/chains.js';
@@ -23,6 +24,23 @@ export function setupPaymentHandlers(bot, storage, walletService, sessions, paym
     }
     sessions.clearState(ctx.chat.id);
     await ctx.reply('💳 <b>Créer une facture</b>\n\nSur quel wallet recevoir le paiement ?', {
+      parse_mode: 'HTML',
+      ...walletListKeyboard(wallets, 'pinv_w_'),
+    });
+  });
+
+  // "💳 Facture" button (from ☰ Plus) — same flow as /invoice, but edits in place.
+  bot.action(CALLBACKS.INVOICE_START, async (ctx) => {
+    await safeAnswerCbQuery(ctx);
+    const wallets = await storage.getWallets(ctx.chat.id);
+    if (!wallets.length) {
+      return safeEditMessage(ctx, "👻 Aucun wallet pour recevoir. Crée-en un d'abord (➕ Nouveau).", {
+        parse_mode: 'HTML',
+        ...mainMenuKeyboard(),
+      });
+    }
+    sessions.clearState(ctx.chat.id);
+    await safeEditMessage(ctx, '💳 <b>Créer une facture</b>\n\nSur quel wallet recevoir le paiement ?', {
       parse_mode: 'HTML',
       ...walletListKeyboard(wallets, 'pinv_w_'),
     });

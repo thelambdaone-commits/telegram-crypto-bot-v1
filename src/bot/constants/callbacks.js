@@ -8,6 +8,8 @@ export const CALLBACKS = {
   BACK_TO_MENU: 'back_to_menu',
   CLOSE_MENU: 'close_menu',
   CANCEL: 'cancel',
+  MORE_MENU: 'more_menu',
+  INVOICE_START: 'invoice_start',
 
   // Wallet
   LIST_WALLETS: 'list_wallets',
