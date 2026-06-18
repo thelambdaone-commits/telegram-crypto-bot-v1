@@ -52,12 +52,20 @@ export function setupInfoCommands(bot) {
     );
   });
 
-  // 🔗 /chains - Liste des blockchains supportées
+  // 🔗 /chains - Liste des blockchains supportées (dérivée de CHAIN_REGISTRY)
   bot.command('chains', async (ctx) => {
+    const entries = Object.entries(CHAIN_REGISTRY);
+    const isL2 = (k, m) => m.evm && k !== 'eth' && k !== 'avax'; // EVM scaling chains
+    const l1 = entries
+      .filter(([k, m]) => !isL2(k, m))
+      .map(([, m]) => `${m.emoji} ${m.native}`)
+      .join(' · ');
+    const l2 = entries
+      .filter(([k, m]) => isL2(k, m))
+      .map(([, m]) => `${m.emoji} ${m.name}`)
+      .join(' · ');
     await ctx.reply(
-      '🔗 <b>Blockchains supportées</b>\n\n' +
-        '• L1 : BTC, ETH, SOL, TRX, TON, AVAX, LTC, BCH, XMR, ZEC\n' +
-        '• L2 : Arbitrum, Polygon, Optimism, Base',
+      '🔗 <b>Blockchains supportées</b>\n\n' + `🏛️ <b>L1</b> : ${l1}\n⚡ <b>L2</b> : ${l2}`,
       { parse_mode: 'HTML' }
     );
   });

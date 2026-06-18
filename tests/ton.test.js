@@ -68,6 +68,34 @@ test('validateAddress rejects testnet-encoded addresses (mainnet bot)', async ()
   assert.ok(ton.validateAddress(address), 'mainnet still accepted');
 });
 
+test('sendTransaction guards amount/address before any network call, and small amounts do not throw', async () => {
+  const t = new TonChain('https://example/api', '');
+  const { privateKey, address } = await t.importFromSeed(SEED);
+
+  // Stub the client so no real RPC is hit; track whether the network was touched.
+  let broadcast = null;
+  let seqnoCalls = 0;
+  t.client = {
+    open: () => ({ getSeqno: async () => { seqnoCalls += 1; return 0; } }),
+    sendFile: async (boc) => { broadcast = boc; },
+  };
+
+  // Pre-flight guards must reject BEFORE touching the client.
+  await assert.rejects(() => t.sendTransaction(privateKey, 'not_an_address', 1), /invalide/i);
+  await assert.rejects(() => t.sendTransaction(privateKey, address, 0), /Montant/i);
+  await assert.rejects(() => t.sendTransaction(privateKey, address, -5), /Montant/i);
+  assert.equal(seqnoCalls, 0, 'no network call on a validation failure');
+
+  // Tiny amount (1e-7) would be scientific-notation → toNano rejects without the
+  // toFixed(9) guard. Must succeed and broadcast.
+  const res = await t.sendTransaction(privateKey, address, 0.0000001);
+  assert.equal(res.status, 'success');
+  assert.equal(res.symbol, 'TON');
+  assert.match(res.hash, /^[0-9a-f]+$/);
+  assert.ok(broadcast, 'a BOC was broadcast');
+  assert.equal(seqnoCalls, 1);
+});
+
 test('estimateFees returns slow/average/fast with an estimatedFee buffer', async () => {
   const f = await ton.estimateFees();
   for (const level of ['slow', 'average', 'fast']) {

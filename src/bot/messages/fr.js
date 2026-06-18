@@ -100,7 +100,7 @@ export const fr = {
       '🆕 Nouveau Wallet - Créer un wallet',
       '🔐 Mes Clés - Voir tes clés privées',
       '📊 Cours EUR - Prix en euros',
-      '🔄 Échanger - Simuler un échange cross-chain sans KYC',
+      '🔄 Échanger - Échanger une crypto contre une autre, sans KYC',
     ],
   },
 
@@ -127,7 +127,7 @@ export const fr = {
     quoteExact: (fromSym, amt, toSym, provider) =>
       `💱 Taux : 1 ${fromSym} ≈ <b>${amt} ${toSym}</b> <i>(via ${provider})</i>`,
     quoteMarket: (fromSym, amt, toSym) =>
-      `💱 ≈ 1 ${fromSym} ≈ <b>${amt} ${toSym}</b> <i>(taux marché, hors frais)</i>`,
+      `💱 1 ${fromSym} ≈ <b>${amt} ${toSym}</b> <i>(taux marché, hors frais)</i>`,
     netFee: (amt, sym) => `⛽ Frais réseau d'envoi ≈ <b>${amt} ${sym}</b>`,
   },
 };

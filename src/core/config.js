@@ -51,9 +51,6 @@ export const config = {
   // ~106 chars max, 24-word seeds ~200 chars, amounts) gets close to this;
   // anything larger is a broken/flood message and is dropped early.
   maxMessageLength: Number.parseInt(process.env.MAX_MESSAGE_LENGTH || '512'),
-  // Web3 swaps (Phase 1). OFF by default — quoting works regardless, but no
-  // swap transaction is ever signed/sent unless this is explicitly enabled.
-  swapEnabled: process.env.SWAP_ENABLED === 'true',
 
   // No-KYC cross-chain exchange (Trocador aggregator, CakeWallet-style).
   // Quote-only for now: getQuote needs the API key, but NO funds are ever moved.

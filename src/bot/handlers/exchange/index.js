@@ -1,3 +1,4 @@
+import { Markup } from 'telegraf';
 import { ExchangeService } from '../../../modules/swap/exchange.service.js';
 import {
   exchangeSymbolKeyboard,
@@ -92,7 +93,10 @@ export function setupExchangeHandlers(bot, storage, walletService, sessions) {
       sessions.clearData(chatId);
       return safeEditMessage(ctx, fr.exchange.noWallet(chainName), {
         parse_mode: 'HTML',
-        ...mainMenuKeyboard(),
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('➕ Nouveau wallet', CALLBACKS.CREATE_WALLET)],
+          [Markup.button.callback('🏠 Menu', CALLBACKS.BACK_TO_MENU)],
+        ]),
       });
     }
 

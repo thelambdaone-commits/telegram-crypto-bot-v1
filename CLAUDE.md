@@ -43,13 +43,14 @@ Telegram → Telegraf → middlewares (auth, rate-limit, profile sync)
 - **`src/core/storage.js`** — `StorageService`: per-`chatId` encrypted file (`<chatId>.enc`) under `DATA_PATH`. Each user's data is encrypted with a key derived from `MASTER_ENCRYPTION_KEY` + chatId (`deriveUserKey`). Private keys and mnemonics are always stored encrypted; never return them in plaintext to Telegram.
 - **`src/core/session/`** — `SessionManager` combines an in-memory store with an encrypted file store (`sessions.enc`) for restart recovery. Multi-step flows (send, import, address analysis) keep state here, keyed by user.
 
-### Swap / Exchange (`src/modules/swap/`)
+### No-KYC cross-chain exchange (`src/modules/swap/exchange.service.js`)
 
-Two **separate** features live here — keep them distinct:
+CakeWallet-style, **keyless** by default. `ExchangeService` builds a Trocador **AnonPay** link (`anonPayUrl`) pre-filled with the pair + the user's own receiving address — the user completes a real, no-KYC exchange on Trocador; **the bot never holds funds or deposit addresses**. A SimpleSwap link is offered as a fallback (`simpleSwapUrl`).
 
-1. **On-chain swap (dormant).** `swap.service.js` — `getQuote()` works keylessly via the KyberSwap `/routes` API (`aggregators/kyber.aggregator.js`), EVM-only, same-chain. `executeSwap()` (approve → build → `sendRaw`) is **hard-gated behind `config.swapEnabled`** (`SWAP_ENABLED`, default `false`). Tested in `tests/swap.service.test.js`. There is **no `swap` handler / no `/swap` command** — `swap.keyboards.js` is an orphan, and the service is not wired to Telegram.
-
-2. **No-KYC cross-chain exchange (LIVE, quote-only).** `exchange.service.js` + `aggregators/trocador.aggregator.js` — CakeWallet-style. `ExchangeService.getQuote(fromChain, toChain, amount)` returns the best no-KYC rate (received amount + provider) across Trocador's partners; cross-chain (BTC↔XMR, ETH↔SOL, …). **Quote-only: no funds ever move, no address asked.** Needs `TROCADOR_API_KEY` (required even for quotes; via env or the `SecretVault`); without it the button shows a "non configuré" message. Wired through the **🔄 Échanger** button on the main menu → `setupExchangeHandlers` (`src/bot/handlers/exchange/`). The coin↔(ticker,network) map is `TROCADOR_COINS` in `exchange.service.js` — the **only** place to fix a network label if a pair returns "indisponible". `TON` is quotable here without a wallet provider (it carries its own `symbol`/`emoji` in that map). Tested in `tests/exchange.service.test.js` (mocked aggregator).
+- **Coin catalog** is auto-generated (`buildCoins`) from `CHAIN_REGISTRY` (natives) + `TOKEN_CONFIGS` (tokens) + `EXTRA_COINS` (TON jettons not in any wallet). Keys: native = chain key (`eth`); token = `<ticker>_<chain>` (`usdt_eth`).
+- **Network labels** (`CHAIN_NETWORK` natives + `TOKEN_NETWORK` token overrides) are per-`(coin × network)` and were **verified against Trocador's live coin list** (e.g. native ETH = `Mainnet`, USDT-eth = `ERC20`, USDT-tron = `TRC20`, USDT-ton = `Toncoin`, AVAX native = `C-Chain` but USDT-avax = `Avax-c`). A wrong label only degrades the AnonPay pre-fill — never a funds risk.
+- **UI** (`src/bot/handlers/exchange/`, `exchange.keyboards.js`): two-step picker (coin symbol → network, network step only when multi-network). Reachable from `/swaps` and the per-wallet **🔄 Échanger** button (`exch_w_<id>` → pre-selects that wallet's coin). `finalize()` shows a best-effort **devis** (exact Trocador rate if `TROCADOR_API_KEY` set, else a market-rate estimate from the EUR price map) + network fee, then the link.
+- `TROCADOR_API_KEY` / `TROCADOR_REF` are **optional** (env or `SecretVault`). Tested in `tests/exchange.service.test.js` (mocked aggregator).
 
 ## Conventions
 
