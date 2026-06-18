@@ -128,7 +128,8 @@ export function formatCryptoPricesEUR(prices, date = new Date()) {
     `◎ Solana (SOL) : ${formatEUR(prices.sol)}\n` +
     `🔺 Avalanche (AVAX) : ${formatEUR(prices.avax || 0)}\n` +
     `🟥 Tron (TRX) : ${formatEUR(prices.trx || 0)}\n` +
-    `💎 TON (TON) : ${formatEUR(prices.ton || 0)}\n\n` +
+    `💎 TON (TON) : ${formatEUR(prices.ton || 0)}\n` +
+    `🟡 BNB (BNB) : ${formatEUR(prices.bnb || 0)}\n\n` +
     '⚡ L2 / Scaling\n' +
     `🟦 ETH on Base : ${formatEUR(prices.base)}\n` +
     `🔵 ETH on Arbitrum : ${formatEUR(prices.eth)}\n` +
@@ -139,6 +140,7 @@ export function formatCryptoPricesEUR(prices, date = new Date()) {
     `💵 Tether (USDT) : ${formatEUR(prices.usdt)}\n` +
     `💵 Dai (DAI) : ${formatEUR(prices.dai || 0)}\n\n` +
     '🎫 Tokens\n' +
+    `Ξ Wrapped ETH (WETH) : ${formatEUR(prices.weth || 0)}\n` +
     `🔗 Chainlink (LINK) : ${formatEUR(prices.link || 0)}\n` +
     `🦄 Uniswap (UNI) : ${formatEUR(prices.uni || 0)}\n` +
     `🔵 Arbitrum (ARB) : ${formatEUR(prices.arb || 0)}\n` +

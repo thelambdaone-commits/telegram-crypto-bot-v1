@@ -72,6 +72,7 @@ export const config = {
     matic: vault.get('maticRpc') || process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
     op: vault.get('opRpc') || process.env.OPTIMISM_RPC_URL || 'https://mainnet.optimism.io',
     base: vault.get('baseRpc') || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    bsc: vault.get('bscRpc') || process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org',
     avax: vault.get('avaxRpc') || process.env.AVAX_RPC_URL || 'https://api.avax.network/ext/bc/C/rpc',
     xmrDaemon: vault.get('xmrDaemon') || process.env.XMR_DAEMON_URL || 'http://node.moneroworld.com:18089',
     xmrWalletRpc: vault.get('xmrWalletRpc') || process.env.XMR_WALLET_RPC_URL || '',

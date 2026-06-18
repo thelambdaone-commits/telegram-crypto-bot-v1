@@ -147,7 +147,7 @@ test('getDepositAssets lists majors first and de-dupes by symbol', () => {
 
 test('getAssetNetworks(USDT) covers every chain that defines USDT', () => {
   const chains = getAssetNetworks('USDT').map((n) => n.chain).sort();
-  assert.deepEqual(chains, ['arb', 'avax', 'base', 'eth', 'matic', 'op', 'sol', 'trx'].sort());
+  assert.deepEqual(chains, ['arb', 'avax', 'base', 'bsc', 'eth', 'matic', 'op', 'sol', 'trx'].sort());
   // None are native (USDT is always a token).
   assert.ok(getAssetNetworks('USDT').every((n) => !n.isNative));
 });

@@ -18,7 +18,7 @@ npm start
 
 | Module | Description |
 | ------ |-------------|
-| 🪙 Multi-chain | Ethereum, Polygon, Solana, Bitcoin, Litecoin, BCH, Arbitrum, Optimism, Base, Avalanche, Monero, Zcash, Tron, **TON** (14 chaînes) |
+| 🪙 Multi-chain | Ethereum, Polygon, Solana, Bitcoin, Litecoin, BCH, Arbitrum, Optimism, Base, Avalanche, Monero, Zcash, Tron, **TON**, **BNB Chain** (15 chaînes) |
 | 📷 QR Code | QR d'adresse avec logo de la crypto et nom du réseau au centre |
 | 💳 Wallets | Creation, import (cle privee / seed) et derivation depuis une seed existante |
 | 💸 Transferts | Estimation dynamique des frais, envoi de tokens (USDC/USDT) |
@@ -35,7 +35,7 @@ src/
 ├── bot/                 # Interface Telegram: handlers, keyboards, textes, middlewares
 ├── core/                # Config, stockage chiffre, sessions, monitor
 ├── modules/             # Services metier: wallet/ + swap/ (echange no-KYC)
-├── providers/           # Adaptateurs blockchain (un par chaine, 14 chaines)
+├── providers/           # Adaptateurs blockchain (un par chaine, 15 chaines)
 ├── shared/              # Logger, chiffrement, prix, QR, securite, RPC resilient
 ├── bootstrap.js         # Initialisation et verification au demarrage
 └── index.js             # Point d'entree

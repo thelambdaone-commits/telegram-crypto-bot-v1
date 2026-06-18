@@ -13,6 +13,7 @@ const ADDRESS_EXPLORERS = {
   zec:   (addr) => `https://zcashblockexplorer.com/address/${addr}`,
   trx:   (addr) => `https://tronscan.org/#/address/${addr}`,
   ton:   (addr) => `https://tonviewer.com/${addr}`,
+  bsc:   (addr) => `https://bscscan.com/address/${addr}`,
 };
 
 const EXPLORER_NAMES = {
@@ -30,6 +31,7 @@ const EXPLORER_NAMES = {
   zec:   'Zcash Block Explorer',
   trx:   'Tronscan',
   ton:   'Tonviewer',
+  bsc:   'BscScan',
 };
 
 const TOKEN_EXPLORERS = {
@@ -41,6 +43,7 @@ const TOKEN_EXPLORERS = {
   matic:(addr) => `https://polygonscan.com/token/${addr}`,
   avax:(addr) => `https://snowtrace.io/token/${addr}`,
   trx: (addr) => `https://tronscan.org/#/token20/${addr}`,
+  bsc: (addr) => `https://bscscan.com/token/${addr}`,
 };
 
 export function getAddressExplorerUrl(chain, address) {

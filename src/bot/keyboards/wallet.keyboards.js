@@ -81,6 +81,9 @@ export function chainSelectionKeyboard(actionPrefix = 'chain_') {
       Markup.button.callback('🔺 Avalanche', `${actionPrefix}avax`),
     ],
     [
+      Markup.button.callback('🟡 BNB Chain', `${actionPrefix}bsc`),
+    ],
+    [
       Markup.button.callback('🟥 Tron', `${actionPrefix}trx`),
       Markup.button.callback('ɱ Monero', `${actionPrefix}xmr`),
     ],

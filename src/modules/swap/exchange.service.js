@@ -47,6 +47,7 @@ export const CHAIN_NETWORK = {
   zec: 'Mainnet',
   trx: 'Mainnet',
   ton: 'Mainnet',
+  bsc: 'BSC',
 };
 
 // Token (ERC-20/SPL/TRC-20/jetton) network label per chain. `default` applies to
@@ -121,13 +122,13 @@ function symbolFor(chain) {
 // Optional polish only: a new token added to TOKEN_CONFIGS still appears in the
 // picker automatically — it just sorts last with a generic 🪙 until listed here.
 const SYMBOL_ORDER = [
-  'BTC', 'ETH', 'SOL', 'TON', 'TRX', 'AVAX', 'MATIC', 'LTC', 'BCH', 'XMR', 'ZEC',
-  'USDT', 'USDC', 'DAI', 'WBTC', 'LINK', 'UNI', 'ARB', 'OP', 'MSOL',
+  'BTC', 'ETH', 'SOL', 'TON', 'TRX', 'BNB', 'AVAX', 'MATIC', 'LTC', 'BCH', 'XMR', 'ZEC',
+  'USDT', 'USDC', 'DAI', 'WBTC', 'WETH', 'LINK', 'UNI', 'ARB', 'OP', 'MSOL',
 ];
 const SYMBOL_EMOJI = {
-  BTC: '₿', ETH: 'Ξ', SOL: '◎', TON: '💎', TRX: '🟥', AVAX: '🔺', MATIC: '⬡',
+  BTC: '₿', ETH: 'Ξ', SOL: '◎', TON: '💎', TRX: '🟥', BNB: '🟡', AVAX: '🔺', MATIC: '⬡',
   LTC: 'Ł', BCH: '🅑', XMR: 'ɱ', ZEC: 'Ⓩ', USDT: '💵', USDC: '💵', DAI: '💵',
-  WBTC: '₿', LINK: '🔗', UNI: '🦄', ARB: '🔵', OP: '🔴', MSOL: '💧',
+  WBTC: '₿', WETH: 'Ξ', LINK: '🔗', UNI: '🦄', ARB: '🔵', OP: '🔴', MSOL: '💧',
 };
 
 export class ExchangeService {

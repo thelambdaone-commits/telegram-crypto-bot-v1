@@ -7,6 +7,7 @@ import { BitcoinCashChain } from '../../providers/bitcoincash.js';
 import { PolygonChain } from '../../providers/polygon.js';
 import { OptimismChain } from '../../providers/optimism.js';
 import { BaseChain } from '../../providers/base.js';
+import { BscChain } from '../../providers/bsc.js';
 import { AvalancheChain } from '../../providers/avalanche.js';
 import { MoneroChain } from '../../providers/monero.js';
 import { ZcashChain } from '../../providers/zcash.js';
@@ -26,6 +27,7 @@ const FIRST_WALLET_CHAINS = [
   'op',
   'base',
   'avax',
+  'bsc',
   'btc',
   'ltc',
   'bch',
@@ -48,6 +50,7 @@ export class WalletService {
       matic: new PolygonChain(config.rpc.matic),
       op: new OptimismChain(config.rpc.op),
       base: new BaseChain(config.rpc.base),
+      bsc: new BscChain(config.rpc.bsc),
       avax: new AvalancheChain(config.rpc.avax),
       xmr: new MoneroChain(config.rpc.xmrDaemon, config.rpc.xmrWalletRpc, config.rpc.xmrWalletAuth),
       zec: new ZcashChain(config.rpc.zecApi, config.rpc.zecRpc, config.rpc.zecRpcAuth),

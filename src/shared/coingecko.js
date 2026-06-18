@@ -85,4 +85,7 @@ export const COIN_IDS = {
   ton: 'the-open-network',
   arb: 'arbitrum',
   msol: 'msol',
+  bsc: 'binancecoin',
+  bnb: 'binancecoin',
+  weth: 'weth',
 };

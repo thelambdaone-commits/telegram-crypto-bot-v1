@@ -51,6 +51,7 @@ const FEE_HINT = {
   base: { emoji: '🟢', label: 'frais bas' },
   matic: { emoji: '🟢', label: 'frais bas' },
   avax: { emoji: '🟢', label: 'frais bas' },
+  bsc: { emoji: '🟢', label: 'frais bas' },
   sol: { emoji: '🟢', label: 'frais quasi nuls' },
   trx: { emoji: '🟢', label: 'frais bas' },
 };

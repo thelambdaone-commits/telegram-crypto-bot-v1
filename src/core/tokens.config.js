@@ -89,6 +89,13 @@ export const TOKEN_CONFIGS = {
         icon: '🦄',
         standard: 'ERC-20',
       },
+      WETH: {
+        address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        decimals: 18,
+        type: 'wrapped',
+        icon: 'Ξ',
+        standard: 'ERC-20',
+      },
     },
   },
   arb: {
@@ -132,6 +139,13 @@ export const TOKEN_CONFIGS = {
         icon: '🔵',
         standard: 'Arbitrum',
       },
+      WETH: {
+        address: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+        decimals: 18,
+        type: 'wrapped',
+        icon: 'Ξ',
+        standard: 'Arbitrum',
+      },
     },
   },
   op: {
@@ -157,6 +171,13 @@ export const TOKEN_CONFIGS = {
         decimals: 18,
         type: 'governance',
         icon: '🔴',
+        standard: 'Optimism',
+      },
+      WETH: {
+        address: '0x4200000000000000000000000000000000000006',
+        decimals: 18,
+        type: 'wrapped',
+        icon: 'Ξ',
         standard: 'Optimism',
       },
       WBTC: {
@@ -239,6 +260,13 @@ export const TOKEN_CONFIGS = {
         icon: '💵',
         standard: 'Base',
         bridged: true,
+      },
+      WETH: {
+        address: '0x4200000000000000000000000000000000000006',
+        decimals: 18,
+        type: 'wrapped',
+        icon: 'Ξ',
+        standard: 'Base',
       },
     },
   },
@@ -328,6 +356,41 @@ export const TOKEN_CONFIGS = {
     native: 'TON',
     tokens: {},
   },
+  bsc: {
+    name: 'BNB Chain',
+    native: 'BNB',
+    tokens: {
+      // BEP-20 stablecoins on BNB Smart Chain use 18 decimals (unlike ETH's 6).
+      USDT: {
+        address: '0x55d398326f99059fF775485246999027B3197955',
+        decimals: 18,
+        type: 'stablecoin',
+        icon: '💵',
+        standard: 'BEP-20',
+      },
+      USDC: {
+        address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+        decimals: 18,
+        type: 'stablecoin',
+        icon: '💵',
+        standard: 'BEP-20',
+      },
+      DAI: {
+        address: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
+        decimals: 18,
+        type: 'stablecoin',
+        icon: '💵',
+        standard: 'BEP-20',
+      },
+      WETH: {
+        address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+        decimals: 18,
+        type: 'wrapped',
+        icon: 'Ξ',
+        standard: 'BEP-20',
+      },
+    },
+  },
 };
 
 export const ERC20_ABI = [
@@ -415,6 +478,7 @@ const NETWORK_ORDER = [
   'base',
   'matic',
   'avax',
+  'bsc',
   'sol',
   'trx',
   'btc',

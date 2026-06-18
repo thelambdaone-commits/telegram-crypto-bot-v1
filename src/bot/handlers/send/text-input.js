@@ -18,6 +18,7 @@ const EVM_NETWORKS = [
   { chain: 'matic', name: 'Polygon', emoji: '⬡' },
   { chain: 'arb', name: 'Arbitrum', emoji: '🔵' },
   { chain: 'avax', name: 'Avalanche', emoji: '🔺' },
+  { chain: 'bsc', name: 'BNB Chain', emoji: '🟡' },
 ];
 
 /**

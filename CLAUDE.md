@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Telegram multi-chain crypto wallet manager bot (Telegraf). Supports Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche (C-Chain), Bitcoin, Litecoin, Bitcoin Cash, Solana, Tron, TON, Monero, and Zcash (14 chains; the canonical list and metadata live in `src/shared/chains.js` `CHAIN_REGISTRY`, and the runtime registry is `WalletService.chains`). Core features: wallet create/import/derive-from-seed, send funds, public-address analysis (multi-EVM scan with balances/tokens/history), EUR prices (CoinGecko), QR codes, and an admin panel. ESM only (`"type": "module"`), Node `>=20.18.0`. User-facing strings are in **French** — match that when editing UI text.
+Telegram multi-chain crypto wallet manager bot (Telegraf). Supports Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche (C-Chain), Bitcoin, Litecoin, Bitcoin Cash, Solana, Tron, TON, Monero, Zcash, and BNB Chain (15 chains; the canonical list and metadata live in `src/shared/chains.js` `CHAIN_REGISTRY`, and the runtime registry is `WalletService.chains`). Core features: wallet create/import/derive-from-seed, send funds, public-address analysis (multi-EVM scan with balances/tokens/history), EUR prices (CoinGecko), QR codes, and an admin panel. ESM only (`"type": "module"`), Node `>=20.18.0`. User-facing strings are in **French** — match that when editing UI text.
 
 ## Commands
 

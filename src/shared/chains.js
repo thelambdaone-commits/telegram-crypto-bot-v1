@@ -29,6 +29,7 @@ export const CHAIN_REGISTRY = {
   zec: { name: 'Zcash', emoji: 'Ⓩ', logo: 'zec', native: 'ZEC', evm: false, coingecko: 'zcash' },
   trx: { name: 'Tron', emoji: '🟥', logo: 'trx', native: 'TRX', evm: false, coingecko: 'tron' },
   ton: { name: 'TON', emoji: '💎', logo: 'ton', native: 'TON', evm: false, coingecko: 'the-open-network' },
+  bsc: { name: 'BNB Chain', emoji: '🟡', logo: 'bnb', native: 'BNB', evm: true, coingecko: 'binancecoin' },
 };
 
 // ── Derived lists/maps (do not hand-edit — change CHAIN_REGISTRY) ─────────────
