@@ -24,10 +24,11 @@ export class TonChain extends BaseProvider {
     super('TON', 'TON');
     this.endpoint = endpoint || 'https://toncenter.com/api/v2/jsonRPC';
     this.client = new TonClient({ endpoint: this.endpoint, apiKey: apiKey || undefined });
-    // TonCenter rate-limits even the free keyed tier on parallel bursts (and the
-    // balances screen fetches every wallet at once), so keep a serialized gap in
-    // both cases — just smaller with a key. Retry backs it up.
-    this._minGapMs = apiKey ? 220 : 1100;
+    // TonCenter limits: no key = 1 RPS, free key = 10 RPS, both with NO burst
+    // allowance (docs.ton.org/.../toncenter/rate-limit). The balances screen
+    // fetches wallets in parallel, so serialize with a gap that stays safely
+    // under the limit (~8 RPS keyed, ~0.9 RPS keyless); retry backs it up.
+    this._minGapMs = apiKey ? 120 : 1100;
     this._queue = Promise.resolve();
   }
 

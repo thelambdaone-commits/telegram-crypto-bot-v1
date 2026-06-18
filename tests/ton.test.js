@@ -96,6 +96,35 @@ test('sendTransaction guards amount/address before any network call, and small a
   assert.equal(seqnoCalls, 1);
 });
 
+test('TonCenter throttle: keyless serialized (1100ms ≈0.9 RPS), keyed faster (120ms ≈8 RPS)', () => {
+  assert.equal(new TonChain('https://x', '')._minGapMs, 1100, 'keyless under the 1 RPS limit');
+  assert.equal(new TonChain('https://x', 'KEY')._minGapMs, 120, 'keyed under the 10 RPS free limit');
+});
+
+test('_retry retries a 429 then succeeds; does not retry a permanent error', async () => {
+  const t = new TonChain('https://x', '');
+  let calls = 0;
+  const out = await t._retry(async () => {
+    if (++calls < 2) throw Object.assign(new Error('429'), { response: { status: 429 } });
+    return 'ok';
+  }, 4, 1);
+  assert.equal(out, 'ok');
+  assert.equal(calls, 2);
+
+  let bad = 0;
+  await assert.rejects(() => t._retry(async () => { bad += 1; throw new Error('bad address'); }, 4, 1), /bad address/);
+  assert.equal(bad, 1, 'permanent error is not retried');
+});
+
+test('_schedule preserves order and returns each result', async () => {
+  const t = new TonChain('https://x', 'KEY');
+  t._minGapMs = 0; // speed up the test
+  const order = [];
+  const out = await Promise.all([1, 2, 3].map((n) => t._schedule(async () => { order.push(n); return n; })));
+  assert.deepEqual(out, [1, 2, 3]);
+  assert.deepEqual(order, [1, 2, 3]);
+});
+
 test('estimateFees returns slow/average/fast with an estimatedFee buffer', async () => {
   const f = await ton.estimateFees();
   for (const level of ['slow', 'average', 'fast']) {
