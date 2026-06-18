@@ -23,6 +23,19 @@ export class TronChain extends BaseProvider {
     this.apiUrl = apiUrl || DEFAULT_HOST;
     this.apiKey = apiKey || '';
     this.tokens = getAllTokensForChain('trx');
+    // Without an API key, serialize TronGrid calls with a gap so the parallel
+    // balances screen doesn't trip the public rate limit (→ "Erreur de
+    // récupération"). With a key, no throttle is needed.
+    this._minGapMs = this.apiKey ? 0 : 350;
+    this._queue = Promise.resolve();
+  }
+
+  /** Serialize a TronGrid call behind the queue (with min-gap) + 429 retry. */
+  _schedule(fn) {
+    const result = this._queue.then(() => this._retry(fn));
+    const gap = () => (this._minGapMs ? new Promise((r) => setTimeout(r, this._minGapMs)) : 0);
+    this._queue = result.then(gap, gap);
+    return result;
   }
 
   _client(privateKey = null) {
@@ -70,6 +83,25 @@ export class TronChain extends BaseProvider {
     return { address, privateKey: pk, publicKey: null };
   }
 
+  /**
+   * Retry a TronGrid call on HTTP 429. The public endpoint rate-limits hard
+   * (~a few req/s) and the balances screen fetches every wallet in parallel, so
+   * without an API key multiple TRX wallets would 429 → "Erreur de récupération".
+   * Exponential backoff + jitter staggers the retries past the rate window.
+   */
+  async _retry(fn, attempts = 4, baseMs = 300) {
+    for (let i = 0; ; i++) {
+      try {
+        return await fn();
+      } catch (e) {
+        const status = e?.response?.status || e?.status;
+        const is429 = status === 429 || /\b429\b|rate.?limit|too many/i.test(e?.message || '');
+        if (!is429 || i >= attempts - 1) throw e;
+        await new Promise((r) => setTimeout(r, baseMs * 2 ** i + Math.floor(Math.random() * 150)));
+      }
+    }
+  }
+
   async getBalance(address, tokenSymbol = null) {
     const sym = String(tokenSymbol || 'TRX').toUpperCase();
     const tw = this._client();
@@ -79,12 +111,12 @@ export class TronChain extends BaseProvider {
       if (!token) return { balance: '0', symbol: tokenSymbol };
       tw.setAddress(address);
       const contract = await tw.contract().at(token.address);
-      const raw = await contract.balanceOf(address).call();
+      const raw = await this._schedule(() => contract.balanceOf(address).call());
       const balance = Number(raw.toString()) / 10 ** token.decimals;
       return { balance, symbol: sym };
     }
 
-    const sun = await tw.trx.getBalance(address);
+    const sun = await this._schedule(() => tw.trx.getBalance(address));
     return { balance: sun / 1e6, balanceSun: String(sun), symbol: 'TRX' };
   }
 
