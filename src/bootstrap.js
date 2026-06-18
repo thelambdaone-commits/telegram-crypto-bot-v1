@@ -10,6 +10,12 @@ import { auditLogger } from './shared/security/audit-logger.js';
 import { initRateLimiters } from './bot/middlewares/security.middleware.js';
 import { registerBotCommands } from './bot/bot-commands.js';
 
+// Telegram errors that are expected and harmless (a re-render with identical
+// content, a stale callback, a blocked/deleted chat). They must NOT be logged as
+// real errors nor surfaced to the user as "an error occurred".
+const BENIGN_TELEGRAM_ERROR =
+  /message is not modified|query is too old|message can't be edited|message to (edit|delete) not found|bot was blocked|user is deactivated|chat not found|MESSAGE_ID_INVALID|forbidden/i;
+
 export class App {
   constructor() {
     this.bot = null;
@@ -71,6 +77,12 @@ export class App {
 
   _setupErrorHandler() {
     this.bot.catch((err, ctx) => {
+      // Benign Telegram errors (e.g. editing a message to identical content) are
+      // not failures — don't log them as errors and don't alarm the user.
+      if (BENIGN_TELEGRAM_ERROR.test(err?.message || '')) {
+        logger.debug('Benign Telegram error ignored', { error: err.message, updateType: ctx.updateType });
+        return;
+      }
       logger.logError(err, {
         requestId: ctx.state?.requestId,
         updateType: ctx.updateType,
@@ -87,11 +99,9 @@ export class App {
   // send/edit errors are ignored; anything else is logged with context instead
   // of becoming a silent unhandledRejection.
   _setupProcessGuards() {
-    const BENIGN =
-      /message is not modified|query is too old|message can't be edited|message to (edit|delete) not found|bot was blocked|user is deactivated|chat not found|MESSAGE_ID_INVALID|forbidden/i;
     process.on('unhandledRejection', (reason) => {
       const message = reason?.message || String(reason);
-      if (BENIGN.test(message)) return;
+      if (BENIGN_TELEGRAM_ERROR.test(message)) return;
       logger.logError(reason instanceof Error ? reason : new Error(message), {
         context: 'unhandledRejection',
       });
