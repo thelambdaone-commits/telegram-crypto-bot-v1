@@ -30,7 +30,11 @@ test('decrypt with wrong key throws error', () => {
 test('decrypt with tampered ciphertext throws error', () => {
   const plaintext = 'secret data';
   const encrypted = encrypt(plaintext, masterKey);
-  const tampered = encrypted.slice(0, 10) + 'A' + encrypted.slice(11);
+  // Flip one char to a GUARANTEED-different value (replacing with a fixed 'A'
+  // was a no-op when that char was already 'A' — the source of the flake).
+  const i = 10;
+  const tampered = encrypted.slice(0, i) + (encrypted[i] === 'A' ? 'B' : 'A') + encrypted.slice(i + 1);
+  assert.notEqual(tampered, encrypted);
   assert.throws(() => decrypt(tampered, masterKey));
 });
 
