@@ -140,8 +140,10 @@ export function applyPayment(invoice, receivedCrypto, opts = {}) {
   if (!Number.isFinite(received) || received < 0) throw new Error('Montant reçu invalide');
 
   // Terminal states are immutable.
+  // Terminal states are immutable — never overwrite the recorded received amount
+  // (a later balance reading, e.g. after the merchant spends, must not corrupt it).
   if ([INVOICE_STATES.SETTLED, INVOICE_STATES.COMPLETE, INVOICE_STATES.EXPIRED, INVOICE_STATES.INVALID].includes(invoice.status)) {
-    return { ...invoice, receivedCrypto: received };
+    return invoice;
   }
 
   const required = invoice.amountCrypto * (1 - invoice.underpayTolerance);

@@ -417,6 +417,26 @@ export class StorageService {
     });
   }
 
+  /**
+   * Atomically add an invoice only if no OPEN invoice already exists for the same
+   * (chain, symbol) — closes the check-then-add TOCTOU that two concurrent
+   * /invoice flows could exploit to create duplicate open invoices. Returns true
+   * if added, false if a conflicting open invoice already exists.
+   */
+  async addInvoiceExclusive(chatId, invoice, { chain, symbol, openStatuses }) {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      data.invoices = data.invoices || [];
+      const conflict = data.invoices.some(
+        (i) => i.chain === chain && i.symbol === symbol && openStatuses.includes(i.status)
+      );
+      if (conflict) return false;
+      data.invoices.push(invoice);
+      await this.saveUserData(chatId, data);
+      return true;
+    });
+  }
+
   async getInvoices(chatId) {
     const data = await this.loadUserData(chatId);
     return data.invoices || [];

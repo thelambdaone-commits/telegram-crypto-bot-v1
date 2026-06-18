@@ -18,6 +18,11 @@ function harness({ balance = 0, wallets, lnConfigured = false, sweep, nodeBalanc
     getWallets: async () => wallets ?? [{ id: 'eth-1', chain: 'eth', address: '0xMerchant', isCorrupted: false }],
     getInvoices: async (id) => store.get(id) || [],
     addInvoice: async (id, inv) => { store.set(id, [...(store.get(id) || []), inv]); return inv.id; },
+    addInvoiceExclusive: async (id, inv, { chain, symbol, openStatuses }) => {
+      const list = store.get(id) || [];
+      if (list.some((i) => i.chain === chain && i.symbol === symbol && openStatuses.includes(i.status))) return false;
+      store.set(id, [...list, inv]); return true;
+    },
     updateInvoice: async (id, inv) => {
       const l = store.get(id) || []; const i = l.findIndex((x) => x.id === inv.id);
       if (i === -1) return false; l[i] = inv; store.set(id, l); return true;
@@ -29,7 +34,8 @@ function harness({ balance = 0, wallets, lnConfigured = false, sweep, nodeBalanc
     getPayouts: async () => payouts,
     updatePayout: async (p) => { const i = payouts.findIndex((x) => x.id === p.id); if (i === -1) return false; payouts[i] = p; return true; },
   };
-  const walletService = { getBalance: async () => ({ balance: String(bal) }) };
+  let balanceThrows = false;
+  const walletService = { getBalance: async () => { if (balanceThrows) throw new Error('RPC down'); return { balance: String(bal) }; } };
   const bot = { telegram: { sendMessage: async (id, text) => notes.push({ id, text }) } };
   const lightning = {
     isConfigured: () => lnConfigured,
@@ -39,7 +45,7 @@ function harness({ balance = 0, wallets, lnConfigured = false, sweep, nodeBalanc
     sendToAddress: async ({ amountSat }) => { if (sendFails) throw new Error('node offline'); return { txid: `tx-${amountSat}` }; },
   };
   const svc = new PaymentService(storage, walletService, bot, { lightning, sweep, adminId: 999 });
-  return { svc, store, notes, ln, lnBalances, payouts, setBalance: (v) => { bal = v; } };
+  return { svc, store, notes, ln, lnBalances, payouts, setBalance: (v) => { bal = v; }, setThrow: (v) => { balanceThrows = v; } };
 }
 
 test('createInvoice attaches the merchant address + baseline and persists', async () => {
@@ -175,6 +181,42 @@ test('sweep stays disabled without a cold address', async () => {
   const r = await h.svc.sweepLightningBalance();
   assert.equal(r.swept, false);
   assert.equal(r.reason, 'disabled');
+});
+
+test('a failed balance read never expires a possibly-paid invoice (RPC-flake safe)', async () => {
+  const h = harness({ balance: 0 });
+  const inv = await h.svc.createInvoice(1, 'eth', 'ETH', { amountCrypto: 1, expirySec: 1 });
+  h.setThrow(true); // RPC dies right at expiry
+  const out = await h.svc.checkInvoice(inv, inv.expiresAt + 1000);
+  assert.equal(out.status, INVOICE_STATES.NEW); // NOT expired on a failed read — retried next cycle
+});
+
+test('overlapping polls do not double-credit (re-entrancy guard)', async () => {
+  const h = harness({ lnConfigured: true });
+  const inv = await h.svc.createLightningInvoice(3, { amountCrypto: 0.0005 }); // 50_000 sats
+  void inv;
+  h.ln.paid = true; h.ln.receivedSat = 50000;
+  await Promise.all([h.svc.pollOnce(), h.svc.pollOnce()]); // concurrent
+  assert.equal(await h.svc.storage.getLnBalance(3), 50000); // credited once, not 100_000
+});
+
+test('concurrent sweeps do not double-spend (re-entrancy guard)', async () => {
+  const h = harness({ lnConfigured: true, sweep: SWEEP, nodeBalanceSat: 750_000 });
+  const [a, b] = await Promise.all([h.svc.sweepLightningBalance(), h.svc.sweepLightningBalance()]);
+  assert.equal([a, b].filter((r) => r.swept).length, 1); // exactly one swept
+  assert.equal([a, b].filter((r) => r.reason === 'busy').length, 1);
+  assert.equal(h.payouts.length, 1);
+});
+
+test('treasuryStatus exposes node balance + payouts without leaking internals', async () => {
+  const h = harness({ lnConfigured: true, sweep: SWEEP, nodeBalanceSat: 123_456 });
+  const st = await h.svc.treasuryStatus();
+  assert.equal(st.enabled, true);
+  assert.equal(st.balanceSat, 123_456);
+  assert.equal(st.thresholdSat, 500_000);
+  assert.equal(st.address, 'bc1qcold');
+  assert.ok(Array.isArray(st.payouts));
+  assert.deepEqual(await harness({ lnConfigured: false }).svc.treasuryStatus(), { enabled: false });
 });
 
 test('pollOnce checks every merchant open invoice', async () => {

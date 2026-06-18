@@ -176,21 +176,20 @@ export function setupPaymentHandlers(bot, storage, walletService, sessions, paym
   // /treasury (admin) — node balance, recent payouts, manual sweep.
   bot.command(['treasury', 'tresorerie'], async (ctx) => {
     if (!adminGuard(ctx)) return;
-    if (!payments.lightningEnabled()) return ctx.reply('⚡ Lightning non configuré.');
-    let bal;
+    let st;
     try {
-      bal = await payments.lightning.getBalance();
+      st = await payments.treasuryStatus();
     } catch (e) {
       return ctx.reply(`❌ Nœud injoignable : ${escapeHtml(e.message)}`);
     }
-    const payouts = (await storage.getPayouts()).slice(-5).reverse();
+    if (!st.enabled) return ctx.reply('⚡ Lightning non configuré.');
     const pe = { withdrawn: '✅', failed: '❌', pending: '⏳' };
-    const lines = payouts.map((p) => `${pe[p.status] || '•'} ${p.amountSat} sats · ${p.status}${p.txid ? ` · <code>${escapeHtml(p.txid.slice(0, 14))}</code>` : ''}`);
+    const lines = st.payouts.map((p) => `${pe[p.status] || '•'} ${p.amountSat} sats · ${p.status}${p.txid ? ` · <code>${escapeHtml(p.txid.slice(0, 14))}</code>` : ''}`);
     await ctx.reply(
       '🏦 <b>Trésorerie Lightning</b>\n' +
-        `Solde nœud : <b>${bal.balanceSat} sats</b>\n` +
-        `Seuil de sweep : ${payments.sweep.thresholdSat} sats\n` +
-        `Destination : <code>${escapeHtml(payments.sweep.address || '(non configurée)')}</code>\n\n` +
+        `Solde nœud : <b>${st.balanceSat} sats</b>\n` +
+        `Seuil de sweep : ${st.thresholdSat} sats\n` +
+        `Destination : <code>${escapeHtml(st.address || '(non configurée)')}</code>\n\n` +
         (lines.length ? '<b>Derniers retraits</b>\n' + lines.join('\n') : 'Aucun retrait.'),
       { parse_mode: 'HTML', ...Markup.inlineKeyboard([[Markup.button.callback('🧹 Balayer maintenant', 'treasury_sweep')]]) }
     );

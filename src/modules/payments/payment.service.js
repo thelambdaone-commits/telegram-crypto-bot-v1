@@ -11,7 +11,8 @@
  * allow only ONE open invoice per (merchant, chain, asset) at a time. Per-invoice
  * HD-derived addresses (BTCPay-style) would lift that — a later phase.
  */
-import { createInvoice, applyPayment, expireIfDue, INVOICE_STATES } from './invoice.service.js';
+import crypto from 'node:crypto';
+import { createInvoice, applyPayment, INVOICE_STATES } from './invoice.service.js';
 import { settlementEntries } from './ledger.js';
 import { LightningService } from './lightning.service.js';
 import { CHAIN_REGISTRY } from '../../shared/chains.js';
@@ -38,11 +39,21 @@ export class PaymentService {
     this.adminId = adminId ?? config.adminUserId;
     this.timer = null;
     this.sweepTimer = null;
+    this._polling = false; // re-entrancy guards: never process an invoice / sweep twice
+    this._sweeping = false;
     this.ledger = []; // in-memory reconciliation log (persisted in a later phase)
   }
 
   lightningEnabled() {
     return this.lightning.isConfigured();
+  }
+
+  /** Treasury snapshot for the admin UI — keeps node/sweep internals encapsulated. */
+  async treasuryStatus(limit = 5) {
+    if (!this.lightningEnabled()) return { enabled: false };
+    const balance = await this.lightning.getBalance(); // may throw → caller handles
+    const payouts = (await this.storage.getPayouts()).slice(-limit).reverse();
+    return { enabled: true, balanceSat: balance.balanceSat, thresholdSat: this.sweep.thresholdSat, address: this.sweep.address, payouts };
   }
 
   /**
@@ -52,9 +63,6 @@ export class PaymentService {
   async createLightningInvoice(merchantId, { amountFiat, amountCrypto, memo = '', expirySec = 900 } = {}) {
     if (!this.lightningEnabled()) throw new Error('Lightning non configuré sur ce bot.');
 
-    const existing = (await this.storage.getInvoices(merchantId)).find((i) => i.chain === LN && OPEN.includes(i.status));
-    if (existing) throw new Error('Une facture Lightning est déjà ouverte.');
-
     const invoice = await createInvoice({ merchantId, chain: LN, symbol: 'BTC', amountFiat, amountCrypto, memo, expirySec });
     const amountSat = Math.max(1, Math.round(invoice.amountCrypto * SATS_PER_BTC));
     const ln = await this.lightning.createInvoice({ amountSat, description: memo || `Facture ${invoice.id}`, externalId: invoice.id, expirySec });
@@ -63,7 +71,8 @@ export class PaymentService {
     invoice.paymentHash = ln.paymentHash;
     invoice.amountSat = amountSat;
     invoice.address = ln.bolt11; // the BOLT11 is what the payer scans
-    await this.storage.addInvoice(merchantId, invoice);
+    const added = await this.storage.addInvoiceExclusive(merchantId, invoice, { chain: LN, symbol: 'BTC', openStatuses: OPEN });
+    if (!added) throw new Error('Une facture Lightning est déjà ouverte.');
     logger.info('[Payments] lightning invoice created', { id: invoice.id, amountSat });
     return invoice;
   }
@@ -85,16 +94,12 @@ export class PaymentService {
     const wallet = wallets.find((w) => w.chain === chain && !w.isCorrupted);
     if (!wallet?.address) throw new Error(`Aucun wallet ${chain.toUpperCase()} pour recevoir.`);
 
-    const existing = (await this.storage.getInvoices(merchantId)).find(
-      (i) => i.chain === chain && i.symbol === String(symbol).toUpperCase() && OPEN.includes(i.status)
-    );
-    if (existing) throw new Error(`Une facture ${symbol} sur ${chain.toUpperCase()} est déjà ouverte.`);
-
     const invoice = await createInvoice({ merchantId, chain, symbol, amountFiat, amountCrypto, memo, expirySec });
     invoice.walletId = wallet.id;
     invoice.address = wallet.address;
     invoice.baseline = await this._balance(merchantId, wallet.id, chain, symbol);
-    await this.storage.addInvoice(merchantId, invoice);
+    const added = await this.storage.addInvoiceExclusive(merchantId, invoice, { chain, symbol: invoice.symbol, openStatuses: OPEN });
+    if (!added) throw new Error(`Une facture ${symbol} sur ${chain.toUpperCase()} est déjà ouverte.`);
     logger.info('[Payments] invoice created', { id: invoice.id, chain, symbol });
     return invoice;
   }
@@ -120,8 +125,10 @@ export class PaymentService {
       }
       next = applyPayment(invoice, received, { confirmed, now });
     } catch (e) {
-      logger.debug('[Payments] balance check failed', { id: invoice.id, error: e.message });
-      next = expireIfDue(invoice, now); // still expire on time even if RPC is down
+      // A failed read tells us NOTHING — do not expire/settle on stale data
+      // (would wrongly expire an invoice that was actually paid). Retry next cycle.
+      logger.debug('[Payments] balance check failed; retry next cycle', { id: invoice.id, error: e.message });
+      return invoice;
     }
 
     if (next.status !== invoice.status || next.receivedCrypto !== invoice.receivedCrypto) {
@@ -162,45 +169,51 @@ export class PaymentService {
    */
   async sweepLightningBalance() {
     if (!this.lightningEnabled() || !this.sweep.address) return { swept: false, reason: 'disabled' };
-
-    let bal;
+    // Guard against concurrent sweeps (scheduled + manual) → would double-spend.
+    if (this._sweeping) return { swept: false, reason: 'busy' };
+    this._sweeping = true;
     try {
-      bal = await this.lightning.getBalance();
-    } catch (e) {
-      logger.warn('[Payments] sweep getBalance failed', { error: e.message });
-      return { swept: false, reason: 'balance-error' };
-    }
-    if (bal.balanceSat < this.sweep.thresholdSat) {
-      return { swept: false, reason: 'below-threshold', balanceSat: bal.balanceSat };
-    }
-
-    const payout = {
-      id: `payout-${Date.now()}`,
-      amountSat: bal.balanceSat,
-      address: this.sweep.address,
-      status: 'pending',
-      txid: null,
-      createdAt: new Date().toISOString(),
-    };
-    await this.storage.addPayout(payout);
-    try {
-      const { txid } = await this.lightning.sendToAddress({ address: this.sweep.address, amountSat: bal.balanceSat });
-      payout.status = 'withdrawn';
-      payout.txid = txid;
-      await this.storage.updatePayout(payout);
-      logger.info('[Payments] treasury swept', { amountSat: payout.amountSat, txid });
-      if (this.adminId) {
-        await this.bot.telegram
-          .sendMessage(this.adminId, `🏦 <b>Trésorerie balayée</b>\n${payout.amountSat} sats → <code>${payout.address}</code>\ntxid <code>${txid}</code>`, { parse_mode: 'HTML' })
-          .catch(() => {});
+      let bal;
+      try {
+        bal = await this.lightning.getBalance();
+      } catch (e) {
+        logger.warn('[Payments] sweep getBalance failed', { error: e.message });
+        return { swept: false, reason: 'balance-error' };
       }
-      return { swept: true, payout };
-    } catch (e) {
-      payout.status = 'failed';
-      payout.error = e.message;
-      await this.storage.updatePayout(payout);
-      logger.warn('[Payments] sweep payout failed (funds remain in node)', { error: e.message });
-      return { swept: false, reason: 'payout-failed', error: e.message };
+      if (bal.balanceSat < this.sweep.thresholdSat) {
+        return { swept: false, reason: 'below-threshold', balanceSat: bal.balanceSat };
+      }
+
+      const payout = {
+        id: `payout-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+        amountSat: bal.balanceSat,
+        address: this.sweep.address,
+        status: 'pending',
+        txid: null,
+        createdAt: new Date().toISOString(),
+      };
+      await this.storage.addPayout(payout);
+      try {
+        const { txid } = await this.lightning.sendToAddress({ address: this.sweep.address, amountSat: bal.balanceSat });
+        payout.status = 'withdrawn';
+        payout.txid = txid;
+        await this.storage.updatePayout(payout);
+        logger.info('[Payments] treasury swept', { amountSat: payout.amountSat, txid });
+        if (this.adminId) {
+          await this.bot.telegram
+            .sendMessage(this.adminId, `🏦 <b>Trésorerie balayée</b>\n${payout.amountSat} sats → <code>${payout.address}</code>\ntxid <code>${txid}</code>`, { parse_mode: 'HTML' })
+            .catch(() => {});
+        }
+        return { swept: true, payout };
+      } catch (e) {
+        payout.status = 'failed';
+        payout.error = e.message;
+        await this.storage.updatePayout(payout);
+        logger.warn('[Payments] sweep payout failed (funds remain in node)', { error: e.message });
+        return { swept: false, reason: 'payout-failed', error: e.message };
+      }
+    } finally {
+      this._sweeping = false;
     }
   }
 
@@ -214,17 +227,25 @@ export class PaymentService {
 
   /** One poll pass over every merchant's open invoices. */
   async pollOnce(now = Date.now()) {
-    const users = await this.storage.getAllUsers();
-    for (const user of users) {
-      let invoices;
-      try {
-        invoices = await this.storage.getInvoices(user.chatId);
-      } catch {
-        continue;
+    // Guard against overlapping polls (a slow pass + the next tick) → a second
+    // pass could re-settle an invoice and double-credit before the first persists.
+    if (this._polling) return;
+    this._polling = true;
+    try {
+      const users = await this.storage.getAllUsers();
+      for (const user of users) {
+        let invoices;
+        try {
+          invoices = await this.storage.getInvoices(user.chatId);
+        } catch {
+          continue;
+        }
+        for (const inv of invoices.filter((i) => OPEN.includes(i.status))) {
+          await this.checkInvoice(inv, now);
+        }
       }
-      for (const inv of invoices.filter((i) => OPEN.includes(i.status))) {
-        await this.checkInvoice(inv, now);
-      }
+    } finally {
+      this._polling = false;
     }
   }
 
