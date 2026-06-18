@@ -31,10 +31,13 @@ export function setupExchangeHandlers(bot, storage, walletService, sessions) {
       ...exchangeSymbolKeyboard(exchange.listSymbols(), 'exch_fs_'),
     });
 
+  // Show ALL symbols (incl. the from-symbol): same-symbol cross-network bridges
+  // like USDT-ETH → USDT-TRON are a primary no-KYC use case. The exact from-coin
+  // is excluded later, at the network step.
   const showToSymbols = (ctx, fromKey, intro) =>
     safeEditMessage(ctx, intro || fr.exchange.pickTo(exchange.symbolOf(fromKey)), {
       parse_mode: 'HTML',
-      ...exchangeSymbolKeyboard(exchange.listSymbols(), 'exch_ts_', exchange.symbolOf(fromKey)),
+      ...exchangeSymbolKeyboard(exchange.listSymbols(), 'exch_ts_'),
     });
 
   // Best-effort "devis + frais" lines. Never throws — the link must always show.
@@ -48,7 +51,10 @@ export function setupExchangeHandlers(bot, storage, walletService, sessions) {
     // not the token symbol — label it with that native symbol.
     try {
       if (fromWallet) {
-        const fees = await walletService.estimateFees(chatId, fromWallet.id, toAddress, 0.001);
+        // For a token source, estimate the actual token-transfer fee (costs more
+        // than a bare native send); still paid in (and labelled with) the native.
+        const tokenSym = fromKey !== exchange.walletChainFor(fromKey) ? fromSym : null;
+        const fees = await walletService.estimateFees(chatId, fromWallet.id, toAddress, 0.001, tokenSym);
         const fee = fees?.average?.estimatedFee || fees?.average?.feeSOL || fees?.average?.feeTON;
         const feeSym = CHAIN_REGISTRY[fromWallet.chain]?.native || fromSym;
         if (fee && Number.isFinite(Number(fee))) lines.push(fr.exchange.netFee(fmt(fee), feeSym));
@@ -172,8 +178,10 @@ export function setupExchangeHandlers(bot, storage, walletService, sessions) {
     await safeAnswerCbQuery(ctx);
     const fromKey = sessions.getData(ctx.chat.id)?.exchangeFrom;
     if (!fromKey) return showFromSymbols(ctx);
-    const coins = exchange.coinsForSymbol(ctx.match[1]);
-    if (!coins.length) return showToSymbols(ctx, fromKey);
+    // Exclude the exact from-coin (same coin+network can't be exchanged), but
+    // keep its other networks so same-symbol bridges work.
+    const coins = exchange.coinsForSymbol(ctx.match[1]).filter((c) => c.key !== fromKey);
+    if (!coins.length) return showToSymbols(ctx, fromKey); // only network was the source itself
     if (coins.length === 1) return finalize(ctx, fromKey, coins[0].key);
     await safeEditMessage(ctx, fr.exchange.pickToNet(ctx.match[1].toUpperCase()), {
       parse_mode: 'HTML',
