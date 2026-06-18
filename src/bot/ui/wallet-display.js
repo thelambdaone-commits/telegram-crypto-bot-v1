@@ -1,6 +1,7 @@
 import { convertToEUR, formatEUR, getPricesEUR } from '../../shared/price.js';
 import { getAllTokensForChain } from '../../core/tokens.config.js';
 import { formatNumber, separator } from './formatters.js';
+import { escapeHtml } from '../../shared/utils/telegram.js';
 
 export async function getWalletBalanceEUR(walletService, chatId, wallet) {
   const balance = await walletService.getBalance(chatId, wallet.id);
@@ -55,7 +56,7 @@ export async function buildBalancesText(walletService, storage, chatId) {
   );
 
   for (const { wallet, balance, valueEUR, tokens, error } of results) {
-    text += `🔸 *${wallet.label}* (${wallet.chain.toUpperCase()})\n`;
+    text += `🔸 <b>${escapeHtml(wallet.label)}</b> (${wallet.chain.toUpperCase()})\n`;
     if (error) {
       text += '❌ Erreur de récupération\n\n';
       continue;
@@ -78,6 +79,6 @@ export async function buildBalancesText(walletService, storage, chatId) {
   }
 
   text += `${separator()}\n`;
-  text += `💶 *Total :* ${formatEUR(totalEUR)}`;
+  text += `💶 <b>Total :</b> ${formatEUR(totalEUR)}`;
   return text;
 }
