@@ -24,6 +24,35 @@ export class TonChain extends BaseProvider {
     super('TON', 'TON');
     this.endpoint = endpoint || 'https://toncenter.com/api/v2/jsonRPC';
     this.client = new TonClient({ endpoint: this.endpoint, apiKey: apiKey || undefined });
+    // TonCenter's public endpoint rate-limits to ~1 req/s; the balances screen
+    // fetches every wallet in parallel, so without a key multiple TON wallets
+    // would fail ("network issue"). Serialize with a gap + retry, like Tron.
+    this._minGapMs = apiKey ? 0 : 1100;
+    this._queue = Promise.resolve();
+  }
+
+  async _retry(fn, attempts = 4, baseMs = 400) {
+    for (let i = 0; ; i++) {
+      try {
+        return await fn();
+      } catch (e) {
+        const status = e?.response?.status || e?.status;
+        const transient =
+          status === 429 ||
+          (status >= 500 && status < 600) ||
+          /\b429\b|rate.?limit|too many|timeout|ECONNRESET|socket/i.test(e?.message || '');
+        if (!transient || i >= attempts - 1) throw e;
+        await new Promise((r) => setTimeout(r, baseMs * 2 ** i + Math.floor(Math.random() * 200)));
+      }
+    }
+  }
+
+  /** Serialize a TonCenter call behind the queue (with min-gap) + retry. */
+  _schedule(fn) {
+    const result = this._queue.then(() => this._retry(fn));
+    const gap = () => (this._minGapMs ? new Promise((r) => setTimeout(r, this._minGapMs)) : 0);
+    this._queue = result.then(gap, gap);
+    return result;
   }
 
   // ── key / wallet derivation ────────────────────────────────────────────────
@@ -86,7 +115,8 @@ export class TonChain extends BaseProvider {
 
   async getBalance(address) {
     try {
-      const nano = await this.client.getBalance(Address.parse(address));
+      const addr = Address.parse(address); // sync: invalid address fails fast (not retried)
+      const nano = await this._schedule(() => this.client.getBalance(addr));
       return {
         balance: fromNano(nano),
         balanceNano: nano.toString(),

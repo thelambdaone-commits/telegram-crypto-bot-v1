@@ -40,7 +40,9 @@ export function setupWalletList(bot, storage, walletService) {
 
   // Click on specific wallet -> show details with balance
   // WalletIds have format: chain-timestamp (e.g., sol-1737339000000)
-  bot.action(/^wallet_([a-z]+-\d+)$/, async (ctx) => {
+  // Wallet ids are `<chain>-<timestamp>-<uuid8>` (storage), so match the chain
+  // prefix + anything — but NOT `wallet_history_…` (no '-' right after the word).
+  bot.action(/^wallet_([a-z]+-.+)$/, async (ctx) => {
     const walletId = ctx.match[1];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
