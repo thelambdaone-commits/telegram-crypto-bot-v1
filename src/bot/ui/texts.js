@@ -38,6 +38,8 @@ XMR ↔ piconero · ZEC ↔ zatoshi · TRX ↔ sun
 ${sectionTitle('💱', 'EXCHANGE')}
 <code>/list</code> — 📋 Cryptos &amp; tokens supportés
 <code>/swaps</code> — 💱 Échange sans KYC (cross-chain)
+<code>/invoice</code> — 💳 Créer une facture (recevoir un paiement)
+<code>/invoices</code> — 🧾 Mes factures
 
 ${sectionTitle('📚', 'ÉDUCATION')}
 <code>/learn</code> — 📖 Coin vs Token

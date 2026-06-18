@@ -7,7 +7,9 @@ import { setupKeysHandlers } from './keys/index.js';
 import { setupDepositHandlers } from './deposit/index.js';
 import { setupSendHandlers } from './send/index.js';
 import { setupExchangeHandlers } from './exchange/index.js';
+import { setupPaymentHandlers } from './payments/index.js';
 import { setupAdminHandlers } from './admin/index.js';
+import { PaymentService } from '../../modules/payments/payment.service.js';
 import { setupCommands } from './commands/index.js';
 import { setupBalanceHandlers } from './balance.handlers.js';
 import { setupNavigationHandlers } from './nav.handlers.js';
@@ -51,6 +53,10 @@ export async function setupHandlers(bot, storage) {
   // Setup deposit monitor
   const depositMonitor = new DepositMonitor(storage, walletService, bot);
   depositMonitor.start();
+
+  // Payment gateway: watch open invoices and notify merchants on settlement.
+  const paymentService = new PaymentService(storage, walletService, bot);
+  paymentService.start();
 
   // Drop duplicate/redelivered updates and debounce rapid button taps first,
   // so a flood never reaches profile sync, rate limiting, or handlers.
@@ -99,6 +105,7 @@ export async function setupHandlers(bot, storage) {
   setupDepositHandlers(bot, storage);
   setupSendHandlers(bot, storage, walletService, sessions);
   setupExchangeHandlers(bot, storage, walletService, sessions);
+  setupPaymentHandlers(bot, storage, walletService, sessions, paymentService);
   setupAdminHandlers(bot, storage, sessions, walletService);
   setupBalanceHandlers(bot, storage, walletService);
   setupNavigationHandlers(bot, storage, walletService, sessions);
@@ -119,5 +126,5 @@ export async function setupHandlers(bot, storage) {
     ctx.reply('👑 <b>Panel Admin</b>', { parse_mode: 'HTML', ...adminExtendedKeyboard() });
   });
 
-  return { sessions, walletService, depositMonitor };
+  return { sessions, walletService, depositMonitor, paymentService };
 }

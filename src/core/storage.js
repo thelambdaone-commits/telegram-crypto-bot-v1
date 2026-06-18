@@ -405,6 +405,37 @@ export class StorageService {
     });
   }
 
+  // ── Payment-gateway invoices (per merchant chatId) ──────────────────────────
+
+  async addInvoice(chatId, invoice) {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      data.invoices = data.invoices || [];
+      data.invoices.push(invoice);
+      await this.saveUserData(chatId, data);
+      return invoice.id;
+    });
+  }
+
+  async getInvoices(chatId) {
+    const data = await this.loadUserData(chatId);
+    return data.invoices || [];
+  }
+
+  /** Replace an invoice (by id) with an updated copy. Returns true if found. */
+  async updateInvoice(chatId, invoice) {
+    return this._withLock(chatId, async () => {
+      const data = await this.loadUserData(chatId);
+      const list = data.invoices || [];
+      const i = list.findIndex((x) => x.id === invoice.id);
+      if (i === -1) return false;
+      list[i] = invoice;
+      data.invoices = list;
+      await this.saveUserData(chatId, data);
+      return true;
+    });
+  }
+
   async _cleanupExpiredTransactions(chatId) {
     return this._withLock(chatId, async () => {
       const data = await this.loadUserData(chatId);

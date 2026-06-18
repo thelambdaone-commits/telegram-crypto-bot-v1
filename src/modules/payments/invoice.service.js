@@ -150,7 +150,9 @@ export function applyPayment(invoice, receivedCrypto, opts = {}) {
   }
 
   if (!paidEnough) {
-    // Partial / not-yet-enough: surface it as processing so the UI can show progress.
+    // Nothing received yet → stay open (NEW). A partial payment (received > 0)
+    // surfaces as processing so the UI can show progress.
+    if (received <= 0) return { ...invoice, receivedCrypto: received };
     return withStatus(invoice, INVOICE_STATES.PROCESSING, { receivedCrypto: received });
   }
 

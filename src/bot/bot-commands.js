@@ -21,6 +21,8 @@ export const BOT_COMMANDS = [
   { command: 'chains', description: '🔗 Blockchains supportées' },
   { command: 'list', description: '📋 Cryptos & tokens supportés' },
   { command: 'swaps', description: '💱 Échange sans KYC' },
+  { command: 'invoice', description: '💳 Créer une facture (recevoir un paiement)' },
+  { command: 'invoices', description: '🧾 Mes factures' },
   { command: 'learn', description: '📚 Leçon : Coin vs Token' },
   { command: 'help', description: '❓ Aide' },
   { command: 'id', description: '🆔 Mon ChatID / UserID' },
