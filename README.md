@@ -23,6 +23,7 @@ npm start
 | 💳 Wallets | Creation, import (cle privee / seed) et derivation depuis une seed existante |
 | 💸 Transferts | Estimation dynamique des frais, envoi de tokens (USDC/USDT) |
 | 🔄 Échange sans KYC | Échange cross-chain **keyless** (Trocador AnonPay) : depuis le menu ou un wallet, devis + frais affichés, adresse de réception pré-remplie. Repli SimpleSwap. `/swaps` `/list` |
+| 💳 Payment gateway | Factures crypto **non-custodial** (BTCPay-style) : `/invoice` → adresse + QR, surveillance auto, notif au paiement. **⚡ Lightning** (BOLT11, instantané) si un nœud phoenixd est branché. `/invoices` |
 | 🔍 Analyse | Detection auto d'adresse + scan multi-EVM (solde, tokens, historique, valeur EUR) |
 | 💵 Prix EUR | CoinGecko integre (`/price`, `/gas`, `/graph`) — tous les coins/tokens pricés |
 | 🔐 Privacy | Monero & Zcash via Tor (optionnel) |
@@ -159,6 +160,26 @@ Editez ensuite `.env` avec vos valeurs reelles.
 | `COINGECKO_API_URL` | `https://api.coingecko.com/api/v3` | Endpoint API |
 | `COINGECKO_API_KEY` | — | Cle API (demo ou pro) |
 | `COINGECKO_API_KEY_HEADER` | `x-cg-demo-api-key` | Header d'authentification |
+
+</details>
+
+<details>
+<summary><b>⚡ Lightning (payment gateway, optionnel)</b></summary>
+
+L'invoicing on-chain marche sans config. Pour activer **Lightning** (BOLT11, règlement instantané), fais tourner un nœud **phoenixd** (ACINQ, liquidité auto) et branche son API HTTP :
+
+```bash
+# Installer + lancer phoenixd : https://phoenix.acinq.co/server
+phoenixd
+# Le mot de passe HTTP est dans ~/.phoenix/phoenix.conf (http-password)
+```
+
+| Variable | Exemple |
+| --- | --- |
+| `LN_BACKEND_URL` | `http://127.0.0.1:9740` |
+| `LN_PASSWORD` | *(http-password de phoenixd)* |
+
+Sans ces variables, l'option ⚡ Lightning n'apparaît pas dans `/invoice`.
 
 </details>
 
