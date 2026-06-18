@@ -60,6 +60,10 @@ EXCHANGE / CALLBACKS  (src/bot/handlers/exchange/index.js)
   exch_to_<key> ──▶ finalize → anonPayUrl (+ simpleSwapUrl) + devis + fee
 ```
 
+### Payment gateway (`src/modules/payments/`) — in progress
+
+BTCPay-style, **non-custodial** crypto invoicing being built in phases (funds go to the merchant's own wallet; the bot orchestrates + notifies, never custodies). **Phase 0 done**: pure domain — `invoice.service.js` (state machine `new → processing → settled → complete`, plus `expired`/`invalid`; fiat→crypto rate-lock at creation; under/over-payment tolerance) + `ledger.js` (double-entry, balanced). No I/O/funds yet; deps (price, clock) injected; tested in `tests/payments.test.js`. **Next**: Phase 1 wires it to `StorageService`, the `DepositMonitor` (watch invoice addresses), `qr.js` (payment QR), a Telegram merchant flow, and signed webhooks. Then Lightning (BOLT11/LNURL, backend TBD), fiat on-ramp deep-links (MoonPay/Transak — compliance offloaded), and a Greenfield-style merchant API.
+
 ## Conventions
 
 - **Handler module shape**: each feature is a directory under `src/bot/handlers/<feature>/` with an `index.js` exporting `setupXHandlers(...)` that registers Telegraf actions/commands. Multi-step text input is typically isolated in a `text-input.js` within the feature.
