@@ -25,6 +25,14 @@ function methodKeyboard(wallets, lnEnabled) {
   return Markup.inlineKeyboard(rows);
 }
 
+// /treasury actions: manual sweep, and (unless a cold address is forced by env)
+// a button to choose which BTC wallet receives swept Lightning funds.
+function treasuryKeyboard(coldForced) {
+  const rows = [[Markup.button.callback('🧹 Balayer maintenant', 'treasury_sweep')]];
+  if (!coldForced) rows.push([Markup.button.callback('💰 Changer le wallet de réception', 'treasury_pick')]);
+  return Markup.inlineKeyboard(rows);
+}
+
 /**
  * Payment gateway — merchant UI (Phase 1). Create a crypto invoice on one of your
  * own wallets, get a QR + address; the PaymentService watches for payment and
@@ -141,12 +149,17 @@ export function setupPaymentHandlers(bot, storage, walletService, sessions, paym
       let caption;
       let qr;
       if (lightning) {
+        const dest = await payments.sweepDestination();
+        const destLine = dest
+          ? `💰 Encaissé sur : <b>${escapeHtml(dest.label || dest.address)}</b> <code>${escapeHtml(dest.address.slice(0, 8))}…</code>\n`
+          : '';
         caption =
           '⚡ <b>Facture Lightning</b>\n━━━━━━━━━━━━━━━\n' +
           `Montant : <b>${formatEUR(inv.amountFiat)}</b> ≈ <b>${inv.amountSat} sats</b> (${fmt(inv.amountCrypto)} BTC)\n` +
           `Invoice (BOLT11) :\n<code>${escapeHtml(inv.bolt11)}</code>\n` +
-          `⌛ Expire dans ${mins} min · <code>${escapeHtml(inv.id)}</code>\n\n` +
-          "Scanne / envoie l'invoice au client. Règlement <b>instantané</b>. ⚡";
+          `⌛ Expire dans ${mins} min · <code>${escapeHtml(inv.id)}</code>\n` +
+          destLine +
+          "\nScanne / envoie l'invoice au client. Règlement <b>instantané</b>. ⚡";
         qr = await generateAddressQR(inv.bolt11, 'btc', { logoSymbol: 'btc', label: 'Lightning' });
       } else {
         caption =
@@ -195,10 +208,41 @@ export function setupPaymentHandlers(bot, storage, walletService, sessions, paym
       '🏦 <b>Trésorerie Lightning</b>\n' +
         `Solde nœud : <b>${st.balanceSat} sats</b>\n` +
         `Seuil de sweep : ${st.thresholdSat} sats\n` +
-        `Destination : <code>${escapeHtml(st.address || '(non configurée)')}</code>\n\n` +
+        `Destination : ${st.addressLabel ? `💰 <b>${escapeHtml(st.addressLabel)}</b>\n<code>${escapeHtml(st.address)}</code>` : `<code>${escapeHtml(st.address || '(non configurée)')}</code>`}\n\n` +
         (lines.length ? '<b>Derniers retraits</b>\n' + lines.join('\n') : 'Aucun retrait.'),
-      { parse_mode: 'HTML', ...Markup.inlineKeyboard([[Markup.button.callback('🧹 Balayer maintenant', 'treasury_sweep')]]) }
+      { parse_mode: 'HTML', ...treasuryKeyboard(st.coldForced) }
     );
+  });
+
+  // Picker: choose WHICH BTC wallet receives swept Lightning funds.
+  bot.action('treasury_pick', async (ctx) => {
+    if (!adminGuard(ctx)) return safeAnswerCbQuery(ctx);
+    await safeAnswerCbQuery(ctx);
+    const { coldForced, wallets } = await payments.sweepWalletOptions();
+    if (coldForced) return ctx.reply('🔒 Destination forcée par <code>LN_SWEEP_BTC_ADDRESS</code>.', { parse_mode: 'HTML' });
+    if (!wallets.length) return ctx.reply('Aucun wallet BTC. Crée-en un avec /gen btc.');
+    const rows = wallets.map((w) => [
+      Markup.button.callback(`${w.active ? '✅ ' : ''}💰 ${w.label}`, `treasury_w_${w.id}`),
+    ]);
+    await ctx.reply(
+      '💰 <b>Wallet de réception Lightning</b>\nOù veux-tu que les sats balayés depuis le nœud soient envoyés ?',
+      { parse_mode: 'HTML', ...Markup.inlineKeyboard(rows) }
+    );
+  });
+
+  bot.action(/^treasury_w_(.+)$/, async (ctx) => {
+    if (!adminGuard(ctx)) return safeAnswerCbQuery(ctx);
+    await safeAnswerCbQuery(ctx);
+    try {
+      const w = await payments.setSweepWallet(ctx.match[1]);
+      await safeEditMessage(
+        ctx,
+        `✅ Destination du sweep : 💰 <b>${escapeHtml(w.label)}</b>\n<code>${escapeHtml(w.address)}</code>`,
+        { parse_mode: 'HTML' }
+      );
+    } catch (e) {
+      await ctx.reply(`❌ ${escapeHtml(e.message)}`);
+    }
   });
 
   bot.action('treasury_sweep', async (ctx) => {

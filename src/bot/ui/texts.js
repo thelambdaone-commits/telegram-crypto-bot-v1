@@ -46,7 +46,7 @@ ${sectionTitle('📚', 'ÉDUCATION')}
 
 ${sectionTitle('🆘', 'GÉNÉRAL')}
 <code>/start</code> — 🚀 Démarrer
-<code>/menu</code> — 🏠 Menu principal
+<code>/menu</code> — 🎮 Menu principal
 <code>/chains</code> — 🔗 Blockchains supportées
 <code>/id</code> — 🆔 Ton ChatID / UserID
 <code>/help</code> — ❓ Cette aide

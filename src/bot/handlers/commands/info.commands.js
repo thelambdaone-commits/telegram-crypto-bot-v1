@@ -33,9 +33,9 @@ export function setupInfoCommands(bot) {
     });
   });
 
-  // 🏠 /menu - Menu principal interactif (inline)
+  // 🎮 /menu - Menu principal interactif (inline)
   bot.command('menu', async (ctx) => {
-    await ctx.reply('🏠 <b>Menu Principal</b>', {
+    await ctx.reply('🎮 <b>Menu Principal</b>', {
       parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });

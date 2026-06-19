@@ -101,7 +101,7 @@ export function setupExchangeHandlers(bot, storage, walletService, sessions) {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('➕ Nouveau wallet', CALLBACKS.CREATE_WALLET)],
-          [Markup.button.callback('🏠 Menu', CALLBACKS.BACK_TO_MENU)],
+          [Markup.button.callback('🎮 Menu', CALLBACKS.BACK_TO_MENU)],
         ]),
       });
     }

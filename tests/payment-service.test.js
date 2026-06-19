@@ -13,6 +13,7 @@ function harness({ balance = 0, wallets, lnConfigured = false, sweep, nodeBalanc
   const payouts = [];
   const notes = [];
   let bal = balance;
+  let settings = {};
   const ln = { paid: false, receivedSat: 0 };
   const storage = {
     getWallets: async () => wallets ?? [{ id: 'eth-1', chain: 'eth', address: '0xMerchant', isCorrupted: false }],
@@ -33,6 +34,8 @@ function harness({ balance = 0, wallets, lnConfigured = false, sweep, nodeBalanc
     addPayout: async (p) => { payouts.push(p); return p.id; },
     getPayouts: async () => payouts,
     updatePayout: async (p) => { const i = payouts.findIndex((x) => x.id === p.id); if (i === -1) return false; payouts[i] = p; return true; },
+    updateSettings: async (_id, s) => { settings = { ...settings, ...s }; },
+    loadUserData: async () => ({ settings }),
   };
   let balanceThrows = false;
   const walletService = { getBalance: async () => { if (balanceThrows) throw new Error('RPC down'); return { balance: String(bal) }; } };
@@ -176,8 +179,120 @@ test('a failed payout is recorded as failed; funds stay in the node (no loss)', 
   assert.equal(h.payouts[0].status, 'failed'); // audit trail; retried next cycle from real balance
 });
 
-test('sweep stays disabled without a cold address', async () => {
-  const h = harness({ lnConfigured: true, sweep: { address: '', thresholdSat: 1, intervalMs: 1 }, nodeBalanceSat: 9_999_999 });
+test('sweep stays disabled without a cold address AND no operator BTC wallet', async () => {
+  const h = harness({ lnConfigured: true, sweep: { address: '', thresholdSat: 1, intervalMs: 1 }, nodeBalanceSat: 9_999_999, wallets: [{ id: 'eth-1', chain: 'eth', address: '0xMerchant', isCorrupted: false }] });
+  const r = await h.svc.sweepLightningBalance();
+  assert.equal(r.swept, false);
+  assert.equal(r.reason, 'disabled');
+});
+
+test('sweep falls back to the operator own BTC wallet when no cold address is set', async () => {
+  const h = harness({
+    lnConfigured: true,
+    sweep: { address: '', thresholdSat: 500_000, intervalMs: 1 },
+    nodeBalanceSat: 750_000,
+    wallets: [{ id: 'btc-1', chain: 'btc', address: 'bc1qmywallet', label: 'BTC Wallet 1', isCorrupted: false }],
+  });
+  const r = await h.svc.sweepLightningBalance();
+  assert.equal(r.swept, true);
+  assert.equal(h.payouts[0].address, 'bc1qmywallet'); // /gen btc address used automatically
+  const st = await h.svc.treasuryStatus();
+  assert.equal(st.address, 'bc1qmywallet'); // admin UI reflects the resolved destination
+  assert.equal(st.addressLabel, 'BTC Wallet 1'); // …and names WHICH wallet it is
+});
+
+test('an explicit cold address wins over the operator BTC wallet', async () => {
+  const h = harness({
+    lnConfigured: true,
+    sweep: { address: 'bc1qcold', thresholdSat: 500_000, intervalMs: 1 },
+    nodeBalanceSat: 750_000,
+    wallets: [{ id: 'btc-1', chain: 'btc', address: 'bc1qhot', isCorrupted: false }],
+  });
+  const r = await h.svc.sweepLightningBalance();
+  assert.equal(r.swept, true);
+  assert.equal(h.payouts[0].address, 'bc1qcold'); // cold storage preserved
+});
+
+test('sweep honors the admin-chosen BTC wallet over the first one', async () => {
+  const h = harness({
+    lnConfigured: true,
+    sweep: { address: '', thresholdSat: 500_000, intervalMs: 1 },
+    nodeBalanceSat: 750_000,
+    wallets: [
+      { id: 'btc-1', chain: 'btc', address: 'bc1qfirst', label: 'BTC Wallet 1', isCorrupted: false },
+      { id: 'btc-2', chain: 'btc', address: 'bc1qsecond', label: 'BTC Wallet 2', isCorrupted: false },
+    ],
+  });
+  await h.svc.setSweepWallet('btc-2'); // operator picks the 2nd wallet in /treasury
+  const r = await h.svc.sweepLightningBalance();
+  assert.equal(r.swept, true);
+  assert.equal(h.payouts[0].address, 'bc1qsecond');
+  const st = await h.svc.treasuryStatus();
+  assert.equal(st.addressLabel, 'BTC Wallet 2');
+});
+
+test('sweepDestination returns the resolved wallet + label (shown on LN invoices)', async () => {
+  const h = harness({
+    lnConfigured: true,
+    sweep: { address: '', thresholdSat: 1, intervalMs: 1 },
+    wallets: [
+      { id: 'btc-1', chain: 'btc', address: 'bc1qfirst', label: 'BTC Wallet 1', isCorrupted: false },
+      { id: 'btc-2', chain: 'btc', address: 'bc1qsecond', label: 'BTC Wallet 2', isCorrupted: false },
+    ],
+  });
+  assert.deepEqual(await h.svc.sweepDestination(), { address: 'bc1qfirst', label: 'BTC Wallet 1' });
+  await h.svc.setSweepWallet('btc-2');
+  assert.deepEqual(await h.svc.sweepDestination(), { address: 'bc1qsecond', label: 'BTC Wallet 2' });
+});
+
+test('sweepDestination labels a forced cold address and is null without any wallet', async () => {
+  const cold = harness({ lnConfigured: true, sweep: { address: 'bc1qcold', thresholdSat: 1, intervalMs: 1 }, wallets: [] });
+  assert.deepEqual(await cold.svc.sweepDestination(), { address: 'bc1qcold', label: 'Adresse externe (cold)' });
+  const none = harness({ lnConfigured: true, sweep: { address: '', thresholdSat: 1, intervalMs: 1 }, wallets: [] });
+  assert.equal(await none.svc.sweepDestination(), null);
+});
+
+test('sweepWalletOptions flags the active wallet (first by default)', async () => {
+  const h = harness({
+    lnConfigured: true,
+    sweep: { address: '', thresholdSat: 1, intervalMs: 1 },
+    nodeBalanceSat: 1,
+    wallets: [
+      { id: 'btc-1', chain: 'btc', address: 'bc1qfirst', label: 'BTC Wallet 1', isCorrupted: false },
+      { id: 'btc-2', chain: 'btc', address: 'bc1qsecond', label: 'BTC Wallet 2', isCorrupted: false },
+    ],
+  });
+  let opts = await h.svc.sweepWalletOptions();
+  assert.equal(opts.coldForced, false);
+  assert.deepEqual(opts.wallets.map((w) => w.active), [true, false]); // first active by default
+  await h.svc.setSweepWallet('btc-2');
+  opts = await h.svc.sweepWalletOptions();
+  assert.deepEqual(opts.wallets.map((w) => w.active), [false, true]);
+});
+
+test('setSweepWallet rejects an unknown wallet and refuses when a cold address is forced', async () => {
+  const free = harness({ lnConfigured: true, sweep: { address: '', thresholdSat: 1, intervalMs: 1 }, wallets: [{ id: 'btc-1', chain: 'btc', address: 'bc1qfirst', isCorrupted: false }] });
+  await assert.rejects(() => free.svc.setSweepWallet('btc-nope'), /introuvable/);
+  const forced = harness({ lnConfigured: true, sweep: { address: 'bc1qcold', thresholdSat: 1, intervalMs: 1 }, wallets: [{ id: 'btc-1', chain: 'btc', address: 'bc1qfirst', isCorrupted: false }] });
+  await assert.rejects(() => forced.svc.setSweepWallet('btc-1'), /forcée/);
+  assert.equal((await forced.svc.sweepWalletOptions()).coldForced, true);
+});
+
+test('start() launches the auto-sweep timer even without a cold address (dynamic destination)', () => {
+  const h = harness({ lnConfigured: true, sweep: { address: '', thresholdSat: 1, intervalMs: 1000 } });
+  h.svc.start();
+  assert.ok(h.svc.sweepTimer, 'sweep timer must run so the periodic sweep fires once a wallet is picked');
+  h.svc.stop();
+  assert.equal(h.svc.sweepTimer, null);
+});
+
+test('a corrupted BTC wallet is skipped by the sweep fallback', async () => {
+  const h = harness({
+    lnConfigured: true,
+    sweep: { address: '', thresholdSat: 500_000, intervalMs: 1 },
+    nodeBalanceSat: 750_000,
+    wallets: [{ id: 'btc-1', chain: 'btc', address: 'bc1qbad', isCorrupted: true }],
+  });
   const r = await h.svc.sweepLightningBalance();
   assert.equal(r.swept, false);
   assert.equal(r.reason, 'disabled');

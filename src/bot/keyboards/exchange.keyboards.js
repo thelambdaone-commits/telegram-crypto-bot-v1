@@ -39,6 +39,6 @@ export function exchangeLinkKeyboard(url, openLabel, altUrl) {
   const rows = [[Markup.button.url(openLabel, url)]];
   if (altUrl) rows.push([Markup.button.url('🔁 Alternative (SimpleSwap)', altUrl)]);
   rows.push([Markup.button.callback('🔄 Autre paire', CALLBACKS.EXCHANGE)]);
-  rows.push([Markup.button.callback('🏠 Menu', CALLBACKS.BACK_TO_MENU)]);
+  rows.push([Markup.button.callback('🎮 Menu', CALLBACKS.BACK_TO_MENU)]);
   return Markup.inlineKeyboard(rows);
 }

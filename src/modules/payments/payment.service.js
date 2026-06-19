@@ -53,7 +53,94 @@ export class PaymentService {
     if (!this.lightningEnabled()) return { enabled: false };
     const balance = await this.lightning.getBalance(); // may throw → caller handles
     const payouts = (await this.storage.getPayouts()).slice(-limit).reverse();
-    return { enabled: true, balanceSat: balance.balanceSat, thresholdSat: this.sweep.thresholdSat, address: this.sweep.address, payouts };
+    const dest = await this.sweepDestination();
+    return {
+      enabled: true,
+      balanceSat: balance.balanceSat,
+      thresholdSat: this.sweep.thresholdSat,
+      address: dest?.address || '',
+      addressLabel: dest?.label || '',
+      coldForced: Boolean(this.sweep.address),
+      payouts,
+    };
+  }
+
+  /**
+   * The resolved sweep destination as { address, label } — i.e. WHICH wallet
+   * eventually receives Lightning funds. Used by /treasury and shown on each
+   * Lightning invoice. Returns null when no destination exists yet.
+   */
+  async sweepDestination() {
+    const address = await this._resolveSweepAddress();
+    if (!address) return null;
+    if (this.sweep.address) return { address, label: 'Adresse externe (cold)' };
+    const adminId = this._adminId();
+    const wallets = adminId ? await this.storage.getWallets(adminId).catch(() => []) : [];
+    return { address, label: wallets.find((w) => w.address === address)?.label || '' };
+  }
+
+  /**
+   * Where the treasury sweep sends funds. An explicit cold address
+   * (LN_SWEEP_BTC_ADDRESS / SecretVault) always wins — keeps real cold storage
+   * possible. Otherwise we fall back to the operator's OWN BTC wallet (the one
+   * `/gen btc` created), resolved the same way on-chain invoicing resolves a
+   * merchant wallet. Returns '' when neither exists → sweep stays disabled.
+   */
+  async _resolveSweepAddress() {
+    if (this.sweep.address) return this.sweep.address; // forced cold address (env/vault) always wins
+    const btc = await this._btcWallets();
+    if (btc.length === 0) return '';
+    const chosenId = await this._chosenSweepWalletId();
+    const chosen = chosenId ? btc.find((w) => w.id === chosenId) : null;
+    return (chosen || btc[0]).address; // admin's UI choice, else the first BTC wallet
+  }
+
+  _adminId() {
+    return Array.isArray(this.adminId) ? this.adminId[0] : this.adminId;
+  }
+
+  /** The operator's usable BTC wallets — the candidate sweep destinations. */
+  async _btcWallets() {
+    const adminId = this._adminId();
+    if (!adminId) return [];
+    try {
+      const wallets = await this.storage.getWallets(adminId);
+      return (wallets || []).filter((w) => w.chain === 'btc' && !w.isCorrupted && w.address);
+    } catch {
+      return [];
+    }
+  }
+
+  /** The wallet id the admin explicitly picked in /treasury (or null). */
+  async _chosenSweepWalletId() {
+    const adminId = this._adminId();
+    if (!adminId) return null;
+    try {
+      const data = await this.storage.loadUserData(adminId);
+      return data?.settings?.lnSweepWalletId || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** BTC wallets the admin can pick as the sweep destination, active one flagged. */
+  async sweepWalletOptions() {
+    const btc = await this._btcWallets();
+    const chosenId = await this._chosenSweepWalletId();
+    const activeId = btc.find((w) => w.id === chosenId)?.id || btc[0]?.id || null;
+    return {
+      coldForced: Boolean(this.sweep.address),
+      wallets: btc.map((w) => ({ id: w.id, label: w.label || w.address, address: w.address, active: w.id === activeId })),
+    };
+  }
+
+  /** Persist the admin's chosen sweep wallet (must be one of their BTC wallets). */
+  async setSweepWallet(walletId) {
+    if (this.sweep.address) throw new Error('Destination forcée par la config (LN_SWEEP_BTC_ADDRESS).');
+    const w = (await this._btcWallets()).find((x) => x.id === walletId);
+    if (!w) throw new Error('Wallet BTC introuvable.');
+    await this.storage.updateSettings(this._adminId(), { lnSweepWalletId: walletId });
+    return { id: w.id, label: w.label || w.address, address: w.address };
   }
 
   /**
@@ -162,13 +249,17 @@ export class PaymentService {
   }
 
   /**
-   * Treasury sweep: move pooled node funds to the cold BTC address once the node
-   * balance crosses the threshold. Threshold-based (not per-payment) to save fees
+   * Treasury sweep: move pooled node funds to the sweep address (an explicit cold
+   * address if set, otherwise the operator's own BTC wallet — see
+   * _resolveSweepAddress) once the node balance crosses the threshold.
+   * Threshold-based (not per-payment) to save fees
    * and failure points. The node balance is the source of truth, so a failed
    * payout just retries from the real balance next cycle — funds are never lost.
    */
   async sweepLightningBalance() {
-    if (!this.lightningEnabled() || !this.sweep.address) return { swept: false, reason: 'disabled' };
+    if (!this.lightningEnabled()) return { swept: false, reason: 'disabled' };
+    const sweepAddress = await this._resolveSweepAddress();
+    if (!sweepAddress) return { swept: false, reason: 'disabled' };
     // Guard against concurrent sweeps (scheduled + manual) → would double-spend.
     if (this._sweeping) return { swept: false, reason: 'busy' };
     this._sweeping = true;
@@ -187,14 +278,14 @@ export class PaymentService {
       const payout = {
         id: `payout-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
         amountSat: bal.balanceSat,
-        address: this.sweep.address,
+        address: sweepAddress,
         status: 'pending',
         txid: null,
         createdAt: new Date().toISOString(),
       };
       await this.storage.addPayout(payout);
       try {
-        const { txid } = await this.lightning.sendToAddress({ address: this.sweep.address, amountSat: bal.balanceSat });
+        const { txid } = await this.lightning.sendToAddress({ address: sweepAddress, amountSat: bal.balanceSat });
         payout.status = 'withdrawn';
         payout.txid = txid;
         await this.storage.updatePayout(payout);
@@ -254,8 +345,11 @@ export class PaymentService {
     this.timer = setInterval(() => this.pollOnce().catch((e) => logger.warn('[Payments] poll error', { error: e.message })), this.intervalMs);
     logger.info('[Payments] watcher started', { intervalMs: this.intervalMs });
 
-    // Treasury sweep loop — only when Lightning + a cold address are configured.
-    if (this.lightningEnabled() && this.sweep.address && !this.sweepTimer) {
+    // Treasury sweep loop — runs whenever Lightning is on. The destination is
+    // resolved per-cycle (cold address, admin-chosen wallet, or first BTC
+    // wallet); sweepLightningBalance() no-ops safely when none exists yet, so the
+    // operator can pick a wallet later without a restart.
+    if (this.lightningEnabled() && !this.sweepTimer) {
       this.sweepTimer = setInterval(
         () => this.sweepLightningBalance().catch((e) => logger.warn('[Payments] sweep error', { error: e.message })),
         this.sweep.intervalMs

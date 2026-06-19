@@ -16,7 +16,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Action: back_to_menu
   bot.action('back_to_menu', async (ctx) => {
     await ctx.answerCbQuery().catch((err) => logger.debug('back_to_menu answerCbQuery failed', { error: err.message }));
-    await safeEditMessage(ctx, '🏠 <b>Menu Principal</b>', {
+    await safeEditMessage(ctx, '🎮 <b>Menu Principal</b>', {
       parse_mode: 'HTML',
       ...mainMenuKeyboard(),
     });

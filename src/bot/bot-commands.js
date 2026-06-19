@@ -7,7 +7,7 @@ import { logger } from '../shared/logger.js';
 
 export const BOT_COMMANDS = [
   { command: 'start', description: '🚀 Démarrer le bot' },
-  { command: 'menu', description: '🏠 Menu principal' },
+  { command: 'menu', description: '🎮 Menu principal' },
   { command: 'wallet', description: '💰 Mes wallets' },
   { command: 'gen', description: '🆕 Générer un nouveau wallet' },
   { command: 'recevoir', description: '📥 Recevoir des fonds (adresse + QR)' },
