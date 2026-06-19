@@ -48,7 +48,13 @@ async function sendChart(ctx, symbol, days = 365) {
     await ctx.replyWithPhoto({ source: buffer }, { caption, parse_mode: 'HTML', ...kb });
   } catch (error) {
     await drop();
-    await ctx.reply(`❌ Erreur : ${escapeHtml(error.message)}`, { parse_mode: 'HTML' });
+    await ctx.reply(`❌ Erreur : ${escapeHtml(error.message)}`, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('📈 Autre crypto', 'graph_pick')],
+        [Markup.button.callback('🎮 Menu', CALLBACKS.BACK_TO_MENU)],
+      ]),
+    });
   }
 }
 
@@ -230,19 +236,35 @@ export function setupMarketCommands(bot) {
     await sendChart(ctx, command.symbol, command.days);
   });
 
-  // 📈 Graph picker grid (from the 📈 button on /price, or after a chart).
+  // 📈 Graph picker grid (from the 📈 button on /price, or after a chart). Edits
+  // the current message in place (delete+reply fallback when it's a photo/chart)
+  // so opening the grid never stacks a new message on the price list.
   bot.action('graph_pick', async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
-    await ctx.reply('📈 <b>Graphique des prix</b>\n\nChoisis une crypto :', {
-      parse_mode: 'HTML',
-      ...graphGridKeyboard(),
-    });
+    const opts = { parse_mode: 'HTML', ...graphGridKeyboard() };
+    const text = '📈 <b>Graphique des prix</b>\n\nChoisis une crypto :';
+    try {
+      await ctx.editMessageText(text, opts);
+    } catch {
+      try {
+        await ctx.deleteMessage();
+      } catch {
+        /* already gone */
+      }
+      await ctx.reply(text, opts);
+    }
   });
 
-  // 📈 A coin was picked (grid tap or analysis button) → render its chart.
+  // 📈 A coin was picked (grid tap or analysis button) → replace the current
+  // message with its chart (a photo can't be edited from text, so delete first).
   bot.action(/^graph_(.+)$/, async (ctx) => {
     if (ctx.match[1] === 'pick') return; // 'graph_pick' is handled by the exact action above
     await ctx.answerCbQuery().catch(() => {});
+    try {
+      await ctx.deleteMessage();
+    } catch {
+      /* already gone */
+    }
     await sendChart(ctx, ctx.match[1], 365);
   });
 }
