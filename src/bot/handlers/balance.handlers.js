@@ -4,6 +4,18 @@ import { getPricesEUR, formatCryptoPricesEUR, clearPriceCache } from '../../shar
 import { buildBalancesText } from '../ui/wallet-display.js';
 import { logger } from '../../shared/logger.js';
 
+// Keyboard under the EUR price list: refresh, open the 📈 graph picker, menu/close.
+function pricesKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('🔄 Recharger', 'refresh_prices')],
+    [Markup.button.callback('📈 Graphique', 'graph_pick')],
+    [
+      Markup.button.callback('🎮 Menu', 'back_to_menu'),
+      Markup.button.callback('❌ Fermer', 'close_message'),
+    ],
+  ]);
+}
+
 export function setupBalanceHandlers(bot, storage, walletService) {
   bot.action('view_balances', async (ctx) => {
     const chatId = ctx.chat.id;
@@ -56,15 +68,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
       const prices = await getPricesEUR(true);
       const text = formatCryptoPricesEUR(prices);
 
-      await ctx.reply(text, {
-        ...Markup.inlineKeyboard([
-          [Markup.button.callback('🔄 Recharger', 'refresh_prices')],
-          [
-            Markup.button.callback('🎮 Menu', 'back_to_menu'),
-            Markup.button.callback('❌ Fermer', 'close_message'),
-          ],
-        ]),
-      });
+      await ctx.reply(text, { ...pricesKeyboard() });
     } catch (error) {
       ctx.reply('❌ Erreur lors de la recuperation des prix.');
     }
@@ -87,15 +91,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
       const prices = await getPricesEUR(true);
       const text = formatCryptoPricesEUR(prices);
 
-      await ctx.editMessageText(text, {
-        ...Markup.inlineKeyboard([
-          [Markup.button.callback('🔄 Recharger', 'refresh_prices')],
-          [
-            Markup.button.callback('🎮 Menu', 'back_to_menu'),
-            Markup.button.callback('❌ Fermer', 'close_message'),
-          ],
-        ]),
-      });
+      await ctx.editMessageText(text, { ...pricesKeyboard() });
     } catch (error) {
       if (error.message && error.message.includes('message is not modified')) {
         return;

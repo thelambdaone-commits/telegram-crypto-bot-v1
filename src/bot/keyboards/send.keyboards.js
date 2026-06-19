@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 import { CALLBACKS } from '../constants/callbacks.js';
 import { getAddressExplorerUrl, getExplorerName } from '../../shared/explorer.js';
 import { getAllTokensForChain, getNativeSymbol } from '../../core/tokens.config.js';
+import { COIN_IDS } from '../../shared/coingecko.js';
 
 export function feeSelectionKeyboard(recommendedLevel = 'slow') {
   return Markup.inlineKeyboard([
@@ -83,8 +84,12 @@ export function addressAnalyzedKeyboard(chain, address) {
     }
   }
 
+  buttons.push([Markup.button.callback('📜 Historique', `analyze_history_${chain}`)]);
+  // Price chart for this chain's coin, when it's priced/graphable.
+  if (COIN_IDS[String(chain).toLowerCase()]) {
+    buttons.push([Markup.button.callback(`📈 Graphique ${String(chain).toUpperCase()}`, `graph_${chain}`)]);
+  }
   buttons.push(
-    [Markup.button.callback('📜 Historique', `analyze_history_${chain}`)],
     [Markup.button.callback('📤 Envoyer a cette adresse', `send_to_analyzed_${chain}`)],
     [Markup.button.callback('🔍 Analyser une autre adresse', CALLBACKS.ANALYZE_ADDRESS)],
     [Markup.button.callback('↩️ Retour au menu', CALLBACKS.BACK_TO_MENU)],

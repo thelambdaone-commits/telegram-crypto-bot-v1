@@ -118,38 +118,57 @@ export function formatPriceUpdateDate(date = new Date()) {
   return `${datePart} à ${timePart}`;
 }
 
+/**
+ * Single source of truth for the price list AND the graph picker grid. Each coin
+ * is `[priceKey, emoji, label]`. Every COIN_IDS key must appear here OR in
+ * PRICE_ALIASES — enforced by tests/price.test.js — so a coin can never be priced
+ * but hidden, and a new coin shows up everywhere at once.
+ */
+export const PRICE_GROUPS = [
+  ['🏛️ L1 / Mainnets', [
+    ['btc', '₿', 'Bitcoin (BTC)'],
+    ['wbtc', '₿', 'Wrapped BTC (WBTC)'],
+    ['eth', 'Ξ', 'Ethereum (ETH)'],
+    ['sol', '◎', 'Solana (SOL)'],
+    ['avax', '🔺', 'Avalanche (AVAX)'],
+    ['trx', '🟥', 'Tron (TRX)'],
+    ['ton', '💎', 'TON (TON)'],
+    ['bnb', '🟡', 'BNB (BNB)'],
+  ]],
+  ['⚡ L2 / Scaling', [
+    ['base', '🟦', 'ETH on Base'],
+    ['eth', '🔵', 'ETH on Arbitrum'],
+    ['op', '🔴', 'Optimism (OP)'],
+    ['matic', '⬡', 'Polygon (POL)'],
+  ]],
+  ['🏦 Stablecoins', [
+    ['usdc', '💵', 'USD Coin (USDC)'],
+    ['usdt', '💵', 'Tether (USDT)'],
+    ['dai', '💵', 'Dai (DAI)'],
+  ]],
+  ['🎫 Tokens', [
+    ['weth', 'Ξ', 'Wrapped ETH (WETH)'],
+    ['link', '🔗', 'Chainlink (LINK)'],
+    ['uni', '🦄', 'Uniswap (UNI)'],
+    ['arb', '🔵', 'Arbitrum (ARB)'],
+    ['msol', '💧', 'Marinade SOL (mSOL)'],
+  ]],
+  ['🪙 Legacy / Forks', [
+    ['ltc', 'Ł', 'Litecoin (LTC)'],
+    ['bch', '🅑', 'Bitcoin Cash (BCH)'],
+    ['xmr', 'ɱ', 'Monero (XMR)'],
+    ['zec', 'Ⓩ', 'Zcash (ZEC)'],
+  ]],
+];
+
+// COIN_IDS keys that share a CoinGecko id with a coin already shown (rendered via
+// its twin, so intentionally not in PRICE_GROUPS): pol≡matic, bsc≡bnb.
+export const PRICE_ALIASES = new Set(['pol', 'bsc']);
+
 export function formatCryptoPricesEUR(prices, date = new Date()) {
-  return (
-    '💹 Prix en euros\n\n' +
-    '🏛️ L1 / Mainnets\n' +
-    `₿ Bitcoin (BTC) : ${formatEUR(prices.btc)}\n` +
-    `₿ Wrapped BTC (WBTC) : ${formatEUR(prices.wbtc || 0)}\n` +
-    `Ξ Ethereum (ETH) : ${formatEUR(prices.eth)}\n` +
-    `◎ Solana (SOL) : ${formatEUR(prices.sol)}\n` +
-    `🔺 Avalanche (AVAX) : ${formatEUR(prices.avax || 0)}\n` +
-    `🟥 Tron (TRX) : ${formatEUR(prices.trx || 0)}\n` +
-    `💎 TON (TON) : ${formatEUR(prices.ton || 0)}\n` +
-    `🟡 BNB (BNB) : ${formatEUR(prices.bnb || 0)}\n\n` +
-    '⚡ L2 / Scaling\n' +
-    `🟦 ETH on Base : ${formatEUR(prices.base)}\n` +
-    `🔵 ETH on Arbitrum : ${formatEUR(prices.eth)}\n` +
-    `🔴 Optimism (OP) : ${formatEUR(prices.op || 0)}\n` +
-    `⬡ Polygon (POL) : ${formatEUR(prices.matic || 0)}\n\n` +
-    '🏦 Stablecoins\n' +
-    `💵 USD Coin (USDC) : ${formatEUR(prices.usdc)}\n` +
-    `💵 Tether (USDT) : ${formatEUR(prices.usdt)}\n` +
-    `💵 Dai (DAI) : ${formatEUR(prices.dai || 0)}\n\n` +
-    '🎫 Tokens\n' +
-    `Ξ Wrapped ETH (WETH) : ${formatEUR(prices.weth || 0)}\n` +
-    `🔗 Chainlink (LINK) : ${formatEUR(prices.link || 0)}\n` +
-    `🦄 Uniswap (UNI) : ${formatEUR(prices.uni || 0)}\n` +
-    `🔵 Arbitrum (ARB) : ${formatEUR(prices.arb || 0)}\n` +
-    `💧 Marinade SOL (mSOL) : ${formatEUR(prices.msol || 0)}\n\n` +
-    '🪙 Legacy / Forks\n' +
-    `Ł Litecoin (LTC) : ${formatEUR(prices.ltc)}\n` +
-    `🅑 Bitcoin Cash (BCH) : ${formatEUR(prices.bch)}\n` +
-    `ɱ Monero (XMR) : ${formatEUR(prices.xmr || 0)}\n` +
-    `Ⓩ Zcash (ZEC) : ${formatEUR(prices.zec || 0)}\n\n` +
-    `🕒 Mis à jour en temps réel le ${formatPriceUpdateDate(date)}`
-  );
+  const body = PRICE_GROUPS.map(
+    ([title, coins]) =>
+      `${title}\n` + coins.map(([key, emoji, label]) => `${emoji} ${label} : ${formatEUR(prices[key] || 0)}`).join('\n')
+  ).join('\n\n');
+  return `💹 Prix en euros\n\n${body}\n\n🕒 Mis à jour en temps réel le ${formatPriceUpdateDate(date)}`;
 }

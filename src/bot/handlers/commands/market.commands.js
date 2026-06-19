@@ -1,7 +1,56 @@
-import { getPricesEUR, formatEUR } from '../../../shared/price.js';
+import { Markup } from 'telegraf';
+import { getPricesEUR, formatEUR, formatCryptoPricesEUR, PRICE_GROUPS } from '../../../shared/price.js';
 import { generatePriceChart, parseGraphCommand } from '../../../shared/chart.js';
+import { COIN_IDS } from '../../../shared/coingecko.js';
 import { getEthFees, getBtcFees, getSolFees, SOL_TYPICAL_CU, SOL_BASE_LAMPORTS } from '../../../shared/fees.js';
 import { escapeHtml } from '../../../shared/utils/telegram.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
+
+// Graph picker grid — one button per graphable coin, deduped by CoinGecko id so
+// ETH / ETH-on-Base / ETH-on-Arbitrum collapse to a single ETH button. Built from
+// PRICE_GROUPS, so it always matches the price list (no drift).
+export function graphGridKeyboard() {
+  const seen = new Set();
+  const btns = [];
+  for (const [, coins] of PRICE_GROUPS) {
+    for (const [key, emoji, label] of coins) {
+      const id = COIN_IDS[key];
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      const ticker = label.match(/\(([^)]+)\)/)?.[1] || key.toUpperCase();
+      btns.push(Markup.button.callback(`${emoji} ${ticker}`, `graph_${key}`));
+    }
+  }
+  const rows = [];
+  for (let i = 0; i < btns.length; i += 4) rows.push(btns.slice(i, i + 4));
+  rows.push([Markup.button.callback('↩️ Retour', CALLBACKS.BACK_TO_MENU)]);
+  return Markup.inlineKeyboard(rows);
+}
+
+// Render a price chart for `symbol` (chain key or token) over `days`. Shared by
+// /graph, the picker grid, and the address-analysis graph button.
+async function sendChart(ctx, symbol, days = 365) {
+  const loading = await ctx.reply('📊 Génération du graphique...');
+  const drop = () => ctx.telegram.deleteMessage(ctx.chat.id, loading.message_id).catch(() => {});
+  try {
+    const { buffer, stats } = await generatePriceChart(symbol, days);
+    await drop();
+    const changeEmoji = stats.isPositive ? '📈' : '📉';
+    const caption =
+      `${changeEmoji} <b>${escapeHtml(symbol.toUpperCase())}</b> — ${stats.periodLabel}\n\n` +
+      `💰 Prix : <b>€${stats.currentPrice.toLocaleString('fr-FR')}</b>\n` +
+      `📊 Var. : <b>${stats.isPositive ? '+' : ''}${stats.priceChange.toFixed(2)}%</b>\n` +
+      `🕒 Mis à jour le <b>${stats.generatedAtLabel}</b>`;
+    const kb = Markup.inlineKeyboard([
+      [Markup.button.callback('📈 Autre crypto', 'graph_pick')],
+      [Markup.button.callback('🎮 Menu', CALLBACKS.BACK_TO_MENU)],
+    ]);
+    await ctx.replyWithPhoto({ source: buffer }, { caption, parse_mode: 'HTML', ...kb });
+  } catch (error) {
+    await drop();
+    await ctx.reply(`❌ Erreur : ${escapeHtml(error.message)}`, { parse_mode: 'HTML' });
+  }
+}
 
 // Rough vsize/gas footprints of a *typical* transfer, used to turn a per-unit
 // fee rate into a concrete "what a transfer costs" estimate (presentation only).
@@ -143,15 +192,13 @@ export function setupMarketCommands(bot) {
     try {
       const prices = await getPricesEUR();
       if (args.length === 0) {
-        return ctx.reply(
-          '💹 <b>Prix des Cryptos (EUR)</b>\n\n' +
-            `Ξ <b>ETH</b> : ${formatEUR(prices.eth)}\n` +
-            `₿ <b>BTC</b> : ${formatEUR(prices.btc)}\n` +
-            `◎ <b>SOL</b> : ${formatEUR(prices.sol)}\n` +
-            `💵 <b>USDC</b> : ${formatEUR(prices.usdc)}\n` +
-            `💵 <b>USDT</b> : ${formatEUR(prices.usdt)}`,
-          { parse_mode: 'HTML' }
-        );
+        // Full list (same as the 📊 Cours button) + a 📈 graph entry point.
+        return ctx.reply(formatCryptoPricesEUR(prices), {
+          ...Markup.inlineKeyboard([
+            [Markup.button.callback('📈 Graphique', 'graph_pick')],
+            [Markup.button.callback('🎮 Menu', CALLBACKS.BACK_TO_MENU)],
+          ]),
+        });
       }
 
       const crypto = args[0].toLowerCase();
@@ -160,6 +207,7 @@ export function setupMarketCommands(bot) {
           `💹 <b>${escapeHtml(crypto.toUpperCase())}</b> : <b>${formatEUR(prices[crypto])}</b>`,
           {
             parse_mode: 'HTML',
+            ...Markup.inlineKeyboard([[Markup.button.callback(`📈 Graphique ${escapeHtml(crypto.toUpperCase())}`, `graph_${crypto}`)]]),
           }
         );
       }
@@ -169,33 +217,31 @@ export function setupMarketCommands(bot) {
     }
   });
 
-  // 📊 /graph - Graphique des prix d'une crypto
+  // 📈 /graph <token> [période] — chart by command.
   bot.command('graph', async (ctx) => {
     const command = parseGraphCommand(ctx.message.text);
     if (!command.ok) {
-      return ctx.reply(`📊 ${escapeHtml(command.error)}`, { parse_mode: 'HTML' });
+      return ctx.reply(`📊 ${escapeHtml(command.error)}`, {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([[Markup.button.callback('📈 Choisir une crypto', 'graph_pick')]]),
+      });
     }
+    await sendChart(ctx, command.symbol, command.days);
+  });
 
-    const loadingMsg = await ctx.reply('📊 Génération du graphique...');
-    try {
-      const { buffer, stats } = await generatePriceChart(command.symbol, command.days);
-      await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsg.message_id);
+  // 📈 Graph picker grid (from the 📈 button on /price, or after a chart).
+  bot.action('graph_pick', async (ctx) => {
+    await ctx.answerCbQuery().catch(() => {});
+    await ctx.reply('📈 <b>Graphique des prix</b>\n\nChoisis une crypto :', {
+      parse_mode: 'HTML',
+      ...graphGridKeyboard(),
+    });
+  });
 
-      const changeEmoji = stats.isPositive ? '📈' : '📉';
-      const caption =
-        `${changeEmoji} <b>${escapeHtml(command.symbol.toUpperCase())}</b> — ${stats.periodLabel}\n\n` +
-        `💰 Prix : <b>€${stats.currentPrice.toLocaleString('fr-FR')}</b>\n` +
-        `📊 Var. : <b>${stats.isPositive ? '+' : ''}${stats.priceChange.toFixed(2)}%</b>\n` +
-        `🕒 Mis à jour le <b>${stats.generatedAtLabel}</b>`;
-
-      await ctx.replyWithPhoto({ source: buffer }, { caption, parse_mode: 'HTML' });
-    } catch (error) {
-      try {
-        await ctx.telegram.deleteMessage(ctx.chat.id, loadingMsg.message_id);
-      } catch {
-        /* message may already be gone */
-      }
-      ctx.reply(`❌ Erreur : ${escapeHtml(error.message)}`, { parse_mode: 'HTML' });
-    }
+  // 📈 A coin was picked (grid tap or analysis button) → render its chart.
+  bot.action(/^graph_(.+)$/, async (ctx) => {
+    if (ctx.match[1] === 'pick') return; // 'graph_pick' is handled by the exact action above
+    await ctx.answerCbQuery().catch(() => {});
+    await sendChart(ctx, ctx.match[1], 365);
   });
 }

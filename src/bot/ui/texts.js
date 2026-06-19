@@ -27,6 +27,7 @@ ${sectionTitle('📊', 'INFOS MARCHÉ')}
 <code>/price</code> — 💹 Prix en EUR
 <code>/gas [eth|btc|sol]</code> — ⛽ Frais de transaction
 <code>/graph &lt;token&gt; [7|30|90|365]</code> — 📈 Graphique (défaut 365j)
+↳ ou bouton <b>📈 Graphique</b> sur <code>/price</code> (grille de toutes les cryptos) &amp; dans 🔍 Analyser
 
 ${sectionTitle('🔢', "CONVERSION D'UNITÉS")}
 <code>/unit &lt;montant&gt; &lt;unité&gt;</code> — Convertir les unités crypto
