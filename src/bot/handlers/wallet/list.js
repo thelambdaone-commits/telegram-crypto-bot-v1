@@ -28,7 +28,8 @@ export function setupWalletList(bot, storage, walletService) {
 
     let text = `${EMOJIS.wallet} <b>Tes Portefeuilles</b>\n\n`;
     wallets.forEach((w) => {
-      text += `🔸 <b>${escapeHtml(w.label)}</b>\n`;
+      const emoji = CHAIN_EMOJIS[w.chain] || '🔸';
+      text += `${emoji} <b>${escapeHtml(w.label)}</b>\n`;
       text += `<code>${w.address}</code>\n\n`;
     });
 
