@@ -23,6 +23,13 @@ export function adminExtendedKeyboard() {
   ]);
 }
 
+export function adminSecurityKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('🧪 Audit complet', CALLBACKS.ADMIN_AUDIT)],
+    [Markup.button.callback('↩️ Retour Panel Admin', CALLBACKS.ADMIN_PANEL)],
+  ]);
+}
+
 export function adminUserKeyboard(targetUserId) {
   return Markup.inlineKeyboard([
     [Markup.button.callback('🔑 Voir Clés', dynamicCallback.adminUserKeys(targetUserId))],

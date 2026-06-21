@@ -1,5 +1,6 @@
 import {
   adminExtendedKeyboard,
+  adminSecurityKeyboard,
   adminUserKeyboard,
   adminCancelKeyboard,
 } from '../../keyboards/index.js';
@@ -125,9 +126,11 @@ export function setupAdminActions(bot, storage, sessions) {
       });
     }
 
+    text += '\n\n<i>🧪 Lance un audit passif complet pour un rapport détaillé.</i>';
+
     ctx.editMessageText(text, {
       parse_mode: 'HTML',
-      ...adminExtendedKeyboard(),
+      ...adminSecurityKeyboard(),
     });
   });
 
