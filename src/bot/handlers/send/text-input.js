@@ -108,7 +108,12 @@ export function setupSendTextInput(bot, storage, walletService, sessions) {
 
         if (data.amountType === 'eur' && !tokenSymbol) {
           const conversion = await convertToEUR(data.selectedChain, 1);
-          amount = inputAmount / conversion.rate;
+          if (!conversion.priceEUR) {
+            return ctx.reply(
+              `⚠️ Prix indisponible pour ${data.selectedChain.toUpperCase()}. Réessaie ou saisis le montant en ${data.selectedChain.toUpperCase()}.`
+            );
+          }
+          amount = inputAmount / conversion.priceEUR;
         }
 
         const balanceData = await walletService.getBalance(
