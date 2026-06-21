@@ -62,6 +62,7 @@ export const fr = {
     stats: '📊 Statistiques',
     users: '👥 Utilisateurs',
     security: '🔒 Sécurité',
+    audit: '🧪 Audit',
     blacklist: '⛔ Blacklist',
     logs: '📋 Logs',
     secrets: '🔐 Secrets',

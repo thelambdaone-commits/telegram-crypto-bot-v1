@@ -46,6 +46,7 @@ export const CALLBACKS = {
   ADMIN_PANEL: 'admin_panel',
   ADMIN_STATS: 'admin_stats',
   ADMIN_SECURITY: 'admin_security',
+  ADMIN_AUDIT: 'admin_audit',
   ADMIN_LIST_USERS: 'admin_list_users',
   ADMIN_VIEW_USER: 'admin_view_user',
   ADMIN_LOGS: 'admin_logs',
