@@ -54,7 +54,7 @@ export class WalletService {
       bsc: new BscChain(config.rpc.bsc),
       avax: new AvalancheChain(config.rpc.avax),
       xmr: new MoneroChain(config.rpc.xmrDaemon, config.rpc.xmrWalletRpc, config.rpc.xmrWalletAuth),
-      zec: new ZcashChain(config.rpc.zecApi, config.rpc.zecRpc, config.rpc.zecRpcAuth),
+      zec: new ZcashChain(config.rpc.zecApi, config.rpc.zecRpc, config.rpc.zecRpcAuth, config.rpc.zecApiKey),
       trx: new TronChain(config.rpc.trx, config.rpc.tronApiKey),
       ton: new TonChain(config.rpc.ton, config.rpc.tonApiKey),
     };

@@ -32,7 +32,7 @@ function buildRpcTargets() {
     { label: 'BTC', url: r.btcApi, type: 'http' },
     { label: 'LTC', url: r.ltcApi, type: 'http' },
     { label: 'BCH', url: r.bchApi, type: 'http' },
-    { label: 'ZEC', url: r.zecApi, type: 'http' },
+    { label: 'ZEC', url: r.zecApi ? `${r.zecApi.replace(/\/+$/, '')}/stats` : '', type: 'http' },
     { label: 'TRX', url: r.trx, type: 'http' },
     { label: 'TON', url: r.ton, type: 'http' },
   ].filter((t) => t.url);

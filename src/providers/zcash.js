@@ -36,12 +36,39 @@ function bitcoinToZcashWif(privateKeyBytes) {
 }
 
 export class ZcashChain extends BaseProvider {
-  constructor(apiUrl = null, rpcUrl = null, rpcAuth = null) {
+  constructor(apiUrl = null, rpcUrl = null, rpcAuth = null, apiKey = null) {
     super('Zcash', 'ZEC');
-    this.apiUrl = apiUrl || 'https://api.zcha.in/v2/mainnet';
+    // Blockchair Zcash REST API. The old api.zcha.in / BlockCypher ZEC endpoints
+    // were discontinued; Blockchair is the live free explorer (optional API key
+    // raises the free-tier rate limit).
+    this.apiUrl = (apiUrl || 'https://api.blockchair.com/zcash').replace(/\/+$/, '');
+    this.apiKey = apiKey || null;
     this.rpcUrl = rpcUrl;
     this.rpcAuth = rpcAuth;
     this.network = ZEC_NETWORK;
+  }
+
+  // Append the Blockchair API key (if configured) to a query string.
+  _withKey(url) {
+    if (!this.apiKey) return url;
+    return url + (url.includes('?') ? '&' : '?') + `key=${encodeURIComponent(this.apiKey)}`;
+  }
+
+  // Fetch a Blockchair address dashboard (balance + utxo + tx hashes in one call).
+  async _fetchDashboard(address, limit = 'utxo') {
+    const url = this._withKey(`${this.apiUrl}/dashboards/address/${address}?limit=${limit}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetchWithTor(url, { signal: controller.signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const entry = data?.data?.[address];
+      if (!entry) throw new Error('adresse introuvable');
+      return entry;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   async createWallet() {
@@ -141,45 +168,22 @@ export class ZcashChain extends BaseProvider {
       }
     }
 
-    const apis = [
-      { url: `${this.apiUrl}/accounts/${address}`, type: 'zchain' },
-      { url: `https://api.blockcypher.com/v1/zec/main/addrs/${address}/balance`, type: 'blockcypher' },
-    ];
-
-    for (const api of apis) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        const response = await fetchWithTor(api.url, { signal: controller.signal });
-        clearTimeout(timeout);
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
-        let balanceSats = 0;
-
-        if (api.type === 'zchain') {
-          balanceSats = data.balance || 0;
-        } else if (api.type === 'blockcypher') {
-          balanceSats = data.final_balance ?? data.balance ?? 0;
-        }
-
-        return {
-          balance: (balanceSats / 100000000).toString(),
-          balanceSats: balanceSats.toString(),
-          symbol: this.symbol,
-        };
-      } catch {
-        continue;
-      }
+    try {
+      const entry = await this._fetchDashboard(address, 0);
+      const balanceSats = entry.address?.balance ?? 0;
+      return {
+        balance: (balanceSats / 100000000).toString(),
+        balanceSats: balanceSats.toString(),
+        symbol: this.symbol,
+      };
+    } catch {
+      return {
+        balance: '0',
+        balanceSats: '0',
+        symbol: this.symbol,
+        warning: 'API Zcash indisponible',
+      };
     }
-
-    return {
-      balance: '0',
-      balanceSats: '0',
-      symbol: this.symbol,
-      warning: 'API Zcash indisponible',
-    };
   }
 
   async getUtxos(address) {
@@ -197,45 +201,17 @@ export class ZcashChain extends BaseProvider {
       }
     }
 
-    const apis = [
-      `${this.apiUrl}/accounts/${address}/utxos`,
-      `https://api.blockcypher.com/v1/zec/main/addrs/${address}?unspentOnly=true`,
-    ];
-
-    for (const url of apis) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeout);
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          return data.map((u) => ({
-            txid: u.txid || u.tx_hash,
-            vout: u.vout || u.tx_output_n || 0,
-            value: u.value || u.amount || 0,
-          }));
-        }
-
-        if (data.txrefs) {
-          return data.txrefs
-            .filter((t) => !t.spent)
-            .map((t) => ({
-              txid: t.tx_hash,
-              vout: t.tx_output_n,
-              value: t.value,
-            }));
-        }
-      } catch {
-        continue;
-      }
+    try {
+      const entry = await this._fetchDashboard(address, 'utxo');
+      return (entry.utxo || []).map((u) => ({
+        txid: u.transaction_hash,
+        vout: u.index,
+        value: u.value,
+        height: u.block_id,
+      }));
+    } catch {
+      return [];
     }
-
-    return [];
   }
 
   async estimateFees(fromAddress, _toAddress, _amount) {
@@ -408,11 +384,53 @@ export class ZcashChain extends BaseProvider {
           })
         ).then((results) => results.filter(Boolean));
       } catch {
-        // Fallback
+        // Fallback to API
       }
     }
 
-    return [];
+    // Blockchair fallback: list recent tx hashes for the address, then fetch
+    // each transaction to derive direction + amount.
+    try {
+      const entry = await this._fetchDashboard(address, limit);
+      const hashes = (entry.transactions || []).slice(0, limit);
+      if (hashes.length === 0) return [];
+
+      const url = this._withKey(`${this.apiUrl}/dashboards/transactions/${hashes.join(',')}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      let txMap;
+      try {
+        const response = await fetchWithTor(url, { signal: controller.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        txMap = (await response.json())?.data || {};
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      return hashes
+        .map((hash) => {
+          const tx = txMap[hash];
+          if (!tx) return null;
+          const isOut = (tx.inputs || []).some((i) => i.recipient === address);
+          const credited = (tx.outputs || [])
+            .filter((o) => o.recipient === address)
+            .reduce((sum, o) => sum + (o.value || 0), 0);
+          const debited = (tx.inputs || [])
+            .filter((i) => i.recipient === address)
+            .reduce((sum, i) => sum + (i.value || 0), 0);
+          const amountSats = isOut ? debited - credited : credited;
+          const t = tx.transaction?.time;
+          return {
+            hash,
+            type: isOut ? 'out' : 'in',
+            amount: (Math.abs(amountSats) / 100000000).toString(),
+            timestamp: t ? Date.parse(t + ' UTC') : Date.now(),
+          };
+        })
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
   }
 
   validateAddress(address) {
