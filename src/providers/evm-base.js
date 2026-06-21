@@ -149,7 +149,9 @@ export class EvmBaseProvider extends BaseProvider {
             return {
               symbol,
               address: token.address,
-              amount: Number(balance) / Math.pow(10, decimals),
+              // formatUnits divides at full bigint precision; Number(balance)
+              // would lose digits above 2^53 (e.g. any 18-decimals balance ≥ ~9).
+              amount: Number(ethers.formatUnits(balance, decimals)),
               decimals,
               icon: token.icon || '💵',
               isKnown: true,
@@ -172,31 +174,39 @@ export class EvmBaseProvider extends BaseProvider {
     const isToken = tokenSymbol && this.tokenAddresses[tokenSymbol];
     const gasLimit = isToken ? 65000n : 21000n;
 
-    const levels = {
-      slow: {
-        maxFeePerGas: (feeData.maxFeePerGas * 80n) / 100n,
-        maxPriorityFeePerGas: (feeData.maxPriorityFeePerGas * 80n) / 100n,
-      },
-      average: {
-        maxFeePerGas: feeData.maxFeePerGas,
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-      },
-      fast: {
-        maxFeePerGas: (feeData.maxFeePerGas * 120n) / 100n,
-        maxPriorityFeePerGas: (feeData.maxPriorityFeePerGas * 150n) / 100n,
-      },
-    };
+    // EIP-1559 chains expose maxFeePerGas/maxPriorityFeePerGas; legacy chains
+    // (e.g. BNB Chain) leave both null and only provide gasPrice. Without this
+    // fallback the multipliers below would do `null * 80n` and throw, breaking
+    // every native/token send on legacy-gas chains.
+    const legacy = feeData.maxFeePerGas == null || feeData.maxPriorityFeePerGas == null;
+    const baseFee = legacy ? feeData.gasPrice : feeData.maxFeePerGas;
+    const basePriority = legacy ? 0n : feeData.maxPriorityFeePerGas;
+
+    if (baseFee == null || baseFee === 0n) {
+      throw new TransactionError('Estimation des frais indisponible (RPC)', {
+        code: ERROR_CODES.RPC_ERROR,
+        chain: this.symbol,
+      });
+    }
+
+    // Per-tier multipliers (%): max fee and priority fee scale independently so
+    // a "fast" tx bumps the tip harder than the cap (legacy keeps priority = 0).
+    const feeMult = { slow: 80n, average: 100n, fast: 120n };
+    const priorityMult = { slow: 80n, average: 100n, fast: 150n };
 
     const fees = {};
-    for (const [level, data] of Object.entries(levels)) {
-      const estimatedFee = gasLimit * data.maxFeePerGas;
+    for (const level of ['slow', 'average', 'fast']) {
+      const maxFeePerGas = (baseFee * feeMult[level]) / 100n;
+      const maxPriorityFeePerGas = (basePriority * priorityMult[level]) / 100n;
+      const estimatedFee = gasLimit * maxFeePerGas;
       fees[level] = {
         gasLimit: gasLimit.toString(),
-        maxFeePerGas: data.maxFeePerGas.toString(),
-        maxPriorityFeePerGas: data.maxPriorityFeePerGas.toString(),
+        maxFeePerGas: maxFeePerGas.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        legacy,
         estimatedFee: ethers.formatEther(estimatedFee),
         estimatedFeeWei: estimatedFee.toString(),
-        gasPriceGwei: Number(data.maxFeePerGas) / 1e9,
+        gasPriceGwei: Number(maxFeePerGas) / 1e9,
       };
     }
 
@@ -252,6 +262,22 @@ export class EvmBaseProvider extends BaseProvider {
     return { hash: tx.hash, status: receipt.status === 1 ? 'success' : 'failed' };
   }
 
+  /**
+   * Turn an estimateFees tier into ethers tx overrides. Legacy-gas chains
+   * (BNB Chain) must send a type-0 tx with `gasPrice`; EIP-1559 chains use the
+   * max/priority pair. Sending the 1559 pair on a legacy chain produces an
+   * invalid tx, hence the split.
+   */
+  _gasOverrides(feeData) {
+    if (feeData.legacy) {
+      return { gasPrice: BigInt(feeData.maxFeePerGas) };
+    }
+    return {
+      maxFeePerGas: BigInt(feeData.maxFeePerGas),
+      maxPriorityFeePerGas: BigInt(feeData.maxPriorityFeePerGas),
+    };
+  }
+
   async sendNative(wallet, toAddress, amount, feeLevel = 'average') {
     const fees = await this.estimateFees(wallet.address, toAddress, amount);
     const feeData = fees[feeLevel];
@@ -260,9 +286,8 @@ export class EvmBaseProvider extends BaseProvider {
       wallet.sendTransaction({
         to: toAddress,
         value: ethers.parseEther(amount.toString()),
-        maxFeePerGas: BigInt(feeData.maxFeePerGas),
-        maxPriorityFeePerGas: BigInt(feeData.maxPriorityFeePerGas),
         gasLimit: BigInt(feeData.gasLimit),
+        ...this._gasOverrides(feeData),
       }),
       30000
     );
@@ -293,9 +318,8 @@ export class EvmBaseProvider extends BaseProvider {
 
     const tx = await withTimeout(
       tokenContract.transfer(toAddress, amountWei, {
-        maxFeePerGas: BigInt(feeData.maxFeePerGas),
-        maxPriorityFeePerGas: BigInt(feeData.maxPriorityFeePerGas),
         gasLimit: BigInt(feeData.gasLimit),
+        ...this._gasOverrides(feeData),
       }),
       30000
     );

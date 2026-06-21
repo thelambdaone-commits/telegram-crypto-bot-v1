@@ -87,3 +87,47 @@ for (const def of PROVIDERS) {
     assert.equal(ethers.formatEther(bal.balanceWei), '2.0');
   });
 }
+
+// Fee estimation: a stub provider lets us drive estimateFees over both gas
+// models without a live RPC. Picks Polygon as a representative EVM chain.
+const stubFeeData = (feeData) => {
+  const p = new PolygonChain();
+  p.getProvider = () => ({ getFeeData: async () => feeData });
+  return p;
+};
+
+test('estimateFees: EIP-1559 chain uses max/priority and emits a 1559 override', async () => {
+  const p = stubFeeData({
+    maxFeePerGas: ethers.parseUnits('100', 'gwei'),
+    maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei'),
+    gasPrice: ethers.parseUnits('90', 'gwei'),
+  });
+  const fees = await p.estimateFees(TEST_ADDRESS, TEST_ADDRESS, 1);
+  assert.equal(fees.average.legacy, false);
+  assert.equal(fees.average.maxFeePerGas, ethers.parseUnits('100', 'gwei').toString());
+  assert.equal(fees.average.maxPriorityFeePerGas, ethers.parseUnits('2', 'gwei').toString());
+  const ov = p._gasOverrides(fees.average);
+  assert.ok('maxFeePerGas' in ov && 'maxPriorityFeePerGas' in ov);
+  assert.ok(!('gasPrice' in ov));
+});
+
+test('estimateFees: legacy chain (BSC-style null 1559) falls back to gasPrice — no throw', async () => {
+  const p = stubFeeData({
+    maxFeePerGas: null,
+    maxPriorityFeePerGas: null,
+    gasPrice: ethers.parseUnits('5', 'gwei'),
+  });
+  const fees = await p.estimateFees(TEST_ADDRESS, TEST_ADDRESS, 1);
+  assert.equal(fees.average.legacy, true);
+  assert.equal(fees.average.maxFeePerGas, ethers.parseUnits('5', 'gwei').toString());
+  assert.equal(fees.average.maxPriorityFeePerGas, '0'); // legacy → no tip
+  // slow tier scales the gasPrice down to 80%.
+  assert.equal(fees.slow.maxFeePerGas, ethers.parseUnits('4', 'gwei').toString());
+  const ov = p._gasOverrides(fees.average);
+  assert.deepEqual(ov, { gasPrice: ethers.parseUnits('5', 'gwei') });
+});
+
+test('estimateFees: throws cleanly when the RPC returns no usable fee data', async () => {
+  const p = stubFeeData({ maxFeePerGas: null, maxPriorityFeePerGas: null, gasPrice: null });
+  await assert.rejects(() => p.estimateFees(TEST_ADDRESS, TEST_ADDRESS, 1), /frais/i);
+});
