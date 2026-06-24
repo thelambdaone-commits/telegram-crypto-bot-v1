@@ -16,6 +16,17 @@ import { registerBotCommands } from './bot/bot-commands.js';
 const BENIGN_TELEGRAM_ERROR =
   /message is not modified|query is too old|message can't be edited|message to (edit|delete) not found|bot was blocked|user is deactivated|chat not found|MESSAGE_ID_INVALID|forbidden/i;
 
+// Transient network failures that warrant a retry rather than aborting startup.
+// A blip reaching api.telegram.org at boot must never permanently disable polling.
+const TRANSIENT_NETWORK_ERROR =
+  /EHOSTUNREACH|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ENETUNREACH|EPIPE|socket hang up|network|timed? out|FetchError/i;
+
+function isTransientNetworkError(error) {
+  return TRANSIENT_NETWORK_ERROR.test(`${error?.code || ''} ${error?.message || ''}`);
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export class App {
   constructor() {
     this.bot = null;
@@ -44,8 +55,15 @@ export class App {
 
     this._setupShutdown();
 
-    await this.bot.telegram.getMe();
-    await registerBotCommands(this.bot);
+    // Reaching Telegram at boot can fail on a transient network blip. Retry
+    // instead of letting the rejection bubble up — otherwise launch() below is
+    // never reached and the process lingers "online" with no polling at all.
+    await this._withRetry(() => this.bot.telegram.getMe(), 'getMe');
+    await this._withRetry(() => registerBotCommands(this.bot), 'registerBotCommands');
+
+    // launch() resolves only when long-polling stops. Don't await it. If it ever
+    // rejects (fatal startup error), exit non-zero so the supervisor restarts a
+    // clean process rather than leaving a deaf bot behind.
     this.bot.launch().catch((error) => {
       logger.logError(error, { context: 'bot.launch' });
       process.exit(1);
@@ -57,6 +75,30 @@ export class App {
     );
 
     return this;
+  }
+
+  // Retry a startup network call across transient failures with capped
+  // exponential backoff. Non-network errors fail fast (no point retrying a bad
+  // token). After exhausting attempts, rethrow so start() rejects and the
+  // process exits — the supervisor then restarts and tries again from scratch.
+  async _withRetry(fn, label, attempts = 6, baseDelayMs = 2000) {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (!isTransientNetworkError(error) || attempt === attempts) {
+          throw error;
+        }
+        const delay = Math.min(baseDelayMs * 2 ** (attempt - 1), 30000);
+        logger.warn(`Startup step "${label}" failed (network), retrying`, {
+          attempt,
+          attempts,
+          delayMs: delay,
+          error: error?.message,
+        });
+        await sleep(delay);
+      }
+    }
   }
 
   _rejectUnencryptedSessions() {
