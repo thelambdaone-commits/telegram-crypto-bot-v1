@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DepositMonitor } from '../src/core/monitor.js';
+import { DepositMonitor } from '../src/modules/monitoring/deposit-monitor.js';
 
 test('DepositMonitor initializes user balances with bounded concurrency', async () => {
   let active = 0;

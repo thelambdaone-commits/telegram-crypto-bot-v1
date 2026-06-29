@@ -1,5 +1,5 @@
 import { deleteConfirmKeyboard, mainMenuKeyboard } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, escapeHtml } from '../../utils.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 
 export function setupWalletDelete(bot, storage) {

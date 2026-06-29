@@ -3,10 +3,10 @@ import {
   mainMenuKeyboard,
   walletActionsKeyboard,
 } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, escapeHtml } from '../../utils.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
+import { MESSAGES, EMOJIS } from '../../i18n/index.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
-import { CHAIN_EMOJIS } from '../../ui/formatters.js';
+import { CHAIN_EMOJIS } from '../../i18n/formatters.js';
 
 export function setupWalletList(bot, storage, walletService) {
   // List wallets

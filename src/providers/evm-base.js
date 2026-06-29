@@ -4,6 +4,7 @@ import { TOKEN_CONFIGS, ERC20_ABI } from '../core/tokens.config.js';
 import { withTimeout } from '../shared/rpc-timeout.js';
 import { RpcManager } from '../shared/rpc/RpcManager.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 
 export class EvmBaseProvider extends BaseProvider {
   constructor(config) {
@@ -282,10 +283,19 @@ export class EvmBaseProvider extends BaseProvider {
     const fees = await this.estimateFees(wallet.address, toAddress, amount);
     const feeData = fees[feeLevel];
 
+    // Montant UI → wei en entier (string→BigInt, troncature à 18 décimales).
+    const valueWei = uiToBaseUnits(amount, 18);
+    if (valueWei <= 0n) {
+      throw new TransactionError('Montant inférieur au minimum transférable (1 wei)', {
+        code: ERROR_CODES.INVALID_AMOUNT,
+        chain: this.nativeSymbol,
+      });
+    }
+
     const tx = await withTimeout(
       wallet.sendTransaction({
         to: toAddress,
-        value: ethers.parseEther(amount.toString()),
+        value: valueWei,
         gasLimit: BigInt(feeData.gasLimit),
         ...this._gasOverrides(feeData),
       }),
@@ -311,7 +321,14 @@ export class EvmBaseProvider extends BaseProvider {
     const tokenContract = new ethers.Contract(token.address, ERC20_ABI, wallet);
 
     const decimals = await tokenContract.decimals();
-    const amountWei = ethers.parseUnits(amount.toString(), decimals);
+    // decimals() renvoie un BigInt en ethers v6 → Number pour le helper.
+    const amountWei = uiToBaseUnits(amount, Number(decimals));
+    if (amountWei <= 0n) {
+      throw new TransactionError('Montant inférieur au minimum transférable', {
+        code: ERROR_CODES.INVALID_AMOUNT,
+        chain: tokenSymbol,
+      });
+    }
 
     const fees = await this.estimateFees(wallet.address, toAddress, amount, tokenSymbol);
     const feeData = fees[feeLevel];

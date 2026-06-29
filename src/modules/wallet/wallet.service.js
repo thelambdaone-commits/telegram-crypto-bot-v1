@@ -257,9 +257,6 @@ export class WalletService {
   }
 
   /**
-   * Pre-flight validation before sending a transaction
-   */
-  /**
    * Max sendable amount for a "send all" / sweep, leaving 0 dust. Only chains
    * whose provider implements an exact-fee sweep (Solana) return a value; others
    * return null so the caller keeps its own reserve-based estimate.

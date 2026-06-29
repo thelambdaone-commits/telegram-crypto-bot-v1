@@ -88,4 +88,5 @@ export const COIN_IDS = {
   bsc: 'binancecoin',
   bnb: 'binancecoin',
   weth: 'weth',
+  wsol: 'solana', // Wrapped SOL tracks SOL 1:1
 };

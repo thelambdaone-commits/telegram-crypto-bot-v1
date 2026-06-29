@@ -11,13 +11,13 @@ import { setupPaymentHandlers } from './payments/index.js';
 import { setupAdminHandlers } from './admin/index.js';
 import { PaymentService } from '../../modules/payments/payment.service.js';
 import { setupCommands } from './commands/index.js';
-import { setupBalanceHandlers } from './balance.handlers.js';
-import { setupNavigationHandlers } from './nav.handlers.js';
+import { setupBalanceHandlers } from './balance/index.js';
+import { setupNavigationHandlers } from './navigation/index.js';
 import { SessionManager } from '../../core/session/index.js';
 import { WalletService } from '../../modules/wallet/wallet.service.js';
 import { config, torProxyUrl } from '../../core/config.js';
 import { initTorProxy } from '../../shared/tor-proxy.js';
-import { DepositMonitor } from '../../core/monitor.js';
+import { DepositMonitor } from '../../modules/monitoring/deposit-monitor.js';
 import {
   globalRateLimit,
   messageLengthGuard,

@@ -8,11 +8,12 @@ import {
   chainHasTokens,
   addressAnalyzedKeyboard,
 } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../utils.js';
+import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../../shared/utils/telegram.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
-import { formatCryptoAmount } from '../../ui/formatters.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { getTxExplorerUrl } from '../../../shared/explorer.js';
+import { formatCryptoAmount } from '../../i18n/formatters.js';
+import { MESSAGES, EMOJIS } from '../../i18n/index.js';
 import { formatTxDetails, handleSendError } from './helpers.js';
 
 export function setupSendActions(bot, storage, walletService, sessions) {
@@ -197,7 +198,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         const date = new Date(tx.timestamp).toLocaleDateString('fr-FR');
         text += `${direction} <b>${escapeHtml(formatCryptoAmount(tx.amount, chain))}</b>\n`;
         text += `📅 ${date}\n`;
-        text += `🔗 <code>${tx.hash.slice(0, 12)}...${tx.hash.slice(-8)}</code>\n\n`;
+        text += `🔗 <code>${escapeHtml(tx.hash)}</code>\n\n`;
       }
 
       await safeEditMessage(ctx, text, { parse_mode: 'HTML', ...backKeyboard });
@@ -415,39 +416,11 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         txHash: result.hash,
       });
 
-      // Use chain from session to determine explorer URL
-      let hashUrl;
+      // Explorer tx link, centralised in shared/explorer.js (covers all 15
+      // chains, incl. avax/bsc/trx that the old inline map omitted).
       const chain = data.selectedChain;
-      if (
-        chain === 'eth' ||
-        chain === 'arb' ||
-        chain === 'op' ||
-        chain === 'base' ||
-        chain === 'matic'
-      ) {
-        const explorers = {
-          eth: 'etherscan.io',
-          arb: 'arbiscan.io',
-          op: 'optimism.io',
-          base: 'basescan.org',
-          matic: 'polygonscan.com',
-        };
-        hashUrl = `https://${explorers[chain] || 'etherscan.io'}/tx/${result.hash}`;
-      } else if (chain === 'sol') {
-        hashUrl = `https://solscan.io/tx/${result.hash}`;
-      } else if (chain === 'ltc') {
-        hashUrl = `https://mempool.space/litecoin/tx/${result.hash}`;
-      } else if (chain === 'bch') {
-        hashUrl = `https://blockchain.com/bch/tx/${result.hash}`;
-      } else if (chain === 'xmr') {
-        hashUrl = `https://xmrchain.net/tx/${result.hash}`;
-      } else if (chain === 'zec') {
-        hashUrl = `https://zcashblockexplorer.com/tx/${result.hash}`;
-      } else if (chain === 'ton') {
-        hashUrl = `https://tonviewer.com/transaction/${result.hash}`;
-      } else {
-        hashUrl = `https://blockchain.com/btc/tx/${result.hash}`;
-      }
+      const hashUrl =
+        getTxExplorerUrl(chain, result.hash) || `https://blockchain.com/btc/tx/${result.hash}`;
 
       const symbol = result.symbol || data.selectedChain.toUpperCase();
       await ctx.editMessageText(

@@ -21,8 +21,8 @@ import { setupExchangeHandlers } from '../src/bot/handlers/exchange/index.js';
 import { setupPaymentHandlers } from '../src/bot/handlers/payments/index.js';
 import { setupAdminHandlers } from '../src/bot/handlers/admin/index.js';
 import { setupCommands } from '../src/bot/handlers/commands/index.js';
-import { setupBalanceHandlers } from '../src/bot/handlers/balance.handlers.js';
-import { setupNavigationHandlers } from '../src/bot/handlers/nav.handlers.js';
+import { setupBalanceHandlers } from '../src/bot/handlers/balance/index.js';
+import { setupNavigationHandlers } from '../src/bot/handlers/navigation/index.js';
 
 import { BOT_COMMANDS } from '../src/bot/bot-commands.js';
 import {

@@ -5,10 +5,13 @@ import {
   feeSelectionKeyboard,
 } from '../../keyboards/index.js';
 import { formatEUR, convertToEUR } from '../../../shared/price.js';
-import { formatNumber, formatCryptoAmount, CHAIN_EMOJIS, truncateAddress } from '../../ui/formatters.js';
+import { formatNumber, formatCryptoAmount, CHAIN_EMOJIS, truncateAddress } from '../../i18n/formatters.js';
 import { sendWalletKeysFile } from '../wallet/key-file.js';
 import { SUPPORTED_CHAINS as PUBLIC_CHAINS, CHAIN_REGISTRY } from '../../../shared/chains.js';
 import { escapeHtml } from '../../../shared/utils/telegram.js';
+import { uiToBaseUnits } from '../../../shared/amounts.js';
+import { getTxExplorerUrl } from '../../../shared/explorer.js';
+import bs58 from 'bs58';
 
 // chain → "Name Emoji" display label, derived from the registry so /gen
 // auto-syncs with every supported chain (no hand-maintained list to drift).
@@ -51,6 +54,60 @@ const UNIT_MAP = {
 };
 
 const UNIT_LIST_LABEL = 'btc, sat, ltc, litoshi, bch, eth, gwei, wei, sol, lamport, xmr, piconero, zec, zatoshi, trx, sun';
+
+// Pure resolution of the /send amount argument — no I/O, so it's unit-testable.
+// The caller fetches the async inputs (estimatedFee for a non-SOL "max",
+// priceEUR for a "€" amount) and passes them in. Returns
+// { amount, amountType, isMaxSend } on success, or { error: <code> }.
+export function computeSendAmount(
+  amountArg,
+  { network, balance, balanceLamports, estimatedFee = 0, priceEUR = null } = {}
+) {
+  const isMax = /^max$/i.test(amountArg);
+  const eurMatch = amountArg.match(/^([\d.,]+)\s*(?:€|eur|euro|euros)$/i);
+
+  if (isMax) {
+    // SOL sweeps to the exact balance − fee at confirmation (0 dust); other
+    // chains reserve the estimated fee up front.
+    const amount =
+      network === 'sol' && balanceLamports
+        ? Math.max(0, Number(balanceLamports) - 5000) / 1e9
+        : Math.max(0, balance - Number.parseFloat(estimatedFee));
+    if (amount <= 0) return { error: 'insufficient_fee' };
+    return {
+      amount,
+      amountType: 'native',
+      isMaxSend: network === 'sol' && !!balanceLamports,
+    };
+  }
+
+  if (eurMatch) {
+    const eur = Number.parseFloat(eurMatch[1].replace(',', '.'));
+    if (Number.isNaN(eur) || eur <= 0) return { error: 'invalid_eur' };
+    if (!priceEUR) return { error: 'no_price' };
+    return { amount: eur / priceEUR, amountType: 'eur', isMaxSend: false };
+  }
+
+  const amount = Number.parseFloat(amountArg.replace(',', '.'));
+  if (Number.isNaN(amount) || amount <= 0) return { error: 'invalid_amount' };
+  return { amount, amountType: 'native', isMaxSend: false };
+}
+
+// Heuristic: does `v` look like a transaction hash/signature (vs an address)?
+// Used to turn the common "/tx <network> <txhash>" mistake into a helpful reply.
+export function looksLikeTxHash(network, v) {
+  if (CHAIN_REGISTRY[network]?.evm) return /^0x[0-9a-fA-F]{64}$/.test(v); // 32-byte hash
+  if (network === 'sol') {
+    // SOL signature = 64 bytes base58; an address is 32 bytes.
+    try {
+      return bs58.decode(v).length === 64;
+    } catch {
+      return false;
+    }
+  }
+  // BTC/LTC/BCH/ZEC/XMR/TRX txids are 64 hex chars.
+  return /^[0-9a-fA-F]{64}$/.test(v);
+}
 
 export function setupWalletCommands(bot, storage, walletService, sessions) {
   // 💰 /wallet - Affiche la liste des wallets
@@ -214,7 +271,10 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       return ctx.reply(
         '💸 <b>Envoi de cryptos</b>\n\n' +
           'Utilisation : <code>/send &lt;réseau&gt; &lt;adresse&gt; &lt;montant&gt;</code>\n\n' +
-          'Exemple : <code>/send eth 0x123...abc 0.1</code>\n\n' +
+          '<b>Montant</b> — au choix :\n' +
+          '• en crypto : <code>/send eth 0x123...abc 0.1</code>\n' +
+          '• en euros : <code>/send eth 0x123...abc 25€</code>\n' +
+          '• tout le solde : <code>/send sol Abc...xyz max</code>\n\n' +
           '💡 Pour un envoi plus guidé, utilise le bouton <b>💸 Envoyer</b> du menu !',
         { parse_mode: 'HTML' }
       );
@@ -222,7 +282,8 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
 
     const network = args[0].toLowerCase();
     const toAddress = args[1];
-    const amount = Number.parseFloat(args[2].replace(',', '.'));
+    // Le montant peut s'écrire en plusieurs jetons ("25 €") → on rejoint la fin.
+    const amountArg = args.slice(2).join(' ').trim();
 
     if (!PUBLIC_CHAINS.includes(network)) {
       return ctx.reply(
@@ -231,10 +292,6 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
           parse_mode: 'HTML',
         }
       );
-    }
-
-    if (Number.isNaN(amount) || amount <= 0) {
-      return ctx.reply('❌ Montant invalide !');
     }
 
     const wallets = await storage.getWallets(chatId);
@@ -246,24 +303,64 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       });
     }
 
-    sessions.setData(chatId, {
-      selectedWalletId: wallet.id,
-      selectedChain: network,
-      toAddress: toAddress,
-      amount: amount,
-      amountType: 'native',
-    });
-    sessions.setState(chatId, 'SELECT_FEE');
+    // "max" (tout le solde) et "25€" déclenchent des appels réseau différents.
+    const wantsMax = /^max$/i.test(amountArg);
+    const wantsEur = /^[\d.,]+\s*(?:€|eur|euro|euros)$/i.test(amountArg);
 
     try {
       const balanceData = await walletService.getBalance(chatId, wallet.id);
+      const balance = Number.parseFloat(balanceData.balance);
+
+      // Pré-charge uniquement ce dont le type de montant a besoin.
+      let estimatedFee = 0;
+      let priceEUR = null;
+      if (wantsMax && !(network === 'sol' && balanceData.balanceLamports)) {
+        const feeProbe = await walletService.estimateFees(chatId, wallet.id, toAddress, 0.001);
+        estimatedFee = feeProbe.slow?.estimatedFee || feeProbe.slow?.feeSOL || 0;
+      }
+      if (wantsEur) {
+        const conv = await convertToEUR(network, 1);
+        priceEUR = conv?.priceEUR || null;
+      }
+
+      const resolved = computeSendAmount(amountArg, {
+        network,
+        balance,
+        balanceLamports: balanceData.balanceLamports,
+        estimatedFee,
+        priceEUR,
+      });
+      if (resolved.error) {
+        const errors = {
+          insufficient_fee: '💸 Solde insuffisant pour couvrir les frais de réseau.',
+          invalid_eur: '❌ Montant en euros invalide !',
+          no_price: `⚠️ Prix indisponible pour ${network.toUpperCase()}. Saisis le montant en ${network.toUpperCase()}.`,
+          invalid_amount: '❌ Montant invalide !',
+        };
+        return ctx.reply(errors[resolved.error] || '❌ Montant invalide !');
+      }
+      const { amount, amountType, isMaxSend } = resolved;
+
+      if (amount > balance) {
+        return ctx.reply(
+          `💸 Solde insuffisant (${balanceData.balance} ${escapeHtml(balanceData.symbol || network.toUpperCase())})`
+        );
+      }
+
       const fees = await walletService.estimateFees(chatId, wallet.id, toAddress, amount);
 
       sessions.setData(chatId, {
-        ...sessions.getData(chatId),
+        selectedWalletId: wallet.id,
+        selectedChain: network,
+        toAddress,
+        amount,
+        amountType,
+        isMaxSend,
         fees,
-        currentBalance: Number.parseFloat(balanceData.balance),
+        currentBalance: balance,
+        currentBalanceLamports: balanceData.balanceLamports,
       });
+      sessions.setState(chatId, 'SELECT_FEE');
 
       const conversion = await convertToEUR(network, amount);
 
@@ -271,7 +368,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
         "💸 <b>Préparation de l'envoi</b>\n\n" +
           `📤 De : ${escapeHtml(wallet.label)}\n` +
           `📥 Vers : <code>${truncateAddress(toAddress)}</code>\n` +
-          `💰 Montant : <b>${escapeHtml(formatCryptoAmount(amount, network))}</b>\n` +
+          `💰 Montant : <b>${escapeHtml(formatCryptoAmount(amount, network))}</b>${wantsMax ? ' 💯 <i>(max)</i>' : ''}\n` +
           `💶 Valeur : ${escapeHtml(formatEUR(conversion.valueEUR))}\n` +
           `📊 Solde dispo : ${balanceData.balance} ${escapeHtml(balanceData.symbol || network.toUpperCase())}\n\n` +
           'Choisis la vitesse de transaction :',
@@ -280,6 +377,60 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     } catch (error) {
       sessions.clearState(chatId);
       ctx.reply(`❌ Erreur : ${error.message}`);
+    }
+  });
+
+  // ✅ /validate - Vérifie qu'une adresse est valide pour un réseau
+  bot.command(['validate', 'check'], async (ctx) => {
+    const args = ctx.message.text.split(' ').slice(1);
+
+    if (args.length < 2) {
+      return ctx.reply(
+        '✅ <b>Validation d’adresse</b>\n\n' +
+          'Utilisation : <code>/validate &lt;réseau&gt; &lt;adresse&gt;</code>\n\n' +
+          'Exemples :\n' +
+          '• <code>/validate btc bc1q...xyz</code>\n' +
+          '• <code>/validate eth 0x123...abc</code>\n\n' +
+          '💡 À utiliser <b>avant</b> un envoi pour éviter une perte de fonds.',
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    const network = args[0].toLowerCase();
+    const address = args[1];
+
+    if (!PUBLIC_CHAINS.includes(network)) {
+      return ctx.reply(
+        `❌ Réseau non supporté ! Choisis parmi : <code>${PUBLIC_CHAINS.join(', ')}</code>`,
+        { parse_mode: 'HTML' }
+      );
+    }
+
+    let valid = false;
+    try {
+      valid = walletService.validateAddress(network, address);
+    } catch (e) {
+      valid = false;
+    }
+
+    const chainEmoji = CHAIN_EMOJIS[network] || '💎';
+    const name = CHAIN_DISPLAY[network] || network.toUpperCase();
+
+    if (valid) {
+      await ctx.reply(
+        '✅ <b>Adresse valide</b>\n\n' +
+          `${chainEmoji} Réseau : <b>${escapeHtml(name)}</b>\n` +
+          `📬 <code>${escapeHtml(address)}</code>\n\n` +
+          `Tu peux l’utiliser avec <code>/send ${network} ${escapeHtml(truncateAddress(address))} &lt;montant&gt;</code>.`,
+        { parse_mode: 'HTML' }
+      );
+    } else {
+      await ctx.reply(
+        `❌ <b>Adresse invalide</b> pour ${chainEmoji} <b>${escapeHtml(name)}</b>\n\n` +
+          `📬 <code>${escapeHtml(address)}</code>\n\n` +
+          '⚠️ Vérifie que tu as bien choisi le <b>bon réseau</b> et recopié l’adresse en entier.',
+        { parse_mode: 'HTML' }
+      );
     }
   });
 
@@ -304,6 +455,27 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
       });
     }
 
+    // /tx liste l'historique d'une ADRESSE. Si l'argument est un hash de
+    // transaction (erreur courante), on l'oriente vers l'explorateur.
+    let validAddress = false;
+    try {
+      validAddress = walletService.validateAddress(network, address);
+    } catch {
+      validAddress = false;
+    }
+    if (!validAddress) {
+      if (looksLikeTxHash(network, address)) {
+        const url = getTxExplorerUrl(network, address);
+        return ctx.reply(
+          '🔗 <b>Ça ressemble à un hash de transaction</b>, pas à une adresse.\n\n' +
+            '<code>/tx</code> liste l’historique d’une <b>adresse</b>. Pour inspecter cette transaction :\n' +
+            (url ? `<a href="${url}">Ouvrir dans l’explorateur</a>` : '<i>explorateur indisponible</i>'),
+          { parse_mode: 'HTML' }
+        );
+      }
+      return ctx.reply(`❌ Adresse ${network.toUpperCase()} invalide.`, { parse_mode: 'HTML' });
+    }
+
     const loadingMsg = await ctx.reply('🔍 Recherche des transactions...');
 
     try {
@@ -320,7 +492,7 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
         const date = new Date(tx.timestamp).toLocaleDateString('fr-FR');
         text += `${direction} <b>${escapeHtml(formatCryptoAmount(tx.amount, network))}</b>\n`;
         text += `📅 ${date}\n`;
-        text += `🔗 <code>${truncateAddress(tx.hash, 10, 8)}</code>\n\n`;
+        text += `🔗 <code>${escapeHtml(tx.hash)}</code>\n\n`;
       }
 
       await ctx.reply(text, { parse_mode: 'HTML' });
@@ -365,8 +537,9 @@ export function setupWalletCommands(bot, storage, walletService, sessions) {
     const lines = def.units.map(([name, factor]) => {
       let valStr;
       if (name === 'wei') {
-        // 10^18 overflows JS safe integers: go ETH→gwei (safe) then ×10^9 exact.
-        valStr = (BigInt(Math.round(coinAmount * 1e9)) * 1_000_000_000n).toLocaleString('fr-FR');
+        // 10^18 overflows JS floats/safe-ints: convert via the string→BigInt
+        // helper (no float multiply), exact down to 1 wei.
+        valStr = uiToBaseUnits(coinAmount, 18).toLocaleString('fr-FR');
       } else if (factor === 1) {
         valStr = formatNumber(coinAmount, 0, 8); // the coin amount itself
       } else {

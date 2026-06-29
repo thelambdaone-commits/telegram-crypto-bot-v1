@@ -152,6 +152,7 @@ export const PRICE_GROUPS = [
     ['uni', '🦄', 'Uniswap (UNI)'],
     ['arb', '🔵', 'Arbitrum (ARB)'],
     ['msol', '💧', 'Marinade SOL (mSOL)'],
+    ['wsol', '◎', 'Wrapped SOL (wSOL)'],
   ]],
   ['🪙 Legacy / Forks', [
     ['ltc', 'Ł', 'Litecoin (LTC)'],

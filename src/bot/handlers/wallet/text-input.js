@@ -1,7 +1,7 @@
 import { mainMenuKeyboard } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
-import { EMOJIS } from '../../messages/index.js';
-import { escapeHtml } from '../../utils.js';
+import { EMOJIS } from '../../i18n/index.js';
+import { escapeHtml } from '../../../shared/utils/telegram.js';
 
 export function setupWalletTextInput(bot, storage, walletService, sessions) {
   bot.on('text', async (ctx, next) => {

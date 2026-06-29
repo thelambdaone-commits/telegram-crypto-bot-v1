@@ -15,6 +15,7 @@ import { WalletContractV4, TonClient, internal, SendMode } from '@ton/ton';
 import { Address, toNano, fromNano, beginCell, external, storeMessage } from '@ton/core';
 import { BaseProvider } from './base.provider.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { logger } from '../shared/logger.js';
 
 const ADDR_OPTS = { bounceable: false, urlSafe: true };
@@ -179,16 +180,15 @@ export class TonChain extends BaseProvider {
         chain: 'TON',
       });
     }
-    // Fixed-decimal string avoids scientific notation (e.g. 1.2e-7) which
-    // toNano() rejects; TON has 9 decimals so this is lossless at chain scale.
-    const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      throw new TransactionError('Montant TON invalide', {
-        code: ERROR_CODES.VALIDATION_ERROR || 'VALIDATION_ERROR',
+    // Montant UI → nanotons (9 décimales) en entier, sans flottant ni notation
+    // scientifique (que toNano() rejette), avec troncature vers le bas.
+    const value = uiToBaseUnits(amount, 9);
+    if (value <= 0n) {
+      throw new TransactionError('Montant inférieur au minimum transférable (1 nanoton)', {
+        code: ERROR_CODES.INVALID_AMOUNT,
         chain: 'TON',
       });
     }
-    const value = toNano(amt.toFixed(9));
 
     const seed32 = Buffer.from(privateKey, 'hex').subarray(0, 32);
     const { keyPair, wallet } = this._walletFromSeed32(seed32);

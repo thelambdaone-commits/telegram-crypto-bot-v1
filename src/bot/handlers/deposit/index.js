@@ -9,7 +9,7 @@
  * All asset/network metadata is derived from the single TOKEN_CONFIGS source.
  */
 import { Markup } from 'telegraf';
-import { safeAnswerCbQuery, escapeHtml } from '../../utils.js';
+import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
 import { CALLBACKS } from '../../constants/callbacks.js';
 import {
   getDepositAssets,
@@ -19,7 +19,7 @@ import {
 import { generateAddressQR } from '../../../shared/qr.js';
 import { buildPaymentURI } from '../../../shared/payment-uri.js';
 import { logger } from '../../../shared/logger.js';
-import { CHAIN_EMOJIS, truncateAddress } from '../../ui/formatters.js';
+import { CHAIN_EMOJIS, truncateAddress } from '../../i18n/formatters.js';
 // EVM chains share one address, so any EVM wallet can receive on any of them.
 import { EVM_CHAINS } from '../../../shared/chains.js';
 

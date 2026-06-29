@@ -58,8 +58,8 @@ export class App {
     // Reaching Telegram at boot can fail on a transient network blip. Retry
     // instead of letting the rejection bubble up — otherwise launch() below is
     // never reached and the process lingers "online" with no polling at all.
-    await this._withRetry(() => this.bot.telegram.getMe(), 'getMe');
-    await this._withRetry(() => registerBotCommands(this.bot), 'registerBotCommands');
+    await this._withRetry(() => this.bot.telegram.getMe(), 'getMe', 6);
+    await this._withRetry(() => registerBotCommands(this.bot), 'registerBotCommands', 3);
 
     // launch() resolves only when long-polling stops. Don't await it. If it ever
     // rejects (fatal startup error), exit non-zero so the supervisor restarts a

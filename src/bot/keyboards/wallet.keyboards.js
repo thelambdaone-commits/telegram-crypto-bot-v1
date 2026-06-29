@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import { CALLBACKS } from '../constants/callbacks.js';
-import { CHAIN_EMOJIS } from '../ui/formatters.js';
+import { CHAIN_EMOJIS } from '../i18n/formatters.js';
 
 export function walletListKeyboard(wallets, prefix = 'wallet_') {
   const chainEmojis = CHAIN_EMOJIS;

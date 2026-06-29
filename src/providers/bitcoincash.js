@@ -5,6 +5,7 @@ import * as bip39 from 'bip39';
 import BIP32Factory from 'bip32';
 
 import { BaseProvider } from './base.provider.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 
 const ECPair = ECPairFactory(tinysecp);
@@ -407,7 +408,11 @@ export class BitcoinCashChain extends BaseProvider {
     const fees = await this.estimateFees(fromAddress, toAddress, amount);
     const feeRate = fees[feeLevel]?.feeSats || fees.average.feeSats;
     const feeSats = parseInt(feeRate);
-    const amountSats = Math.floor(amount * 100000000);
+    const sats = uiToBaseUnits(amount, 8);
+    if (sats <= 0n) {
+      throw new Error('Montant inférieur au minimum transférable (1 satoshi)');
+    }
+    const amountSats = Number(sats);
 
     const tx = new bitcoin.Transaction();
     tx.version = 1;

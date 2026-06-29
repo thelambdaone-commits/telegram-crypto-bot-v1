@@ -216,8 +216,9 @@ npm run ci
 | --- | --- |
 | `/wallet`, `/gen <reseau>` | Lister / generer un wallet |
 | `/bal <reseau> <adresse>`, `/tx <reseau> <adresse>` | Solde / historique d'une adresse |
-| `/send <reseau> <adresse> <montant>` | Envoyer des fonds |
-| `/price`, `/gas`, `/graph <token> <periode>`, `/unit` | Infos marche |
+| `/send <reseau> <adresse> <montant>` | Envoyer des fonds — montant en crypto (`0.1`), en euros (`25€`) ou `max` (tout le solde) |
+| `/validate <reseau> <adresse>` | Vérifier qu'une adresse est valide avant d'envoyer |
+| `/price`, `/gas [reseau]`, `/graph <token> <periode>`, `/unit` | Infos marche (`/gas` couvre **toutes** les chaînes : `/gas eth`, `/gas xmr`, `/gas trx`…) |
 | `/swaps`, `/list` | Échange sans KYC / liste des coins & tokens supportés |
 | `/menu`, `/help`, `/chains`, `/learn` | Navigation et aide |
 

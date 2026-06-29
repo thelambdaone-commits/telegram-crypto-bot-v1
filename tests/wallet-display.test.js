@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildBalancesText } from '../src/bot/ui/wallet-display.js';
+import { buildBalancesText } from '../src/bot/i18n/wallet-display.js';
 
 test('buildBalancesText displays provider symbol instead of chain code', async () => {
   const storage = {

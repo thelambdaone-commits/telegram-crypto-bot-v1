@@ -1,6 +1,6 @@
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
-import { EMOJIS } from '../../messages/index.js';
-import { truncateAddress } from '../../ui/formatters.js';
+import { EMOJIS } from '../../i18n/index.js';
+import { truncateAddress } from '../../i18n/formatters.js';
 import { logger } from '../../../shared/logger.js';
 import { ERROR_CODES } from '../../../shared/errors.js';
 

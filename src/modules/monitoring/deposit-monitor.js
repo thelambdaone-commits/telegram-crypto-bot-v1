@@ -1,7 +1,7 @@
-import { logger } from '../shared/logger.js';
-import { config } from './config.js';
-import { formatEUR, convertToEUR } from '../shared/price.js';
-import { escapeHtml } from '../shared/utils/telegram.js';
+import { logger } from '../../shared/logger.js';
+import { config } from '../../core/config.js';
+import { formatEUR, convertToEUR } from '../../shared/price.js';
+import { escapeHtml } from '../../shared/utils/telegram.js';
 
 const DEFAULT_MONITOR_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_MONITOR_CONCURRENCY = 4;
@@ -10,8 +10,6 @@ const DEFAULT_USER_DELAY_MS = 250;
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-
 
 /**
  * Deposit Monitor - Checks for new deposits and notifies admin

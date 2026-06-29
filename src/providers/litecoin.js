@@ -5,6 +5,7 @@ import * as bip39 from 'bip39';
 import BIP32Factory from 'bip32';
 
 import { BaseProvider } from './base.provider.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 
 const ECPair = ECPairFactory(tinysecp);
 const bip32 = BIP32Factory(tinysecp);
@@ -292,7 +293,11 @@ export class LitecoinChain extends BaseProvider {
       });
     }
 
-    const amountSats = Math.floor(amount * 100000000);
+    const litoshis = uiToBaseUnits(amount, 8);
+    if (litoshis <= 0n) {
+      throw new Error('Montant inférieur au minimum transférable (1 litoshi)');
+    }
+    const amountSats = Number(litoshis);
     const feeSats = Math.floor(parseFloat(feeRate));
 
     psbt.addOutput({
