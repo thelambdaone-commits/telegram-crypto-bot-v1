@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RpcManager } from '../src/shared/rpc/RpcManager.js';
 import { RpcHealthMonitor } from '../src/shared/rpc/RpcHealthMonitor.js';
+import { logger } from '../src/shared/logger.js';
 
 test('RpcManager executes successfully against first endpoint', async () => {
   let callOrder = [];
@@ -125,6 +126,80 @@ test('RpcHealthMonitor sorts by health score', () => {
   const sorted = monitor.getSortedEndpoints();
   assert.equal(sorted[0], 'https://fast.com/rpc');
   assert.equal(sorted[1], 'https://slow.com/rpc');
+});
+
+test('RpcHealthMonitor logs "marked unhealthy" only once (edge-triggered)', () => {
+  const warnings = [];
+  const monitor = new RpcHealthMonitor({
+    // capture only the unhealthy transition log
+    now: () => 1000,
+  });
+  monitor.register('https://bad.com/rpc');
+
+  const origWarn = logger.warn;
+  logger.warn = (msg, meta) => {
+    if (msg === 'RPC endpoint marked unhealthy') warnings.push(meta);
+  };
+  try {
+    for (let i = 0; i < 10; i++) monitor.recordError('https://bad.com/rpc');
+  } finally {
+    logger.warn = origWarn;
+  }
+
+  assert.equal(warnings.length, 1, 'should warn exactly once on the transition');
+  assert.equal(warnings[0].consecutiveFailures, 5);
+});
+
+test('RpcHealthMonitor quarantines a dead endpoint and drops it from rotation', () => {
+  let clock = 1000;
+  const monitor = new RpcHealthMonitor({
+    quarantineThreshold: 20,
+    quarantineCooldownMs: 60000,
+    now: () => clock,
+  });
+  monitor.register('https://good.com/rpc');
+  monitor.register('https://dead.com/rpc');
+
+  monitor.recordSuccess('https://good.com/rpc', 50);
+  for (let i = 0; i < 20; i++) monitor.recordError('https://dead.com/rpc');
+
+  const dead = monitor.getStats().find((s) => s.url === 'https://dead.com/rpc');
+  assert.ok(dead.disabled, 'dead endpoint should be quarantined');
+  assert.ok(!monitor.getSortedEndpoints().includes('https://dead.com/rpc'));
+});
+
+test('RpcHealthMonitor re-arms a quarantined endpoint after cooldown', () => {
+  let clock = 1000;
+  const monitor = new RpcHealthMonitor({
+    quarantineThreshold: 20,
+    quarantineCooldownMs: 60000,
+    now: () => clock,
+  });
+  monitor.register('https://flaky.com/rpc');
+  monitor.register('https://healthy.com/rpc'); // keeps the list non-empty
+  monitor.recordSuccess('https://healthy.com/rpc', 50);
+
+  for (let i = 0; i < 20; i++) monitor.recordError('https://flaky.com/rpc');
+  assert.ok(!monitor.getSortedEndpoints().includes('https://flaky.com/rpc'));
+
+  clock += 60001; // cooldown elapsed
+  assert.ok(monitor.getSortedEndpoints().includes('https://flaky.com/rpc'));
+  const ep = monitor.getStats().find((s) => s.url === 'https://flaky.com/rpc');
+  assert.ok(!ep.disabled);
+  assert.equal(ep.consecutiveFailures, 0);
+});
+
+test('RpcHealthMonitor never returns an empty list when all are quarantined', () => {
+  const monitor = new RpcHealthMonitor({ quarantineThreshold: 20, now: () => 1000 });
+  monitor.register('https://a.com/rpc');
+  monitor.register('https://b.com/rpc');
+
+  for (const url of ['https://a.com/rpc', 'https://b.com/rpc']) {
+    for (let i = 0; i < 20; i++) monitor.recordError(url);
+  }
+
+  const sorted = monitor.getSortedEndpoints();
+  assert.equal(sorted.length, 2, 'falls back to the full set rather than empty');
 });
 
 test('RpcManager hedged requests return fastest', async () => {

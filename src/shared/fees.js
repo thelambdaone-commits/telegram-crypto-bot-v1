@@ -41,7 +41,7 @@ export async function getBtcFees() {
 }
 
 export async function getSolFees() {
-  const rpc = config.rpc?.sol || 'https://api.mainnet-beta.solana.com';
+  const rpc = config.rpc?.sol || 'https://solana-rpc.publicnode.com';
   const solResponse = await fetch(rpc, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

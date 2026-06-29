@@ -33,8 +33,11 @@ export class SolanaChain extends BaseProvider {
     const endpoints = [
       rpcUrl,
       ...configuredFallbacks,
+      // Keyless public fallbacks (verified live, juin 2026). rpc.ankr.com/solana
+      // was removed: Ankr dropped keyless access and it now requires an API key.
+      // solana.drpc.org was NOT added: dRPC's Solana is paid-tier only.
+      'https://solana-rpc.publicnode.com',
       'https://api.mainnet-beta.solana.com',
-      'https://rpc.ankr.com/solana',
     ].filter(Boolean);
 
     this.balanceRpc = new RpcManager(endpoints, async (endpoint, { address }) => {
@@ -402,7 +405,7 @@ export class SolanaChain extends BaseProvider {
 
   async getTransactionHistory(address, limit = 5) {
     // Solana - Get signatures first, then fetch details for each
-    const rpcUrl = this.primaryRpcUrl || 'https://api.mainnet-beta.solana.com';
+    const rpcUrl = this.primaryRpcUrl || 'https://solana-rpc.publicnode.com';
 
     try {
       // Step 1: Get recent signatures

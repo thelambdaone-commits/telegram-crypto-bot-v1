@@ -6,11 +6,14 @@ export class EthereumChain extends EvmBaseProvider {
       name: 'Ethereum',
       symbol: 'ETH',
       nativeSymbol: 'ETH',
-      rpcUrl: rpcUrl || 'https://eth.llamarpc.com',
+      rpcUrl: rpcUrl || 'https://ethereum.publicnode.com',
+      // Keyless public fallbacks (verified live, juin 2026). rpc.ankr.com/eth was
+      // removed: Ankr dropped keyless access and it now requires an API key.
+      // PublicNode + dRPC verified working; llamarpc kept last (intermittent).
       fallbackRpcUrls: [
-        'https://eth.llamarpc.com',
         'https://ethereum.publicnode.com',
-        'https://rpc.ankr.com/eth',
+        'https://eth.drpc.org',
+        'https://eth.llamarpc.com',
       ],
       tokenConfigKey: 'eth',
     });
