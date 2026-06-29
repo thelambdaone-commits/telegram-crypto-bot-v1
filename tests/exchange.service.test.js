@@ -84,12 +84,12 @@ test('USDT-TON is the only TON jetton with a Trocador route (usdc/dai omitted)',
   assert.ok(!svc.isSupported('usdc_ton'));
   assert.ok(!svc.isSupported('dai_ton'));
   assert.equal(TROCADOR_COINS.usdt_ton.ticker, 'usdt');
-  assert.equal(TROCADOR_COINS.usdt_ton.network, 'Toncoin'); // jetton label, not native 'Mainnet'
+  assert.equal(TROCADOR_COINS.usdt_ton.network, 'TON'); // jetton label (live-verified), not native 'Mainnet'
 
   const captured = {};
   await new ExchangeService(mockAggregator(captured)).getQuote('usdt_ton', 'btc', 100);
   assert.equal(captured.args.tickerFrom, 'usdt');
-  assert.equal(captured.args.networkFrom, 'Toncoin');
+  assert.equal(captured.args.networkFrom, 'TON');
 
   const list = svc.listChains();
   const usdt = list.find((c) => c.chain === 'usdt_ton');
@@ -107,19 +107,38 @@ test('wallet tokens are now covered: USDT quotable on many networks', async () =
   assert.notEqual(TROCADOR_COINS.usdt_eth.network, TROCADOR_COINS.usdt_trx.network);
 
   const captured = {};
-  await new ExchangeService(mockAggregator(captured)).getQuote('usdt_eth', 'usdc_trx', 100);
+  await new ExchangeService(mockAggregator(captured)).getQuote('usdt_eth', 'usdt_trx', 100);
   assert.equal(captured.args.tickerFrom, 'usdt');
   assert.equal(captured.args.networkFrom, 'ERC20'); // USDT on Ethereum = ERC20
-  assert.equal(captured.args.tickerTo, 'usdc');
-  assert.equal(captured.args.networkTo, 'TRC20'); // USDC on Tron = TRC20
+  assert.equal(captured.args.tickerTo, 'usdt');
+  assert.equal(captured.args.networkTo, 'TRC20'); // USDT on Tron = TRC20
 });
 
-test('every wallet token in TOKEN_CONFIGS has an exchange entry', () => {
+// Every wallet token gets an exchange entry EXCEPT those Trocador has no route for
+// (live-verified) — those are intentionally excluded so the picker shows no dead
+// options. Keep this list in sync with UNSUPPORTED_TOKENS in exchange.service.js.
+const EXCHANGE_EXCLUDED = {
+  eth: ['sol'],
+  trx: ['usdc'],
+  sol: ['weth', 'msol', 'wsol'],
+  bsc: ['weth'],
+  arb: ['arb'],
+  op: ['op'],
+  base: ['usdt'],
+  avax: ['wbtc', 'dai'],
+};
+
+test('every supported wallet token has an exchange entry (excluded ones do not)', () => {
   const svc = new ExchangeService(mockAggregator());
   const keys = new Set(svc.listChains().map((c) => c.chain));
   for (const [chain, cfg] of Object.entries(TOKEN_CONFIGS)) {
     for (const sym of Object.keys(cfg.tokens || {})) {
-      assert.ok(keys.has(`${sym.toLowerCase()}_${chain}`), `uncovered: ${sym} on ${chain}`);
+      const key = `${sym.toLowerCase()}_${chain}`;
+      if (EXCHANGE_EXCLUDED[chain]?.includes(sym.toLowerCase())) {
+        assert.ok(!keys.has(key), `should be excluded: ${sym} on ${chain}`);
+      } else {
+        assert.ok(keys.has(key), `uncovered: ${sym} on ${chain}`);
+      }
     }
   }
 });
@@ -135,6 +154,23 @@ test('anonPayUrl builds a keyless AnonPay link with the right pair + address', (
   assert.equal(q.get('ticker_to'), 'usdt');
   assert.equal(q.get('network_to'), 'ERC20');
   assert.equal(q.get('address'), addr);
+});
+
+test('anonPayUrl uses live-verified Trocador labels (eth=ERC20, polygon=pol, ton+memo)', () => {
+  const svc = new ExchangeService(mockAggregator());
+  // Native ETH on Trocador is "ERC20", not "Mainnet" (the bug that broke BTC→ETH).
+  const ethUrl = new URL(svc.anonPayUrl({ fromKey: 'btc', toKey: 'eth', address: '0xRecipient' }));
+  assert.equal(ethUrl.searchParams.get('ticker_to'), 'eth');
+  assert.equal(ethUrl.searchParams.get('network_to'), 'ERC20');
+  // Polygon native is ticker "pol" (POL rebrand) on "Mainnet".
+  const polUrl = new URL(svc.anonPayUrl({ fromKey: 'btc', toKey: 'matic', address: '0xRecipient' }));
+  assert.equal(polUrl.searchParams.get('ticker_to'), 'pol');
+  assert.equal(polUrl.searchParams.get('network_to'), 'Mainnet');
+  // TON receivers need a memo param or AnonPay rejects the link.
+  const tonUrl = new URL(svc.anonPayUrl({ fromKey: 'btc', toKey: 'ton', address: 'UQRecipient' }));
+  assert.equal(tonUrl.searchParams.get('memo'), '0');
+  // Non-TON pairs carry no memo.
+  assert.equal(ethUrl.searchParams.get('memo'), null);
 });
 
 test('anonPayUrl rejects identical coins and missing address', () => {

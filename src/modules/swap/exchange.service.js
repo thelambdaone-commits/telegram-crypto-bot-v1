@@ -22,44 +22,72 @@ const ANONPAY_BASE = 'https://trocador.app/anonpay/';
 const SIMPLESWAP_BASE = 'https://simpleswap.io/';
 
 /**
- * Network labels Trocador uses, VERIFIED against its live AnonPay coin list.
+ * Network labels Trocador uses, VERIFIED LIVE against the AnonPay endpoint
+ * (every (ticker × network) below was confirmed to render the checkout instead
+ * of "Invalid ticker_to/network_to or address parameter").
  * Trocador labels a coin by (ticker × network), and the label differs between a
- * chain's NATIVE coin and its TOKENS (e.g. native AVAX = "C-Chain", but USDT on
- * Avalanche = "Avax-c" and USDC = "AVAXC"). So we keep two maps:
- *   - CHAIN_NETWORK: the native coin's label per chain (most are "Mainnet").
+ * chain's NATIVE coin and its TOKENS — and is frequently NOT "Mainnet":
+ *   - native ETH = "ERC20", native BNB = "BEP20", native AVAX = "AVAXC",
+ *     native ARB-chain ETH = "Arbitrum"; but Polygon tokens = "MATIC" while the
+ *     native is ticker "pol" on "Mainnet" (see NATIVE_TICKER).
+ * So we keep two maps:
+ *   - CHAIN_NETWORK: the native coin's label per chain.
  *   - TOKEN_NETWORK: per-chain token overrides (by ticker, with a default).
- * Authoritative source is GET /api/coins (needs TROCADOR_API_KEY); these were
- * confirmed from the public generator. A wrong label only degrades the AnonPay
- * pre-fill (user re-picks on Trocador) — never a funds risk.
+ * A WRONG label here breaks the AnonPay link outright (Trocador rejects the
+ * pair), so these are not cosmetic — keep them in sync with Trocador's catalog.
  */
 export const CHAIN_NETWORK = {
-  eth: 'Mainnet',
+  eth: 'ERC20',
   btc: 'Mainnet',
   sol: 'Mainnet',
-  arb: 'Arbitrum One',
-  matic: 'Polygon',
+  arb: 'Arbitrum',
+  matic: 'Mainnet', // native Polygon = ticker "pol" (NATIVE_TICKER) on "Mainnet"
   op: 'Optimism',
   base: 'Base',
-  avax: 'C-Chain',
+  avax: 'AVAXC',
   ltc: 'Mainnet',
   bch: 'Mainnet',
   xmr: 'Mainnet',
   zec: 'Mainnet',
   trx: 'Mainnet',
   ton: 'Mainnet',
-  bsc: 'BSC',
+  bsc: 'BEP20',
+};
+
+// Trocador tickers that differ from our native asset symbol (CHAIN_REGISTRY).
+const NATIVE_TICKER = {
+  matic: 'pol', // Polygon rebranded MATIC → POL; Trocador lists the native as "pol".
 };
 
 // Token (ERC-20/SPL/TRC-20/jetton) network label per chain. `default` applies to
 // every token on that chain unless a ticker-specific entry overrides it. Chains
 // absent here use the chain's native label (CHAIN_NETWORK) for their tokens too
-// (arb→"Arbitrum One", op→"Optimism", base→"Base", matic→"Polygon").
+// (arb→"Arbitrum", op→"Optimism", base→"Base", bsc→"BEP20").
 export const TOKEN_NETWORK = {
   eth: { default: 'ERC20' },
   sol: { default: 'SOL' },
   trx: { default: 'TRC20' },
-  ton: { default: 'Toncoin' },
-  avax: { usdt: 'Avax-c', default: 'AVAXC' },
+  ton: { default: 'TON' }, // jettons (USDT on TON); native TON stays "Mainnet"
+  avax: { default: 'AVAXC' },
+  matic: { default: 'MATIC' }, // Polygon tokens use "MATIC" (native uses "Mainnet")
+};
+
+// (chain → token tickers) Trocador does NOT list as a routable (ticker × network)
+// pair — verified live. Excluded from the picker so it never shows a dead option:
+//  - wrapped/native-elsewhere coins with no Trocador route (wSOL/mSOL/WETH-on-SOL,
+//    SOL-on-ETH, WETH-on-BSC, USDT-on-Base, WBTC/DAI-on-Avalanche, USDC-on-Tron);
+//  - ARB/OP governance tokens: Trocador only lists them on network "Mainnet"
+//    (Ethereum-side), so routing them to an L2 address would deliver on the wrong
+//    chain — excluded as a safety measure, not offered as an exchange target.
+const UNSUPPORTED_TOKENS = {
+  eth: ['sol'],
+  trx: ['usdc'],
+  sol: ['weth', 'msol', 'wsol'],
+  bsc: ['weth'],
+  arb: ['arb'],
+  op: ['op'],
+  base: ['usdt'],
+  avax: ['wbtc', 'dai'],
 };
 
 function networkFor(chain, ticker, isToken) {
@@ -75,7 +103,7 @@ function networkFor(chain, ticker, isToken) {
 // USDC and DAI on TON have NO Trocador route (verified against its coin list), so
 // they're intentionally omitted — listing them would be a dead option.
 const EXTRA_COINS = {
-  usdt_ton: { ticker: 'usdt', network: 'Toncoin', symbol: 'USDT', emoji: '💎', name: 'USDT · TON', walletChain: 'ton' },
+  usdt_ton: { ticker: 'usdt', network: 'TON', symbol: 'USDT', emoji: '💎', name: 'USDT · TON', walletChain: 'ton' },
 };
 
 /**
@@ -90,15 +118,17 @@ function buildCoins() {
     const meta = CHAIN_REGISTRY[chain] || {};
     const native = meta.native || chain.toUpperCase();
     const emoji = CHAIN_EMOJIS[chain] || '●';
+    const nativeTicker = NATIVE_TICKER[chain] || native.toLowerCase();
     coins[chain] = {
-      ticker: native.toLowerCase(),
-      network: networkFor(chain, native.toLowerCase(), false),
+      ticker: nativeTicker,
+      network: networkFor(chain, nativeTicker, false),
       symbol: native,
       emoji,
       name: meta.name || chain.toUpperCase(),
       walletChain: chain, // chain whose wallet address receives this coin
     };
     for (const sym of Object.keys(TOKEN_CONFIGS[chain]?.tokens || {})) {
+      if (UNSUPPORTED_TOKENS[chain]?.includes(sym.toLowerCase())) continue;
       coins[`${sym.toLowerCase()}_${chain}`] = {
         ticker: sym.toLowerCase(),
         network: networkFor(chain, sym.toLowerCase(), true),
@@ -223,6 +253,9 @@ export class ExchangeService {
       network_from: from.network,
       bgcolor: 'True',
     });
+    // TON receivers (native + jettons) require a memo/comment param; AnonPay
+    // rejects the link with "Missing Memo Parameter" otherwise. "0" = no memo.
+    if (to.walletChain === 'ton') params.set('memo', '0');
     const ref = config.exchange?.trocadorRef;
     if (ref) params.set('ref', ref);
     return `${ANONPAY_BASE}?${params.toString()}`;
