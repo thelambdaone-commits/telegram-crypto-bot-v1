@@ -37,7 +37,7 @@ export function walletActionsKeyboard(walletId) {
 export function deleteConfirmKeyboard(walletId) {
   return Markup.inlineKeyboard([
     [Markup.button.callback('🗑️ Oui, Supprimer', `confirm_delete_${walletId}`)],
-    [Markup.button.callback('↩️ Annuler', 'view_keys')],
+    [Markup.button.callback('↩️ Annuler', CALLBACKS.VIEW_KEYS)],
   ]);
 }
 

@@ -12,10 +12,11 @@ import { logger } from '../../../shared/logger.js';
 import { generateAddressQR } from '../../../shared/qr.js';
 import { CHAIN_EMOJIS, truncateAddress } from '../../ui/formatters.js';
 import { Markup } from 'telegraf';
+import { CALLBACKS } from '../../constants/callbacks.js';
 
 export function setupKeysHandlers(bot, storage, walletService) {
   // View keys menu
-  bot.action('view_keys', async (ctx) => {
+  bot.action(CALLBACKS.VIEW_KEYS, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 

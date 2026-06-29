@@ -5,6 +5,7 @@ import {
   adminCancelKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { adminGuard } from '../../middlewares/auth.middleware.js';
 import {
   getRateLimitStats,
@@ -102,7 +103,7 @@ function promptBroadcast(ctx, sessions, edit = false) {
 
 export function setupAdminActions(bot, storage, sessions) {
   // Security stats
-  bot.action('admin_security', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_SECURITY, async (ctx) => {
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;
 
@@ -135,7 +136,7 @@ export function setupAdminActions(bot, storage, sessions) {
   });
 
   // View audit logs
-  bot.action('admin_logs', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_LOGS, async (ctx) => {
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;
 
@@ -165,7 +166,7 @@ export function setupAdminActions(bot, storage, sessions) {
   });
 
   // Broadcast menu
-  bot.action('admin_broadcast', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_BROADCAST, async (ctx) => {
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;
 
@@ -184,7 +185,7 @@ export function setupAdminActions(bot, storage, sessions) {
   });
 
   // Ban/Unban menus
-  bot.action('admin_ban', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_BAN, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;
@@ -196,7 +197,7 @@ export function setupAdminActions(bot, storage, sessions) {
     });
   });
 
-  bot.action('admin_unban', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_UNBAN, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;
@@ -209,7 +210,7 @@ export function setupAdminActions(bot, storage, sessions) {
   });
 
   // View user - prompt for ID
-  bot.action('admin_view_user', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_VIEW_USER, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;

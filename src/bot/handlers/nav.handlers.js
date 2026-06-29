@@ -8,13 +8,14 @@ import {
   cancelKeyboard,
   chainSelectionKeyboard,
 } from '../keyboards/index.js';
+import { CALLBACKS } from '../constants/callbacks.js';
 import { safeEditMessage } from '../utils.js';
 import { logger } from '../../shared/logger.js';
 import { getFullHelpText, chainSelectionPrompt } from '../ui/index.js';
 
 export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Action: back_to_menu
-  bot.action('back_to_menu', async (ctx) => {
+  bot.action(CALLBACKS.BACK_TO_MENU, async (ctx) => {
     await ctx.answerCbQuery().catch((err) => logger.debug('back_to_menu answerCbQuery failed', { error: err.message }));
     const opts = { parse_mode: 'HTML', ...mainMenuKeyboard() };
     try {
@@ -32,7 +33,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Action: more_menu — secondary actions behind "☰ Plus"
-  bot.action('more_menu', async (ctx) => {
+  bot.action(CALLBACKS.MORE_MENU, async (ctx) => {
     await ctx.answerCbQuery().catch((err) => logger.debug('more_menu answerCbQuery failed', { error: err.message }));
     await safeEditMessage(ctx, '☰ <b>Plus d’options</b>', {
       parse_mode: 'HTML',
@@ -41,7 +42,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Action: cancel
-  bot.action('cancel', async (ctx) => {
+  bot.action(CALLBACKS.CANCEL, async (ctx) => {
     const chatId = ctx.chat.id;
     sessions.clearState(chatId);
     await ctx.answerCbQuery('Opération annulée').catch((err) => logger.debug('cancel answerCbQuery failed', { error: err.message }));
@@ -52,7 +53,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Action: close_menu
-  bot.action('close_menu', async (ctx) => {
+  bot.action(CALLBACKS.CLOSE_MENU, async (ctx) => {
     await ctx.answerCbQuery('Menu fermé').catch((err) => logger.debug('close_menu answerCbQuery failed', { error: err.message }));
     try {
       await ctx.deleteMessage();
@@ -62,7 +63,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   });
 
   // Action: help_menu
-  bot.action('help_menu', async (ctx) => {
+  bot.action(CALLBACKS.HELP_MENU, async (ctx) => {
     await ctx.answerCbQuery().catch((err) => logger.debug('help_menu answerCbQuery failed', { error: err.message }));
     await safeEditMessage(ctx, getFullHelpText(), {
       parse_mode: 'HTML',
@@ -84,7 +85,7 @@ export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   bot.hears(['🔍 Analyser', '🔎 Analyser'], async (ctx) => {
     sessions.setState(ctx.chat.id, 'ENTER_ADDRESS_ANALYZE');
     ctx.reply(
-      "🔎 <b>Analyse d'adresse</b>\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, TON) pour voir son solde et tous ses tokens.",
+      "🔎 <b>Analyse d'adresse</b>\n\nEntre une adresse publique (ETH, BTC, LTC, BCH, SOL, ARB, MATIC, OP, BASE, AVAX, XMR, ZEC, TON) pour voir son solde et tous ses tokens.",
       {
         parse_mode: 'HTML',
         ...cancelKeyboard(),

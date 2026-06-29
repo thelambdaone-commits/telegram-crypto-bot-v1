@@ -2,22 +2,23 @@ import { Markup } from 'telegraf';
 import { mainMenuKeyboard, walletListKeyboard } from '../keyboards/index.js';
 import { getPricesEUR, formatCryptoPricesEUR, clearPriceCache } from '../../shared/price.js';
 import { buildBalancesText } from '../ui/wallet-display.js';
+import { CALLBACKS } from '../constants/callbacks.js';
 import { logger } from '../../shared/logger.js';
 
 // Keyboard under the EUR price list: refresh, open the 📈 graph picker, menu/close.
 function pricesKeyboard() {
   return Markup.inlineKeyboard([
-    [Markup.button.callback('🔄 Recharger', 'refresh_prices')],
-    [Markup.button.callback('📈 Graphique', 'graph_pick')],
+    [Markup.button.callback('🔄 Recharger', CALLBACKS.REFRESH_PRICES)],
+    [Markup.button.callback('📈 Graphique', CALLBACKS.GRAPH_PICK)],
     [
-      Markup.button.callback('🎮 Menu', 'back_to_menu'),
-      Markup.button.callback('❌ Fermer', 'close_message'),
+      Markup.button.callback('🎮 Menu', CALLBACKS.BACK_TO_MENU),
+      Markup.button.callback('❌ Fermer', CALLBACKS.CLOSE_MESSAGE),
     ],
   ]);
 }
 
 export function setupBalanceHandlers(bot, storage, walletService) {
-  bot.action('view_balances', async (ctx) => {
+  bot.action(CALLBACKS.VIEW_BALANCES, async (ctx) => {
     const chatId = ctx.chat.id;
     await ctx.answerCbQuery().catch(() => {});
 
@@ -38,7 +39,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
       .catch((e) => logger.warn('balance.editMessageText failed', { chatId, error: e.message }));
   });
 
-  bot.action('prices_eur', async (ctx) => {
+  bot.action(CALLBACKS.PRICES_EUR, async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
 
     try {
@@ -86,7 +87,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
     await ctx.reply(text, { parse_mode: 'HTML', ...mainMenuKeyboard() });
   });
 
-  bot.action('refresh_prices', async (ctx) => {
+  bot.action(CALLBACKS.REFRESH_PRICES, async (ctx) => {
     try {
       clearPriceCache();
       const prices = await getPricesEUR(true);
@@ -102,7 +103,7 @@ export function setupBalanceHandlers(bot, storage, walletService) {
     }
   });
 
-  bot.action('close_message', async (ctx) => {
+  bot.action(CALLBACKS.CLOSE_MESSAGE, async (ctx) => {
     await ctx.deleteMessage();
   });
 }

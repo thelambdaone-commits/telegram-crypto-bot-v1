@@ -1,4 +1,5 @@
 import { adminSecurityKeyboard } from '../../keyboards/index.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
 import { adminGuard } from '../../middlewares/auth.middleware.js';
 import { getRateLimitStats, DAILY_VOLUME_LIMITS } from '../../middlewares/security.middleware.js';
@@ -297,7 +298,7 @@ export function setupAdminAudit(bot, storage, sessions, walletService) {
     }
   }
 
-  bot.action('admin_audit', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_AUDIT, async (ctx) => {
     await safeAnswerCbQuery(ctx);
     await runAudit(ctx, { edit: true });
   });

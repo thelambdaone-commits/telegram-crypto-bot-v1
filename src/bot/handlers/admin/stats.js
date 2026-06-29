@@ -1,4 +1,5 @@
 import { adminExtendedKeyboard } from '../../keyboards/index.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
@@ -7,7 +8,7 @@ import { CHAIN_EMOJIS } from '../../ui/formatters.js';
 
 export function setupAdminStats(bot, storage, walletService) {
   // Global stats
-  bot.action('admin_stats', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_STATS, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 

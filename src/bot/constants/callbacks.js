@@ -37,6 +37,9 @@ export const CALLBACKS = {
 
   // Market
   PRICES_EUR: 'prices_eur',
+  REFRESH_PRICES: 'refresh_prices',
+  GRAPH_PICK: 'graph_pick',
+  CLOSE_MESSAGE: 'close_message',
   HELP_MENU: 'help_menu',
 
   // Exchange (no-KYC cross-chain, quote-only)
@@ -88,6 +91,12 @@ export const CALLBACK_REGEX = {
   VIEW_PRIVKEY: /^view_privkey_(\d+)$/,
   WALLET_HISTORY: /^wallet_history_(\d+)$/,
   TOKEN_SELECT: /^token_(.+)_(.+)$/,
+  SEND_FROM: /^send_from_(.+)$/,
+  SEND_ANALYZED_FROM: /^send_analyzed_from_(.+)$/,
+  ANALYZE_HISTORY: /^analyze_history_(.+)$/,
+  ANALYZE_HISTORY_BACK: 'analyze_history_back',
+  FEE_SELECTION: /^fee_(.+)$/,
+  QUICK_AMOUNT: /^quick_amount_(.+)$/,
   SEND_TO_ANALYZED: /^send_to_analyzed_(.+)$/,
   ADMIN_USER_KEYS: /^admin_user_keys_(\d+)$/,
   EXCHANGE_WALLET: /^exch_w_(.+)$/,

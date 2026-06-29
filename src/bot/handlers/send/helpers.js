@@ -21,11 +21,15 @@ export async function formatTxDetails(data, feeLevel) {
     arb: 'ETH',
     op: 'ETH',
     base: 'ETH',
+    avax: 'AVAX',
     btc: 'BTC',
     ltc: 'LTC',
     bch: 'BCH',
     xmr: 'XMR',
     zec: 'ZEC',
+    trx: 'TRX',
+    ton: 'TON',
+    bsc: 'BNB',
   };
   const nativeSymbol = CHAIN_NATIVE_SYMBOLS[data.selectedChain] || data.selectedChain.toUpperCase();
 

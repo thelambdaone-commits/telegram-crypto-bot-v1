@@ -3,6 +3,7 @@ import {
   mainMenuKeyboard,
   walletActionsKeyboard,
 } from '../../keyboards/index.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { safeAnswerCbQuery, escapeHtml } from '../../utils.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { convertToEUR, formatEUR } from '../../../shared/price.js';
@@ -10,7 +11,7 @@ import { CHAIN_EMOJIS } from '../../ui/formatters.js';
 
 export function setupWalletList(bot, storage, walletService) {
   // List wallets
-  bot.action('list_wallets', async (ctx) => {
+  bot.action(CALLBACKS.LIST_WALLETS, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 

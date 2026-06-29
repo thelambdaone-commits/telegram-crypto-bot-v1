@@ -239,7 +239,7 @@ export function setupMarketCommands(bot) {
   // 📈 Graph picker grid (from the 📈 button on /price, or after a chart). Edits
   // the current message in place (delete+reply fallback when it's a photo/chart)
   // so opening the grid never stacks a new message on the price list.
-  bot.action('graph_pick', async (ctx) => {
+  bot.action(CALLBACKS.GRAPH_PICK, async (ctx) => {
     await ctx.answerCbQuery().catch(() => {});
     const opts = { parse_mode: 'HTML', ...graphGridKeyboard() };
     const text = '📈 <b>Graphique des prix</b>\n\nChoisis une crypto :';

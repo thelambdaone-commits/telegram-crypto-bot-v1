@@ -4,6 +4,7 @@ import {
   walletCreationMethodKeyboard,
   cancelKeyboard,
 } from '../../keyboards/index.js';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { config } from '../../../core/config.js';
@@ -17,7 +18,7 @@ const inFlightGenerations = new Set();
 
 export function setupWalletCreate(bot, storage, walletService, sessions) {
   // Create wallet - show chain selection
-  bot.action('create_wallet', async (ctx) => {
+  bot.action(CALLBACKS.CREATE_WALLET, async (ctx) => {
     await safeAnswerCbQuery(ctx);
     ctx.editMessageText(chainSelectionPrompt(), {
       parse_mode: 'HTML',
@@ -100,22 +101,22 @@ export function setupWalletCreate(bot, storage, walletService, sessions) {
       const l2Info = {
         matic:
           '⬡ <b>Polygon (Layer 2)</b>\n' +
-          'Frais: tres bon marche (~0.001-0.01 EUR)\n' +
+          'Frais: très bon marché (~0.001-0.01 EUR)\n' +
           'Token natif: MATIC (pour payer les frais)\n' +
           'Tokens: USDC, USDT\n\n',
         op:
           '🔴 <b>Optimism (Layer 2)</b>\n' +
-          'Frais: tres bon marche (~0.001-0.01 EUR)\n' +
+          'Frais: très bon marché (~0.001-0.01 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
         base:
           '🟦 <b>Base (Layer 2)</b>\n' +
-          'Frais: tres bon marche (~0.001 EUR)\n' +
+          'Frais: très bon marché (~0.001 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
         arb:
           '🔵 <b>Arbitrum (Layer 2)</b>\n' +
-          'Frais: tres bon marche (~0.01-0.05 EUR)\n' +
+          'Frais: très bon marché (~0.01-0.05 EUR)\n' +
           'Token natif: ETH\n' +
           'Tokens: USDC, USDT\n\n',
       };

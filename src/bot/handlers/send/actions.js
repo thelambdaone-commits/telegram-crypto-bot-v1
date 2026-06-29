@@ -7,6 +7,7 @@ import {
   tokenSelectionKeyboard,
   chainHasTokens,
   addressAnalyzedKeyboard,
+  cancelKeyboard,
 } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../utils.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
@@ -14,10 +15,12 @@ import { convertToEUR, formatEUR } from '../../../shared/price.js';
 import { formatCryptoAmount } from '../../ui/formatters.js';
 import { MESSAGES, EMOJIS } from '../../messages/index.js';
 import { formatTxDetails, handleSendError } from './helpers.js';
+import { CALLBACKS, CALLBACK_REGEX } from '../../constants/callbacks.js';
+import { getTransactionExplorerUrl } from '../../../shared/explorer.js';
 
 export function setupSendActions(bot, storage, walletService, sessions) {
   // Send funds menu - Step 1: Select source wallet
-  bot.action('send_funds', async (ctx) => {
+  bot.action(CALLBACKS.SEND_FUNDS, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
@@ -40,7 +43,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
   });
 
   // Select source wallet - Step 2: Check if token selection is needed
-  bot.action(/^send_from_(.+)$/, async (ctx) => {
+  bot.action(CALLBACK_REGEX.SEND_FROM, async (ctx) => {
     const walletId = ctx.match[1];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
@@ -64,23 +67,20 @@ export function setupSendActions(bot, storage, walletService, sessions) {
     } else {
       // Native-only chains: go directly to address
       sessions.setState(chatId, 'ENTER_ADDRESS');
-      const cancelKeyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('❌ Annuler', 'cancel')],
-      ]);
       ctx.editMessageText(
         `🚀 <b>Envoi depuis ${escapeHtml(wallet.label)}</b>\n\nColle l'adresse du destinataire :`,
         {
           parse_mode: 'HTML',
-          ...cancelKeyboard,
+          ...cancelKeyboard(),
         }
       );
     }
   });
 
   // Token selected for Arbitrum
-  bot.action(/^token_(.+)$/, async (ctx) => {
-    const match = ctx.match[1];
-    const [chain, token] = match.split('_');
+  bot.action(CALLBACK_REGEX.TOKEN_SELECT, async (ctx) => {
+    const chain = ctx.match[1];
+    const token = ctx.match[2];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
@@ -92,21 +92,18 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
     const chainSymbol = chain.toUpperCase();
     const tokenLabel = token === 'native' ? chainSymbol : token;
-    const cancelKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('❌ Annuler', 'cancel')],
-    ]);
 
     ctx.editMessageText(
       `🚀 <b>Envoi ${escapeHtml(tokenLabel)} depuis ${chainSymbol}</b>\n\nColle l'adresse du destinataire :`,
       {
         parse_mode: 'HTML',
-        ...cancelKeyboard,
+        ...cancelKeyboard(),
       }
     );
   });
 
   // Action for "Send to analyzed address" - address is stored in session
-  bot.action(/^send_to_analyzed_(.+)$/, async (ctx) => {
+  bot.action(CALLBACK_REGEX.SEND_TO_ANALYZED, async (ctx) => {
     const chain = ctx.match[1];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
@@ -146,7 +143,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
 
   // Back from history view: restore the analysis page in place.
   // Registered BEFORE the regex below so "analyze_history_back" isn't captured as a chain.
-  bot.action('analyze_history_back', async (ctx) => {
+  bot.action(CALLBACK_REGEX.ANALYZE_HISTORY_BACK, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
@@ -164,7 +161,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
   });
 
   // Transaction history for an analyzed address - replaces the analysis page in place
-  bot.action(/^analyze_history_(.+)$/, async (ctx) => {
+  bot.action(CALLBACK_REGEX.ANALYZE_HISTORY, async (ctx) => {
     const chain = ctx.match[1];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
@@ -210,7 +207,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
   });
 
   // Select quick amount (All or 50%)
-  bot.action(/^quick_amount_(.+)$/, async (ctx) => {
+  bot.action(CALLBACK_REGEX.QUICK_AMOUNT, async (ctx) => {
     const type = ctx.match[1]; // all or 50
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
@@ -317,26 +314,22 @@ export function setupSendActions(bot, storage, walletService, sessions) {
   });
 
   // Manual amount selection action
-  bot.action('manual_amount', async (ctx) => {
+  bot.action(CALLBACKS.MANUAL_AMOUNT, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
     const data = sessions.getData(chatId);
     const label = data.amountType === 'native' ? data.selectedChain.toUpperCase() : 'Euros';
 
-    const cancelKeyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('❌ Annuler', 'cancel')],
-    ]);
-
     ctx.editMessageText(
       '⌨️ <b>Saisie du montant</b>\n\n' + `Combien souhaites-tu envoyer (${escapeHtml(label)}) ?`,
-      { parse_mode: 'HTML', ...cancelKeyboard }
+      { parse_mode: 'HTML', ...cancelKeyboard() }
     );
     sessions.setState(chatId, 'ENTER_AMOUNT');
   });
 
   // Fee selection
-  bot.action(/^fee_(.+)$/, async (ctx) => {
+  bot.action(CALLBACK_REGEX.FEE_SELECTION, async (ctx) => {
     const feeLevel = ctx.match[1];
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
@@ -373,7 +366,7 @@ export function setupSendActions(bot, storage, walletService, sessions) {
   });
 
   // Confirm send
-  bot.action('confirm_send', async (ctx) => {
+  bot.action(CALLBACKS.CONFIRM_SEND, async (ctx) => {
     const chatId = ctx.chat.id;
     await safeAnswerCbQuery(ctx);
 
@@ -415,39 +408,9 @@ export function setupSendActions(bot, storage, walletService, sessions) {
         txHash: result.hash,
       });
 
-      // Use chain from session to determine explorer URL
-      let hashUrl;
       const chain = data.selectedChain;
-      if (
-        chain === 'eth' ||
-        chain === 'arb' ||
-        chain === 'op' ||
-        chain === 'base' ||
-        chain === 'matic'
-      ) {
-        const explorers = {
-          eth: 'etherscan.io',
-          arb: 'arbiscan.io',
-          op: 'optimism.io',
-          base: 'basescan.org',
-          matic: 'polygonscan.com',
-        };
-        hashUrl = `https://${explorers[chain] || 'etherscan.io'}/tx/${result.hash}`;
-      } else if (chain === 'sol') {
-        hashUrl = `https://solscan.io/tx/${result.hash}`;
-      } else if (chain === 'ltc') {
-        hashUrl = `https://mempool.space/litecoin/tx/${result.hash}`;
-      } else if (chain === 'bch') {
-        hashUrl = `https://blockchain.com/bch/tx/${result.hash}`;
-      } else if (chain === 'xmr') {
-        hashUrl = `https://xmrchain.net/tx/${result.hash}`;
-      } else if (chain === 'zec') {
-        hashUrl = `https://zcashblockexplorer.com/tx/${result.hash}`;
-      } else if (chain === 'ton') {
-        hashUrl = `https://tonviewer.com/transaction/${result.hash}`;
-      } else {
-        hashUrl = `https://blockchain.com/btc/tx/${result.hash}`;
-      }
+      const txUrl = getTransactionExplorerUrl(chain, result.hash);
+      const hashUrl = txUrl || `https://blockchain.com/btc/tx/${result.hash}`;
 
       const symbol = result.symbol || data.selectedChain.toUpperCase();
       await ctx.editMessageText(

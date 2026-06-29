@@ -1,4 +1,5 @@
 import { Markup } from 'telegraf';
+import { CALLBACKS } from '../../constants/callbacks.js';
 import { adminGuard } from '../../middlewares/auth.middleware.js';
 import { adminCancelKeyboard } from '../../keyboards/index.js';
 import { safeAnswerCbQuery, safeEditMessage, escapeHtml } from '../../../shared/utils/telegram.js';
@@ -7,7 +8,7 @@ import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logge
 
 export function setupAdminSecrets(bot, storage, sessions) {
   // View Secrets List
-  bot.action('admin_secrets', async (ctx) => {
+  bot.action(CALLBACKS.ADMIN_SECRETS, async (ctx) => {
     await safeAnswerCbQuery(ctx);
     if (!adminGuard(ctx)) return;
 
