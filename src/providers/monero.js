@@ -1,5 +1,6 @@
 import { BaseProvider } from './base.provider.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { fetchWithTor } from '../shared/tor-proxy.js';
 
 let moneroTs;
@@ -248,8 +249,17 @@ export class MoneroChain extends BaseProvider {
       const fees = await this.estimateFees('', toAddress, amount);
       const feeData = fees[feeLevel];
 
+      // Montant UI → piconero (12 décimales) en entier, sans flottant.
+      const atomic = uiToBaseUnits(amount, 12);
+      if (atomic <= 0n) {
+        throw new TransactionError('Montant inférieur au minimum transférable (1 piconero)', {
+          code: ERROR_CODES.INVALID_AMOUNT,
+          chain: 'XMR',
+        });
+      }
+
       const txWallet = await this._walletRpcCall('create_transaction', {
-        destinations: [{ address: toAddress, amount: Math.floor(Number.parseFloat(amount) * 1e12) }],
+        destinations: [{ address: toAddress, amount: Number(atomic) }],
         priority: feeLevel === 'fast' ? 2 : feeLevel === 'average' ? 1 : 0,
         fee: feeData.feeAtomic,
       });

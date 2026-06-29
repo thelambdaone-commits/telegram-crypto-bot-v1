@@ -5,6 +5,7 @@ import * as ecc from 'tiny-secp256k1';
 import ECPairFactoryModule from 'ecpair';
 
 import { BaseProvider } from './base.provider.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 
 const bip32 = BIP32Factory(ecc);
@@ -237,7 +238,14 @@ export class BitcoinChain extends BaseProvider {
     const fees = await this.estimateFees(fromAddress, toAddress, amount);
     const feeData = fees[feeLevel];
 
-    const amountSats = Math.floor(Number.parseFloat(amount) * 100000000);
+    // Montant UI → satoshis en entier (string→BigInt, troncature à 8 décimales),
+    // sans flottant. Avec un BTC cher, un montant minuscule en € peut tomber
+    // sous 1 satoshi → on bloque plutôt que d'arrondir.
+    const sats = uiToBaseUnits(amount, 8);
+    if (sats <= 0n) {
+      throw new Error('Montant inférieur au minimum transférable (1 satoshi)');
+    }
+    const amountSats = Number(sats);
     const feeSats = feeData.estimatedFeeSats;
 
     // Select UTXOs

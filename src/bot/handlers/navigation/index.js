@@ -7,10 +7,10 @@ import {
   walletListKeyboard,
   cancelKeyboard,
   chainSelectionKeyboard,
-} from '../keyboards/index.js';
-import { safeEditMessage } from '../utils.js';
-import { logger } from '../../shared/logger.js';
-import { getFullHelpText, chainSelectionPrompt } from '../ui/index.js';
+} from '../../keyboards/index.js';
+import { safeEditMessage } from '../../../shared/utils/telegram.js';
+import { logger } from '../../../shared/logger.js';
+import { getFullHelpText, chainSelectionPrompt } from '../../i18n/index.js';
 
 export function setupNavigationHandlers(bot, storage, walletService, sessions) {
   // Action: back_to_menu

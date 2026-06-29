@@ -1,8 +1,8 @@
 import { Markup } from 'telegraf';
-import { mainMenuKeyboard, walletListKeyboard } from '../keyboards/index.js';
-import { getPricesEUR, formatCryptoPricesEUR, clearPriceCache } from '../../shared/price.js';
-import { buildBalancesText } from '../ui/wallet-display.js';
-import { logger } from '../../shared/logger.js';
+import { mainMenuKeyboard, walletListKeyboard } from '../../keyboards/index.js';
+import { getPricesEUR, formatCryptoPricesEUR, clearPriceCache } from '../../../shared/price.js';
+import { buildBalancesText } from '../../i18n/wallet-display.js';
+import { logger } from '../../../shared/logger.js';
 
 // Keyboard under the EUR price list: refresh, open the 📈 graph picker, menu/close.
 function pricesKeyboard() {

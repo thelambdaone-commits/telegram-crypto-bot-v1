@@ -1,5 +1,12 @@
 import { Markup } from 'telegraf';
-import { getPricesEUR, formatEUR, formatCryptoPricesEUR, PRICE_GROUPS } from '../../../shared/price.js';
+import {
+  getPricesEUR,
+  formatEUR,
+  formatCryptoPricesEUR,
+  PRICE_GROUPS,
+  convertToEUR,
+} from '../../../shared/price.js';
+import { CHAIN_REGISTRY } from '../../../shared/chains.js';
 import { generatePriceChart, parseGraphCommand } from '../../../shared/chart.js';
 import { COIN_IDS } from '../../../shared/coingecko.js';
 import { getEthFees, getBtcFees, getSolFees, SOL_TYPICAL_CU, SOL_BASE_LAMPORTS } from '../../../shared/fees.js';
@@ -67,7 +74,77 @@ function nowLabel() {
   return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function setupMarketCommands(bot) {
+// Native fee (in the chain's own coin) for one fee level, resolved uniformly
+// across every provider's heterogeneous estimateFees() shape. Order matters:
+// `estimatedFee` (EVM/BTC/BCH/TON, already native) is checked before the
+// smallest-unit fields so a sats-valued `fee` (UTXO chains) is never mistaken
+// for a native amount.
+export function feeNative(lvl) {
+  if (!lvl) return null;
+  if (lvl.estimatedFee != null) return Number(lvl.estimatedFee); // EVM, BTC, BCH, TON
+  if (lvl.feeSOL != null) return Number(lvl.feeSOL); // Solana
+  if (lvl.feeTON != null) return Number(lvl.feeTON); // TON (fallback)
+  if (lvl.feeSats != null) return Number(lvl.feeSats) / 1e8; // LTC, Zcash
+  if (lvl.feeAtomic != null) return Number(lvl.feeAtomic) / 1e12; // Monero
+  if (lvl.fee != null) return Number(lvl.fee); // Tron (native TRX)
+  return null;
+}
+
+function fmtFee(n) {
+  if (n == null || Number.isNaN(n)) return '—';
+  return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 12 });
+}
+
+// Generic per-chain fee card for any supported network that doesn't have a
+// bespoke view (eth/btc/sol keep their richer ones). Derived from the registry
+// + the provider's estimateFees, so adding a chain needs no change here.
+async function genericFeeCard(ctx, walletService, chain) {
+  const meta = CHAIN_REGISTRY[chain];
+  const provider = walletService?.chains?.[chain];
+  if (!meta || !provider) {
+    return ctx.reply(
+      `❌ Réseau inconnu pour <code>/gas</code> : <code>${escapeHtml(chain)}</code>\n\n` +
+        `Réseaux : <code>${Object.keys(CHAIN_REGISTRY).join(', ')}</code>`,
+      { parse_mode: 'HTML' }
+    );
+  }
+
+  let fees;
+  try {
+    fees = await provider.estimateFees('', '', 0.001);
+  } catch {
+    return ctx.reply(`⚠️ Frais ${escapeHtml(meta.native)} momentanément indisponibles. Réessaie.`, {
+      parse_mode: 'HTML',
+    });
+  }
+
+  const unit = await convertToEUR(chain, 1).catch(() => null);
+  const price = unit?.priceEUR || null;
+  const eurStr = (f) => (price && f != null ? ` ≈ ${formatEUR(f * price)}` : '');
+
+  const rows = [
+    ['🐢 Lent', 'slow'],
+    ['⚙️ Normal', 'average'],
+    ['⚡ Rapide', 'fast'],
+  ].map(([label, key]) => [label, feeNative(fees[key])]);
+
+  // Many chains (Tron, flat-fee fallbacks) price every tier the same → collapse.
+  const allSame = rows.every(([, v]) => v === rows[0][1]);
+  const body = allSame
+    ? `💸 Frais d’un transfert : <b>${fmtFee(rows[0][1])} ${escapeHtml(meta.native)}</b>${eurStr(rows[0][1])}`
+    : rows
+        .map(([label, f]) => `${label} : <b>${fmtFee(f)} ${escapeHtml(meta.native)}</b>${eurStr(f)}`)
+        .join('\n');
+
+  const note = fees.feeNote ? `\n\nℹ️ <i>${escapeHtml(fees.feeNote)}</i>` : '';
+
+  return ctx.reply(
+    `${meta.emoji} <b>Frais ${escapeHtml(meta.name)}</b>\n\n${body}${note}\n\n🕒 Mis à jour à ${nowLabel()}`,
+    { parse_mode: 'HTML' }
+  );
+}
+
+export function setupMarketCommands(bot, walletService) {
   // ⛽ /gas - Prix du gas / frais de transaction (multi-chaînes)
   bot.command('gas', async (ctx) => {
     const args = ctx.message.text.split(' ').slice(1);
@@ -137,6 +214,11 @@ export function setupMarketCommands(bot) {
         );
       }
 
+      // Any other supported chain → generic registry-derived fee card.
+      if (chain) {
+        return await genericFeeCard(ctx, walletService, chain);
+      }
+
       // Summary across all chains.
       const [eth, btc, sol] = await Promise.all([
         getEthFees().catch(() => null),
@@ -177,7 +259,8 @@ export function setupMarketCommands(bot) {
 
       text +=
         `🕒 Mis à jour à ${nowLabel()}\n` +
-        '<i>Détails :</i> <code>/gas eth</code> · <code>/gas btc</code> · <code>/gas sol</code>';
+        '<i>Détail par réseau :</i> <code>/gas eth</code> · <code>/gas btc</code> · <code>/gas sol</code>\n' +
+        '<i>…ou n’importe quelle chaîne :</i> <code>/gas xmr</code> · <code>/gas trx</code> · <code>/gas ltc</code> · <code>/gas ton</code> …';
 
       await ctx.reply(text, { parse_mode: 'HTML' });
     } catch (error) {

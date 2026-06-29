@@ -8,7 +8,7 @@ import { logger } from '../../../shared/logger.js';
 import { escapeHtml, scheduleSecureDelete, safeAnswerCbQuery } from '../../../shared/utils/telegram.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { sendWalletKeysFile } from '../wallet/key-file.js';
-import { separator, CHAIN_EMOJIS } from '../../ui/index.js';
+import { separator, CHAIN_EMOJIS } from '../../i18n/index.js';
 import { SUPPORTED_CHAINS, NETWORK_LABEL, isEvmChain } from '../../../shared/chains.js';
 
 // Onboarding reveal groups — derived from the registry so a new chain shows up

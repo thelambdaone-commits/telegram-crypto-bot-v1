@@ -3,7 +3,7 @@ import { safeAnswerCbQuery, escapeHtml } from '../../../shared/utils/telegram.js
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { getPricesEUR, formatEUR } from '../../../shared/price.js';
 import { logger } from '../../../shared/logger.js';
-import { CHAIN_EMOJIS } from '../../ui/formatters.js';
+import { CHAIN_EMOJIS } from '../../i18n/formatters.js';
 
 export function setupAdminStats(bot, storage, walletService) {
   // Global stats

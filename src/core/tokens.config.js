@@ -43,6 +43,24 @@ export const TOKEN_CONFIGS = {
         icon: '💵',
         standard: 'SPL',
       },
+      // Wrapped Ether bridged to Solana via Wormhole (Portal). decimals=8
+      // (Wormhole caps wrapped decimals at 8). Verified on-chain (getTokenSupply).
+      WETH: {
+        mint: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
+        decimals: 8,
+        type: 'wrapped',
+        icon: 'Ξ',
+        standard: 'SPL',
+        bridged: true,
+      },
+      // Native SOL wrapped as an SPL token (canonical native mint, 9 decimals).
+      wSOL: {
+        mint: 'So11111111111111111111111111111111111111112',
+        decimals: 9,
+        type: 'wrapped',
+        icon: '◎',
+        standard: 'SPL',
+      },
     },
   },
   eth: {
@@ -97,6 +115,16 @@ export const TOKEN_CONFIGS = {
         type: 'wrapped',
         icon: 'Ξ',
         standard: 'ERC-20',
+      },
+      // SOL bridged to Ethereum via Wormhole (ERC-20). decimals=9, EIP-55
+      // checksummed; verified on-chain (decimals()/symbol()).
+      SOL: {
+        address: '0xD31a59c85aE9D8edEFeC411D448f90841571b89c',
+        decimals: 9,
+        type: 'wrapped',
+        icon: '◎',
+        standard: 'ERC-20',
+        bridged: true,
       },
     },
   },

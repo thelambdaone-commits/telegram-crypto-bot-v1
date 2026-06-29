@@ -4,13 +4,13 @@ import {
   walletCreationMethodKeyboard,
   cancelKeyboard,
 } from '../../keyboards/index.js';
-import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../utils.js';
+import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../../shared/utils/telegram.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
 import { config } from '../../../core/config.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { MESSAGES, EMOJIS } from '../../i18n/index.js';
 import { logger } from '../../../shared/logger.js';
 import { sendWalletKeysFile } from './key-file.js';
-import { chainSelectionPrompt, CHAIN_EMOJIS } from '../../ui/index.js';
+import { chainSelectionPrompt, CHAIN_EMOJIS } from '../../i18n/index.js';
 
 // Guards against a double tap / Telegram callback retry creating two wallets.
 const inFlightGenerations = new Set();

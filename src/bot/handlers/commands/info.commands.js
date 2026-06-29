@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import { mainMenuKeyboard, mainReplyKeyboard } from '../../keyboards/index.js';
-import { getFullHelpText } from '../../ui/index.js';
+import { getFullHelpText } from '../../i18n/index.js';
 import { CALLBACKS } from '../../constants/callbacks.js';
 import { CHAIN_REGISTRY } from '../../../shared/chains.js';
 import { TOKEN_CONFIGS } from '../../../core/tokens.config.js';

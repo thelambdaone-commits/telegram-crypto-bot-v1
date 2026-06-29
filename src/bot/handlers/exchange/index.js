@@ -10,7 +10,7 @@ import { CALLBACKS, CALLBACK_REGEX } from '../../constants/callbacks.js';
 import { safeAnswerCbQuery, safeEditMessage } from '../../../shared/utils/telegram.js';
 import { CHAIN_REGISTRY } from '../../../shared/chains.js';
 import { getPricesEUR } from '../../../shared/price.js';
-import { fr } from '../../messages/fr.js';
+import { fr } from '../../i18n/fr.js';
 import { logger } from '../../../shared/logger.js';
 
 // Trim a number to a readable, locale-free string.

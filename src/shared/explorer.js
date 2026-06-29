@@ -46,9 +46,32 @@ const TOKEN_EXPLORERS = {
   bsc: (addr) => `https://bscscan.com/token/${addr}`,
 };
 
+const TX_EXPLORERS = {
+  eth:   (h) => `https://etherscan.io/tx/${h}`,
+  arb:   (h) => `https://arbiscan.io/tx/${h}`,
+  op:    (h) => `https://optimism.io/tx/${h}`,
+  base:  (h) => `https://basescan.org/tx/${h}`,
+  matic: (h) => `https://polygonscan.com/tx/${h}`,
+  avax:  (h) => `https://snowtrace.io/tx/${h}`,
+  sol:   (h) => `https://solscan.io/tx/${h}`,
+  ltc:   (h) => `https://mempool.space/litecoin/tx/${h}`,
+  bch:   (h) => `https://blockchain.com/bch/tx/${h}`,
+  btc:   (h) => `https://blockchain.com/btc/tx/${h}`,
+  xmr:   (h) => `https://xmrchain.net/tx/${h}`,
+  zec:   (h) => `https://zcashblockexplorer.com/tx/${h}`,
+  trx:   (h) => `https://tronscan.org/#/transaction/${h}`,
+  ton:   (h) => `https://tonviewer.com/transaction/${h}`,
+  bsc:   (h) => `https://bscscan.com/tx/${h}`,
+};
+
 export function getAddressExplorerUrl(chain, address) {
   const builder = ADDRESS_EXPLORERS[chain];
   return builder ? builder(address) : null;
+}
+
+export function getTxExplorerUrl(chain, hash) {
+  const builder = TX_EXPLORERS[chain];
+  return builder ? builder(hash) : null;
 }
 
 export function getExplorerName(chain) {

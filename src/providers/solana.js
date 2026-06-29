@@ -17,6 +17,7 @@ import {
 import { BaseProvider } from './base.provider.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 import { TOKEN_CONFIGS, getTokenConfig } from '../core/tokens.config.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { RpcManager } from '../shared/rpc/RpcManager.js';
 
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
@@ -296,7 +297,15 @@ export class SolanaChain extends BaseProvider {
       }
       sentAmount = lamports / LAMPORTS_PER_SOL;
     } else {
-      lamports = Math.round(Number.parseFloat(amount) * LAMPORTS_PER_SOL);
+      // Montant UI → lamports en entier, sans flottant ni arrondi excédentaire.
+      const lamportsBig = uiToBaseUnits(amount, 9);
+      if (lamportsBig <= 0n) {
+        throw new TransactionError('Montant inférieur au minimum transférable (1 lamport)', {
+          code: ERROR_CODES.INVALID_AMOUNT,
+          chain: 'SOL',
+        });
+      }
+      lamports = Number(lamportsBig);
       sentAmount = amount;
     }
 
@@ -370,7 +379,13 @@ export class SolanaChain extends BaseProvider {
       );
     }
 
-    const rawAmount = BigInt(Math.round(Number(amount) * 10 ** cfg.decimals));
+    const rawAmount = uiToBaseUnits(amount, cfg.decimals);
+    if (rawAmount <= 0n) {
+      throw new TransactionError('Montant inférieur au minimum transférable', {
+        code: ERROR_CODES.INVALID_AMOUNT,
+        chain: 'SOL',
+      });
+    }
     transaction.add(
       createTransferCheckedInstruction(
         fromAta,

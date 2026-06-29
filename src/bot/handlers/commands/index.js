@@ -8,6 +8,6 @@ import { setupInfoCommands } from './info.commands.js';
  */
 export function setupCommands(bot, storage, walletService, sessions) {
   setupWalletCommands(bot, storage, walletService, sessions);
-  setupMarketCommands(bot);
+  setupMarketCommands(bot, walletService);
   setupInfoCommands(bot);
 }

@@ -5,12 +5,12 @@ import {
   corruptedWalletKeyboard,
 } from '../../keyboards/index.js';
 import { auditLogger, AUDIT_ACTIONS } from '../../../shared/security/audit-logger.js';
-import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../utils.js';
-import { MESSAGES, EMOJIS } from '../../messages/index.js';
+import { safeAnswerCbQuery, scheduleSecureDelete, escapeHtml } from '../../../shared/utils/telegram.js';
+import { MESSAGES, EMOJIS } from '../../i18n/index.js';
 import { isAdmin } from '../../middlewares/auth.middleware.js';
 import { logger } from '../../../shared/logger.js';
 import { generateAddressQR } from '../../../shared/qr.js';
-import { CHAIN_EMOJIS, truncateAddress } from '../../ui/formatters.js';
+import { CHAIN_EMOJIS } from '../../i18n/formatters.js';
 import { Markup } from 'telegraf';
 
 export function setupKeysHandlers(bot, storage, walletService) {
@@ -278,7 +278,7 @@ export function setupKeysHandlers(bot, storage, walletService) {
       const chainSymbol = wallet.chain.toUpperCase();
 
       let text = `${chainEmoji} <b>Historique — ${escapeHtml(wallet.label)}</b>\n`;
-      text += `<code>${truncateAddress(wallet.address)}</code>\n\n`;
+      text += `<code>${escapeHtml(wallet.address)}</code>\n\n`;
 
       for (const tx of txHistory) {
         // Direction emoji and label
@@ -294,13 +294,10 @@ export function setupKeysHandlers(bot, storage, walletService) {
         const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
         const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-        // Short hash
-        const shortHash = truncateAddress(tx.hash, 10, 8);
-
-        // One line per info - clean format
+        // One line per info - clean format (full hash, copyable)
         text += `${directionEmoji} <b>${directionLabel}</b> · ${escapeHtml(amountDisplay)}\n`;
         text += `🕑 ${dateStr} ${timeStr}\n`;
-        text += `🔗 <code>${shortHash}</code>\n\n`;
+        text += `🔗 <code>${escapeHtml(tx.hash)}</code>\n\n`;
       }
 
       text += `<i>${txHistory.length} transaction(s)</i>`;

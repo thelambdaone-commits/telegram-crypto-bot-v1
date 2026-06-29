@@ -10,6 +10,7 @@
 import { TronWeb } from 'tronweb';
 import * as bip39 from 'bip39';
 import { BaseProvider } from './base.provider.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { getAllTokensForChain } from '../core/tokens.config.js';
 
 const DEFAULT_HOST = 'https://api.trongrid.io';
@@ -150,7 +151,11 @@ export class TronChain extends BaseProvider {
       const token = this._token(sym);
       if (!token) throw new Error(`Token TRC-20 non supporté: ${sym}`);
       const contract = await tw.contract().at(token.address);
-      const value = BigInt(Math.round(Number(amount) * 10 ** token.decimals)).toString();
+      const units = uiToBaseUnits(amount, token.decimals);
+      if (units <= 0n) {
+        throw new Error('Montant inférieur au minimum transférable');
+      }
+      const value = units.toString();
       const hash = await contract
         .transfer(toAddress, value)
         .send({ feeLimit: TRC20_FEE_LIMIT_SUN });
@@ -164,7 +169,12 @@ export class TronChain extends BaseProvider {
       };
     }
 
-    const sun = Math.round(Number(amount) * 1e6);
+    // TRX → sun (6 décimales), entier, sans flottant.
+    const sunBig = uiToBaseUnits(amount, 6);
+    if (sunBig <= 0n) {
+      throw new Error('Montant inférieur au minimum transférable (1 sun)');
+    }
+    const sun = Number(sunBig);
     const result = await tw.trx.sendTransaction(toAddress, sun);
     const hash = result?.txid || result?.transaction?.txID;
     if (!hash || result?.result === false) {

@@ -4,6 +4,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import bs58check from 'bs58check';
 
 import { BaseProvider } from './base.provider.js';
+import { uiToBaseUnits } from '../shared/amounts.js';
 import { TransactionError, ERROR_CODES } from '../shared/errors.js';
 import { fetchWithTor } from '../shared/tor-proxy.js';
 
@@ -270,7 +271,11 @@ export class ZcashChain extends BaseProvider {
         const utxos = await this.getUtxos(fromAddress);
         const fees = await this.estimateFees(fromAddress, toAddress, amount);
         const feeData = fees[feeLevel];
-        const amountSats = Math.floor(Number.parseFloat(amount) * 100000000);
+        const zats = uiToBaseUnits(amount, 8);
+        if (zats <= 0n) {
+          throw new Error('Montant inférieur au minimum transférable (1 zatoshi)');
+        }
+        const amountSats = Number(zats);
         const feeSats = Math.max(feeData.feeSats, 1000);
 
         let totalInput = 0;
